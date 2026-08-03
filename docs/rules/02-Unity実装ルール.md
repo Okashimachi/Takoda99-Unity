@@ -17,29 +17,28 @@ takoda99-unity の実装コードを書くときのルール（AI に書かせ�
 
 迷ったら「`UnityEngine` を書かずに実装できるか」で判断する。書けるなら `pureC#/src/` に置く。
 
-## 2. pureC#（仕様書駆動開発）
+## 2. 仕様書駆動開発（両領域共通）
 
-`pureC#/` 配下は **仕様書駆動開発（Spec-Driven Development）** で進める。詳細ルールは [pureC#/README.md](../../pureC%23/README.md) および [pureC#/docs/.sdd/README.md](../../pureC%23/docs/.sdd/README.md) を参照。
+**`Unity/` `pureC#/` のどちらも、`docs/.sdd/` に仕様書を書いてから実装する。** 領域ごとの詳細ルールは各READMEと `.sdd` の索引にある。
 
-- **実装より先に仕様書（`pureC#/docs/.sdd/*.md`）を書く。** 仕様書が無いモジュールを直接 `src/` に実装しない。
-- 仕様書はTakoda99-Client-Docsの該当章（モジュール定義・IF定義）を出発点にし、実装に必要な粒度まで具体化したもの。矛盾したらTakoda99-Client-Docsが上流。
+| 領域 | 領域のREADME | 仕様書（.sdd）の索引 |
+|---|---|---|
+| `Unity/` | [Unity/README.md](../../Unity/README.md) | [Unity/docs/.sdd/README.md](../../Unity/docs/.sdd/README.md) |
+| `pureC#/` | [pureC#/README.md](../../pureC%23/README.md) | [pureC#/docs/.sdd/README.md](../../pureC%23/docs/.sdd/README.md) |
+
+共通ルール：
+
+- **実装より先に仕様書を書く。** 仕様書が無いモジュールを直接実装しない。
+- 仕様書はTakoda99-Client-Docsの該当章（モジュール定義・IF定義）／Takoda99-Docs `03_Unity仕様書.md` を出発点にし、実装に必要な粒度まで具体化したもの。矛盾したら上流が優先。
 - 仕様書とコードの対応が崩れたら、まず仕様書を直してからコードを直す（コードだけ直して仕様書を放置しない）。
+- **同じモジュールの仕様を両領域に二重に書かない。** `pureC#` のモジュール仕様は `pureC#/docs/.sdd/` が正典で、Unity側には「それをUnityからどう使うか」だけを書く。
 
 ## 3. Unity/Assets/ 側のディレクトリ構成
 
-```
-Unity/Assets/Scripts/
-  Net/        WebGLNetworkClient（実体）
-  State/      （pureC#/src の Store/Reducer を参照）
-  Typing/     （pureC#/src の TypingJudge を参照）
-  Lifecycle/  （pureC#/src の MatchClientController を参照）
-  Timer/      PatienceTimer.cs
-  View/       Prefab/MonoBehaviour（描画）
-  Input/      UnityInputSource.cs
-```
+構成の詳細は [Unity/README.md](../../Unity/README.md) §1 を参照。要点のみ：
 
 - `View/` `Input/` `Net/`（WebGL実装）`Timer/` 以外は、**`pureC#/src` の実装をそのまま参照する**（Unity内で再実装・二重管理しない）。
-- 参照方法（DLL参照 or ソース直接取り込み）は導入時に確定し、本節に追記する。
+- 参照方法（DLL参照 or ソース直接取り込み）は導入時に確定し、[Unity/README.md](../../Unity/README.md) に追記する。
 
 ## 4. デバッグパネルを最初に作る
 

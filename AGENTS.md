@@ -9,12 +9,19 @@
 
 このリポジトリは性質の異なる2つのコードを同居させている。
 
-| 領域 | 内容 | Unity依存 |
-|---|---|---|
-| `Unity/` | Unityプロジェクト本体（`Unity/Assets/` 配下に実装）。描画（Prefab/UI/シーン）・入力（Input System）・我慢ゲージ表示（`PatienceTimer`）・WebGL向けネットワーク実装など | **あり** |
-| `pureC#/` | Unityを起動せずに実装・テストできる純粋なC#ロジック（`Contract`参照・`Dispatcher`・`Store`/`Reducer`・`TypingJudge`・`RomajiTable`・`MatchClientController`）。`docs/.sdd/` に仕様書を書き、それを基に `src/` へ実装する**仕様書駆動開発**で進める | **なし（禁止）** |
+| 領域 | 内容 | Unity依存 | 領域のREADME |
+|---|---|---|---|
+| `Unity/` | Unityプロジェクト本体（`Unity/Assets/` 配下に実装）。描画（Prefab/UI/シーン）・入力（Input System）・我慢ゲージ表示（`PatienceTimer`）・WebGL向けネットワーク実装など | **あり** | [Unity/README.md](./Unity/README.md) |
+| `pureC#/` | Unityを起動せずに実装・テストできる純粋なC#ロジック（`Contract`参照・`Dispatcher`・`Store`/`Reducer`・`TypingJudge`・`RomajiTable`・`MatchClientController`） | **なし（禁止）** | [pureC#/README.md](./pureC%23/README.md) |
 
-`pureC#/` の位置づけ・作業ルールは [pureC#/README.md](./pureC%23/README.md) を参照。
+**どちらの領域も、`docs/.sdd/` に仕様書を書いてから実装する「仕様書駆動開発」で進める。** 実装に着手する前に、担当領域のREADMEと `.sdd` の索引を必ず読むこと。
+
+| 領域 | 仕様書（.sdd）の索引 | 仕様書の対象 |
+|---|---|---|
+| `Unity/` | [Unity/docs/.sdd/README.md](./Unity/docs/.sdd/README.md) | `WebGLNetworkClient` / `UnityInputSource` / `PatienceTimer` / `Renderer` / デバッグパネル / シーン・Prefab構成 |
+| `pureC#/` | [pureC#/docs/.sdd/README.md](./pureC%23/docs/.sdd/README.md) | `Contract` / `Dispatcher` / `Store`+`Reducer` / `TypingJudge` / `RomajiTable` / `MatchClientController` |
+
+> 仕様書は上流（Client-Docs / Docs / Proto）を**実装粒度まで具体化するだけ**で、新しいルールを作る場所ではない。同じモジュールの仕様を両領域に二重に書かない。
 
 ## 1. 上流リポジトリへの参照（正典の所在）
 
