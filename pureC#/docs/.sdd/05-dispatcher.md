@@ -48,6 +48,16 @@ public interface IDispatcher
 
     /// <summary>受理されず破棄されたときの通知（phase 外・デコード失敗）。</summary>
     event Action<string, string> OnMessageDropped;  // (type, reason)
+
+    /// <summary>
+    /// Store.Apply が成功した直後に、適用した Action をそのまま通知する。
+    /// [06-match-client-controller](./06-match-client-controller.md) が唯一の購読者で、
+    /// ここから `IRenderer` の離散イベント（客の来店・離脱・警告・脱落・試合終了等）を組み立てる。
+    /// Dispatcher 自身は IRenderer を知らない（依存してよいのは統括層のみ。第3章 §2 ルール2）ため、
+    /// 「Action化 → Store.Apply →（必要なら Renderer へイベント通知）」という §3.1 の設計上の約束を、
+    /// Dispatcher が Renderer を直接呼ばずに実現するための橋渡しとして追加した。
+    /// </summary>
+    event Action<Takoda99.Client.State.IAction> OnActionApplied;
 }
 
 /// <summary>送信キュー。順序保証と再送方針を1箇所に閉じる。</summary>
