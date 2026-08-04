@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Unity（IL2CPP / netstandard2.1 相当）から参照できるよう Proto と同じ netstandard2.1 を狙う。 -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Takoda99.Client</RootNamespace>
+    <!-- pureC# は Unity 非依存。UnityEngine を参照しない（docs/rules/01 絶対原則10）。 -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\third_party\Takoda99.Proto\Takoda99.Proto.csproj" />
+  </ItemGroup>
+
+</Project>
