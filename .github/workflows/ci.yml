@@ -1,0 +1,71 @@
+name: CI
+
+# Unityライセンスを必要としない検証だけを行う（実行1〜2分）。
+# Unity Editor でのテスト・WebGLビルドは、必要になった時点で別ワークフローとして追加する
+# （GameCI + ライセンスのシークレット設定が要るため、コストが一段上がる）。
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+# 同じブランチで新しいpushがあったら、走っている古いジョブは打ち切る。
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ビルド・テスト・Unity互換性
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: .NET SDK のセットアップ
+        uses: actions/setup-dotnet@v4
+        with:
+          # テストプロジェクトは net8.0、本体は netstandard2.1。
+          dotnet-version: '8.0.x'
+
+      # --- 1. Unity非依存ロジックの単体テスト ---
+      - name: pureC# の単体テスト
+        run: dotnet test "pureC#/src/Takoda99.Client.Tests/Takoda99.Client.Tests.csproj" --verbosity minimal
+
+      # --- 2. View用派生状態の単体テスト（Unityを起動しない） ---
+      - name: View用派生状態の単体テスト
+        run: dotnet test "Unity/tests/Takoda99.View.Tests/Takoda99.View.Tests.csproj" --verbosity minimal
+
+      # --- 3. Unity互換性（最重要） ---
+      # テストは net8.0 / LangVersion 10 で通るため、C# 10 の構文を書いても気づけない。
+      # Unity と同じ netstandard2.1 / LangVersion 9 でコンパイルして、Unity側だけ壊れる事故を防ぐ。
+      - name: Unity互換（C# 9）でコンパイルできるか
+        run: dotnet build "Unity/tests/Takoda99.View.LangVersionCheck/Takoda99.View.LangVersionCheck.csproj" --verbosity minimal
+
+      # --- 4. 責務境界の担保 ---
+      # pureC# は Unity 非依存が絶対原則（docs/rules/01-責務と絶対原則.md）。
+      # UnityEngine を参照するパッケージが無いためビルドも失敗するはずだが、
+      # 条件付きコンパイル等ですり抜ける余地を潰すため明示的に検査する。
+      - name: pureC#/src に UnityEngine が混入していないか
+        run: |
+          if grep -rn --include='*.cs' -E '^\s*using\s+UnityEngine' "pureC#/src"; then
+            echo "::error::pureC#/src は Unity 非依存です。UnityEngine への参照は Unity/Assets/ 側へ移してください（docs/rules/01-責務と絶対原則.md）"
+            exit 1
+          fi
+          echo "OK: UnityEngine の参照なし"
+
+      # --- 5. 契約の保護 ---
+      # Proto は上流が正典で、このリポジトリでは変更しない（docs/rules/01-責務と絶対原則.md）。
+      # 手ミラーを書き換えると、サーバーとの契約が黙ってズレるため検知する。
+      - name: Proto の手ミラーが変更されていないか
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          if ! git diff --quiet "origin/${{ github.base_ref }}" -- "pureC#/vendor/Takoda99.Proto"; then
+            echo "::error::pureC#/vendor/Takoda99.Proto は Takoda99-Proto の手ミラーです。変更は Proto 側で行ってください（docs/rules/01-責務と絶対原則.md）"
+            git diff --stat "origin/${{ github.base_ref }}" -- "pureC#/vendor/Takoda99.Proto"
+            exit 1
+          fi
+          echo "OK: 手ミラーは未変更"
