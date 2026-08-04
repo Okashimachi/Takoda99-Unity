@@ -1,0 +1,24 @@
+{
+  "name": "phase-and-heat",
+  "description": "PhaseChange / DifficultyUpdate。DifficultyUpdate未受信の間heatLevelが0のままか",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    {
+      "atMs": 0,
+      "kind": "receive",
+      "type": "MatchStart",
+      "payload": {
+        "matchId": "m-01",
+        "selfStoreId": "s-self",
+        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
+        "phase": "Early",
+        "stores": []
+      }
+    },
+    { "atMs": 1000, "kind": "wait" },
+    { "atMs": 2000, "kind": "receive", "type": "PhaseChange", "payload": { "phase": "Mid" } },
+    { "atMs": 3000, "kind": "receive", "type": "DifficultyUpdate", "payload": { "heatLevel": 2 } },
+    { "atMs": 4000, "kind": "receive", "type": "PhaseChange", "payload": { "phase": "Late" } },
+    { "atMs": 5000, "kind": "receive", "type": "DifficultyUpdate", "payload": { "heatLevel": 5 } }
+  ]
+}

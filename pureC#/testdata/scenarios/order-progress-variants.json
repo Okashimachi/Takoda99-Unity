@@ -1,0 +1,59 @@
+{
+  "name": "order-progress-variants",
+  "description": "orderCountが4/6/8/12のとき、たこ焼き台のBatter/Cooked/Emptyの数が正しいか",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-04",
+        "attribute": "Normal",
+        "orderCount": 4,
+        "words": ["たこ", "やき", "ふね", "かぜ"],
+        "patienceMaxMs": 12000
+      }
+    },
+    { "atMs": 2000, "kind": "input", "keys": "takoyakifunekaze" },
+    {
+      "atMs": 3000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-06",
+        "attribute": "Normal",
+        "orderCount": 6,
+        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ"],
+        "patienceMaxMs": 12000
+      }
+    },
+    { "atMs": 4000, "kind": "input", "keys": "takoyakifunekazemiseame" },
+    {
+      "atMs": 5000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-08",
+        "attribute": "Normal",
+        "orderCount": 8,
+        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ", "そら", "うみ"],
+        "patienceMaxMs": 14000
+      }
+    },
+    { "atMs": 6000, "kind": "input", "keys": "takoyakifunekazemiseamesorumi" },
+    {
+      "atMs": 7000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-12",
+        "attribute": "Normal",
+        "orderCount": 12,
+        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ", "そら", "うみ", "やま", "かわ", "つき", "ほし"],
+        "patienceMaxMs": 16000
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "other-store-eliminated",
+  "description": "他店のStoreEliminated -> ミニ盤面のみ更新、自店は無影響",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    {
+      "atMs": 0,
+      "kind": "receive",
+      "type": "MatchStart",
+      "payload": {
+        "matchId": "m-01",
+        "selfStoreId": "s-self",
+        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
+        "phase": "Early",
+        "stores": [
+          { "storeId": "s-self", "displayName": "自店", "evalNormalized": 0.5, "rank": 50, "creditLife": 3, "alive": true },
+          { "storeId": "s-002", "displayName": "2号店", "evalNormalized": 0.1, "rank": 90, "creditLife": 0, "alive": true }
+        ]
+      }
+    },
+    { "atMs": 1000, "kind": "receive", "type": "StoreEliminated", "payload": { "storeId": "s-002", "reason": "SelfCollapse", "finalRank": 90 } },
+    { "atMs": 1500, "kind": "input", "keys": "tako" }
+  ]
+}
