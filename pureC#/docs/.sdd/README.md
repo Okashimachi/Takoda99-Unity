@@ -32,8 +32,11 @@ pureC#/src/*.cs（仕様書の実装）
 | 04 | [04-store-reducer.md](./04-store-reducer.md) | `Store` / `Reducer`（状態管理） | 01 | ✅ | ✅ |
 | 05 | [05-dispatcher.md](./05-dispatcher.md) | `Dispatcher`（振り分け・送信キュー） | 01, 04 | ✅ | ✅ |
 | 06 | [06-match-client-controller.md](./06-match-client-controller.md) | `MatchClientController`（統括・ライフサイクル） | 01, 03, 04, 05 | ✅ | ✅ |
+| 07 | [07-scenario-player.md](./07-scenario-player.md) | `ScenarioPlayer`（サンプルデータ再生・テスト専用） | 01 | ✅ | 未 |
 
 新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。実装が完了したら「実装」列を ✅ にする。
+
+> `07-scenario-player.md` はテスト専用モジュール。**サーバーのロジックは一切再現せず、サーバー権威の値はシナリオに書かれたものをそのまま流す。** サーバー未接続でクライアントの状態遷移・表示分岐を検証するために使う。
 
 ### 1仕様書 ＝ 1ブランチ ＝ 1PR
 
