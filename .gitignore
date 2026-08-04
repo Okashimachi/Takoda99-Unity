@@ -104,7 +104,8 @@ node_modules/
 */.idea/*
 
 # pureC#（Unity非依存のクラスライブラリ）。上のUnity向けルールでの誤除外を打ち消す。
-pureC#/src/**/bin/
-pureC#/src/**/obj/
+pureC#/**/bin/
+pureC#/**/obj/
 !pureC#/**/*.csproj
 !pureC#/**/*.sln
+!pureC#/**/*.slnx

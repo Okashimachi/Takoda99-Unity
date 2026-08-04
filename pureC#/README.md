@@ -20,8 +20,13 @@
 ```
 pureC#/
   docs/
-    .sdd/           # 仕様書駆動開発（Spec-Driven Development）の仕様書一式
-  src/              # .sdd の仕様書に基づいて実装するコード本体
+    .sdd/                      # 仕様書駆動開発（Spec-Driven Development）の仕様書一式
+  src/
+    Takoda99.Client/           # .sdd の仕様書に基づいて実装するコード本体（netstandard2.1）
+    Takoda99.Client.Tests/     # xUnit の単体テスト（net8.0）
+  vendor/
+    Takoda99.Proto/            # Proto の C# 契約のソース手ミラー（バージョン固定・編集禁止）
+  Takoda99.Client.slnx
 ```
 
 仕様書とソースの対応関係・書き方のルールは [docs/.sdd/README.md](./docs/.sdd/README.md) を参照。
@@ -45,9 +50,14 @@ pureC#/
 
 - `src/Takoda99.Client` は Unity非依存の `.NET` クラスライブラリ（`netstandard2.1`。UnityのC#バージョンと合わせる）としてビルドできる（`dotnet build`）。
 - テストは `src/Takoda99.Client.Tests`（xUnit、`dotnet test`）。Unity非依存のテストランナーで実行する。
+
+```bash
+dotnet test "pureC#/Takoda99.Client.slnx"
+```
+
 - `UnityEngine` への参照・`using UnityEngine` を `src/` に一切書かない（CIやレビューでチェックする）。
-- Takoda99-Proto の C# DTO は `vendor/Takoda99.Proto/Messages.cs` をソース手ミラーとして取り込み、`Takoda99.Client.csproj` から `<Compile Include>` で参照する（NuGet/GitHub Packages はこの開発環境から認証済み解決ができないため採用しなかった。経緯は `vendor/Takoda99.Proto/VERSION.md`）。
-- Unity側（`Unity/Assets/`）からの参照方法（DLL参照 or ソース直接取り込み）は、Unity側の実装開始時にここへ追記する（未確定のまま）。
+- Takoda99-Proto の C# DTO は `vendor/Takoda99.Proto/Messages.cs` をソース手ミラーとして取り込み、`Takoda99.Client.csproj` から `<Compile Include>` で参照する（NuGet/GitHub Packages はこの開発環境から認証済み解決ができないため採用しなかった。経緯は `vendor/Takoda99.Proto/VERSION.md`）。**このミラーは編集しない。**
+- Unity側（`Unity/Assets/`）からの参照方法（DLL参照 or ソース直接取り込み）は**未確定**。決まり次第ここに追記する。それまで Unity 側の View用派生状態は、`pureC#` の値オブジェクト型ではなくプリミティブを入力に取る形で実装する（[Unity/docs/.sdd/value-objects/](../Unity/docs/.sdd/value-objects/README.md)）。
 
 ## 4. 上流との関係
 
