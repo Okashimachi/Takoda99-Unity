@@ -38,7 +38,7 @@ takoda99-unity の実装コードを書くときのルール（AI に書かせ�
 構成の詳細は [Unity/README.md](../../Unity/README.md) §1 を参照。要点のみ：
 
 - `View/` `Input/` `Net/`（WebGL実装）`Timer/` 以外は、**`pureC#/src` の実装をそのまま参照する**（Unity内で再実装・二重管理しない）。
-- 参照方法（DLL参照 or ソース直接取り込み）は導入時に確定し、[Unity/README.md](../../Unity/README.md) に追記する。
+- 参照方法は **DLL参照**で確定済み。`pureC#` を DLL としてビルドし `Assets/Plugins/Takoda99/` から使う（[Unity/docs/.sdd/07-purecs-dll-reference.md](../../Unity/docs/.sdd/07-purecs-dll-reference.md)）。DLLは `dotnet test` の実行で自動コピーされるため、手動コピーの手順を増やさない。
 
 ## 4. デバッグパネルを最初に作る
 

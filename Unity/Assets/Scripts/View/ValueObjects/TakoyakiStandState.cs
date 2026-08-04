@@ -1,5 +1,7 @@
 // 仕様書: Unity/docs/.sdd/value-objects/03-takoyaki-stand-state.md
 // たこ焼き台（6列×4行＝24穴）の各穴の見た目状態。提供の確定はしない（OrderProgressState 側の責務）。
+//
+// Unity は C# 9 までのため record struct（C# 10）を使わない（StoreVisualState.cs 冒頭の注記を参照）。
 
 using System.Collections.Generic;
 
@@ -11,10 +13,16 @@ namespace Takoda99.View.ValueObjects
     /// たこ焼き台の各穴が「なにもない／生地／焼けた」のどれかを表す表示用状態。
     /// グリッド形状をView側に持たせないため、穴数・列数・行数はここで定義する。
     /// </summary>
-    public readonly record struct TakoyakiStandState(
-        IReadOnlyList<TakoyakiSlotState> Slots // 長さ = StandCapacity(24)。index = row * StandColumns + col
-    )
+    public readonly struct TakoyakiStandState
     {
+        /// <summary>長さ = StandCapacity(24)。index = row * StandColumns + col（行優先・左上原点）。</summary>
+        public IReadOnlyList<TakoyakiSlotState> Slots { get; }
+
+        public TakoyakiStandState(IReadOnlyList<TakoyakiSlotState> Slots)
+        {
+            this.Slots = Slots;
+        }
+
         public const int StandColumns = 6; // 横
         public const int StandRows = 4;    // 縦
         public const int StandCapacity = StandColumns * StandRows; // 24
