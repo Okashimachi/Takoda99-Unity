@@ -33,6 +33,8 @@ pureC#/src/*.cs（仕様書の実装）
 
 新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。
 
+`03-store-reducer.md` が保持する値オブジェクトの形（データ定義そのもの）は [`value-objects/`](./value-objects/README.md) に分冊している。`Store`/`Reducer` のふるまいを書く前に参照すること。
+
 ## 3. 仕様書の書式
 
 新規の仕様書は [`_template.md`](./_template.md) をコピーして作成する。最低限、以下を含める：
