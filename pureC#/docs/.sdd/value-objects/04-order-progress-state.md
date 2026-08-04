@@ -29,7 +29,7 @@ public readonly record struct OrderProgressState(
 | 行列先頭の客が確定（新規到着 or 前客提供完了で繰り上がり） | 新しい `OrderProgressState` を生成。`OrderCount = CustomerState.OrderCount`、`TypedWordCount = 0`、`MissCount = 0`、`StartedAtMs = MatchState.ElapsedMs` |
 | `TypingJudge` が1単語ぶんの正誤判定を確定（1単語タイプし終えた瞬間） | `TypedWordCount += 1`。誤入力があった場合は都度 `MissCount += 1`（1文字ミスごとに加算。用語集の `missCount` 定義に合わせる） |
 | 毎フレーム（表示用） | `ElapsedMs = MatchState.ElapsedMs - StartedAtMs` |
-| `TypedWordCount == OrderCount` に到達 | `Serve`/`OrderServed` をトリガーし、この `OrderProgressState` を破棄（サーバーへ `elapsedMs` / `missCount` を含む `OrderServed` を送信するのは `MatchClientController` の責務） |
+| `TypedWordCount == OrderCount` に到達 | `Serve`/`OrderServed` をトリガーし、この `OrderProgressState` を破棄する。送信は `MatchClientController` の責務で、Proto の `OrderServed` は `customerId` / `elapsedMs` / `missCount` / `clientTimestamp` の4項目を持つ（`clientTimestamp` は同時脱落のタイブレーク用。用語集4章） |
 
 ## 4. 不変条件
 
