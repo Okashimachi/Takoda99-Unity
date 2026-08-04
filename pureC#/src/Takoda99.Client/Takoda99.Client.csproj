@@ -33,7 +33,8 @@
   -->
   <Target Name="CopyToUnity" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
     <PropertyGroup>
-      <Takoda99UnityPluginDir>$(MSBuildProjectDirectory)\..\..\..\Unity\Assets\Plugins\Takoda99</Takoda99UnityPluginDir>
+      <!-- 区切りは / で書く。プロパティ値の \ は Linux（CI）で分離子として解釈されないため。 -->
+      <Takoda99UnityPluginDir>$(MSBuildProjectDirectory)/../../../Unity/Assets/Plugins/Takoda99</Takoda99UnityPluginDir>
     </PropertyGroup>
     <Copy SourceFiles="$(TargetPath)"
           DestinationFolder="$(Takoda99UnityPluginDir)"

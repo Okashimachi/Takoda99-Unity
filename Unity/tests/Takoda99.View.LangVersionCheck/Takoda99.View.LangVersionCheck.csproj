@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Unity互換性チェック専用のプロジェクト。テストは持たず、コンパイルが通るかだけを見る。
+
+    Unity（6000.5 時点）のコンパイラは C# 9 までしか受け付けないが、
+    Takoda99.View.Tests は net8.0 / LangVersion 10 でビルドしているため、
+    C# 10 の構文（record struct・init・with）を書いても**テストは通ってしまう**。
+    実際にこれで Unity 側だけ 225 件のコンパイルエラーが出た事故があった。
+
+    このプロジェクトは Unity と同じ条件（netstandard2.1 / LangVersion 9）で
+    Assets 配下の同じソースをコンパイルし、Unityを起動せずに互換性を検証する。
+    仕様: Unity/docs/.sdd/07-purecs-dll-reference.md §6
+  -->
+
+  <PropertyGroup>
+    <!-- Unity の API Compatibility Level（.NET Standard 2.1）に合わせる。 -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <!-- Unity のコンパイラが受け付ける上限。ここを上げると検証の意味が無くなる。 -->
+    <LangVersion>9</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- 出力物は使わないため、成果物の生成を最小限にする。 -->
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Takoda99.View.Tests と同じ範囲をリンクする。
+      UnityEngine に依存するコード（MonoBehaviour 等）が Assets/ に増えても、
+      このプロジェクトのリンク対象は ValueObjects に限り続けること
+      （UnityEngine の参照を持たないため、含めるとコンパイルできない）。
+    -->
+    <Compile Include="../../Assets/Scripts/View/ValueObjects/*.cs">
+      <Link>ValueObjects/%(Filename).cs</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>
