@@ -3,7 +3,4 @@
     <Project Path="src/Takoda99.Client.Tests/Takoda99.Client.Tests.csproj" />
     <Project Path="src/Takoda99.Client/Takoda99.Client.csproj" />
   </Folder>
-  <Folder Name="/third_party/">
-    <Project Path="third_party/Takoda99.Proto/Takoda99.Proto.csproj" />
-  </Folder>
 </Solution>
