@@ -23,9 +23,10 @@ Unity/
   Assets/           # .sdd の仕様書に基づいて実装するUnityプロジェクト本体
   Packages/
   ProjectSettings/
+  tests/            # Unityを起動せずに実行する単体テスト（Assets外・下記 §2.1）
 ```
 
-`docs/` は `Assets/` の外に置く（Unityのアセットインポート対象に含めないため）。仕様書の書き方・一覧は [docs/.sdd/README.md](./docs/.sdd/README.md) を参照。
+`docs/` と `tests/` は `Assets/` の外に置く（Unityのアセットインポート対象に含めないため）。仕様書の書き方・一覧は [docs/.sdd/README.md](./docs/.sdd/README.md) を参照。
 
 ### Assets/ 配下の構成
 
@@ -50,6 +51,20 @@ Assets/Scripts/
 4. 実装が仕様書と食い違ったら、**まず仕様書を直してから**コードを直す。
 
 > `pureC#/` との違いは「Unity固有の要素（MonoBehaviour・Prefab・シーン・Input System・WebGL制約）を仕様書に書いてよい／書くべき」点のみ。進め方のルールは共通。
+
+### 2.1 View用派生状態のテスト
+
+`Assets/Scripts/View/ValueObjects/`（[docs/.sdd/value-objects/](./docs/.sdd/value-objects/README.md) の実装）は**純粋関数のみ**で `UnityEngine` に依存しないため、Unityエディタを起動せずに単体テストできる。`tests/Takoda99.View.Tests` が同ソースを**リンク参照**（コピーではない）してテストする。
+
+```bash
+dotnet test "Unity/tests/Takoda99.View.Tests/Takoda99.View.Tests.csproj"
+```
+
+`Assets/` 側に `MonoBehaviour` 等のUnity依存コードを足すときは、このテストプロジェクトのリンク対象を `ValueObjects/` に限ったままにする（Unity依存コードのテストは Unity Test Framework 側で行う）。
+
+### 2.2 pureC# の参照方法（未確定）
+
+`pureC#/src` を `Assets/` からどう参照するか（DLL参照 or ソース直接取り込み）は**まだ決まっていない**。決まるまでの暫定として、`View/ValueObjects` の変換関数は `pureC#` の値オブジェクト型ではなく**素の値（`evalNormalized` / `creditLife` / `orderCount` 等）を引数に取る**。参照方法が決まった時点で、`pureC#` の型を直接受けるオーバーロードを追加し、本節を更新する。
 
 ## 3. Unity側で守る制約
 

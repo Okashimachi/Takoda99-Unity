@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Unity/Assets/Scripts/View/ValueObjects の変換処理（selector）は純粋関数で UnityEngine に依存しないため、
+    Unityエディタを起動せずに単体テストできる。ソースを二重管理しないよう、実体をリンク参照する。
+    Assets 配下に MonoBehaviour 等の Unity 依存コードが増えても、このプロジェクトは
+    ValueObjects だけをリンクし続けること。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Assets\Scripts\View\ValueObjects\*.cs">
+      <Link>ValueObjects\%(Filename).cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+</Project>
