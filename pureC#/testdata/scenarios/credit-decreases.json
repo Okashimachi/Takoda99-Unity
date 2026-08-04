@@ -1,0 +1,11 @@
+{
+  "name": "credit-decreases",
+  "description": "CreditUpdateでlifeが3→2→1→0。提灯の点灯数が追従し、deltaの加算で値を作っていないか",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    { "atMs": 1000, "kind": "receive", "type": "CreditUpdate", "payload": { "life": 2, "delta": -1, "reason": "CustomerLeft" } },
+    { "atMs": 2000, "kind": "receive", "type": "CreditUpdate", "payload": { "life": 1, "delta": -1, "reason": "CustomerLeft" } },
+    { "atMs": 3000, "kind": "receive", "type": "CreditUpdate", "payload": { "life": 0, "delta": -1, "reason": "CustomerLeft" } }
+  ]
+}

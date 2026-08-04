@@ -1,0 +1,36 @@
+{
+  "name": "few-players-match",
+  "description": "maxStoresに満たない人数（例20店）で開始。ミニ盤面が破綻しないか",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    {
+      "atMs": 0,
+      "kind": "receive",
+      "type": "MatchStart",
+      "payload": {
+        "matchId": "m-02",
+        "selfStoreId": "s-self",
+        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
+        "phase": "Early",
+        "stores": [
+          { "storeId": "s-self", "displayName": "自店", "evalNormalized": 0.5, "rank": 1, "creditLife": 3, "alive": true },
+          { "storeId": "s-002", "displayName": "2号店", "evalNormalized": 0.5, "rank": 2, "creditLife": 3, "alive": true },
+          { "storeId": "s-003", "displayName": "3号店", "evalNormalized": 0.5, "rank": 3, "creditLife": 3, "alive": true }
+        ]
+      }
+    },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "StoreListUpdate",
+      "payload": {
+        "aliveCount": 20,
+        "stores": [
+          { "storeId": "s-self", "displayName": "自店", "evalNormalized": 0.55, "rank": 1, "creditLife": 3, "alive": true },
+          { "storeId": "s-002", "displayName": "2号店", "evalNormalized": 0.5, "rank": 2, "creditLife": 3, "alive": true },
+          { "storeId": "s-003", "displayName": "3号店", "evalNormalized": 0.45, "rank": 3, "creditLife": 3, "alive": true }
+        ]
+      }
+    }
+  ]
+}

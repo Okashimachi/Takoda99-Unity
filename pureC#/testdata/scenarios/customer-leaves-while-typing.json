@@ -1,0 +1,35 @@
+{
+  "name": "customer-leaves-while-typing",
+  "description": "打鍵の途中でCustomerLeftが届く。進行中の注文が破棄され、次客へ繰り上がるか（幽霊注文が残らないか）",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-01",
+        "attribute": "Normal",
+        "orderCount": 3,
+        "words": ["たこ", "やき", "ふね"],
+        "patienceMaxMs": 12000
+      }
+    },
+    {
+      "atMs": 1500,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-02",
+        "attribute": "Normal",
+        "orderCount": 2,
+        "words": ["かぜ", "みせ"],
+        "patienceMaxMs": 12000
+      }
+    },
+    { "atMs": 2000, "kind": "input", "keys": "tak" },
+    { "atMs": 3000, "kind": "receive", "type": "CustomerLeft", "payload": { "customerId": "c-01", "reason": "Timeout" } },
+    { "atMs": 3500, "kind": "input", "keys": "kazemise" }
+  ]
+}

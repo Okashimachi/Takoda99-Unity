@@ -18,4 +18,10 @@
     <ProjectReference Include="..\Takoda99.Client\Takoda99.Client.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\testdata\scenarios\*.json"
+          Link="testdata\scenarios\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
