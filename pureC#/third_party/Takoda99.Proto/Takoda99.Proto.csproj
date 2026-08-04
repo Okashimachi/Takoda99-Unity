@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Unity（IL2CPP / netstandard2.1 相当）でも参照できるよう netstandard2.1 を狙う。 -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+
+    <!-- NuGet / GitHub Packages 配布メタデータ -->
+    <PackageId>Takoda99.Proto</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Okashimachi</Authors>
+    <Description>takoda99 WebSocket 契約（メッセージDTO）の C# 型。全リポジトリの共有契約。</Description>
+    <RepositoryUrl>https://github.com/Okashimachi/Takoda99-Proto</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>UNLICENSED</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- netstandard2.1 では System.Text.Json は明示参照が要る。 -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+</Project>
