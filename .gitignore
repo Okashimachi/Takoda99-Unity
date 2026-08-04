@@ -114,3 +114,7 @@ pureC#/**/obj/
 Unity/tests/**/bin/
 Unity/tests/**/obj/
 !Unity/tests/**/*.csproj
+
+# pureC# のビルド成果物。日常は各自 dotnet test で生成する。
+# 節目の配布は GitHub Release への添付で行う（Unity/docs/.sdd/07-purecs-dll-reference.md §5）。
+/Unity/Assets/Plugins/Takoda99/*.dll

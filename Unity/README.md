@@ -79,7 +79,11 @@ Unityを起動せずに互換性を確認できる。CIでも実行している�
 `pureC#/src` は **DLL としてビルドし、`Assets/Plugins/Takoda99/` から参照する**。詳細は [docs/.sdd/07-purecs-dll-reference.md](./docs/.sdd/07-purecs-dll-reference.md)。
 
 - `Takoda99.Client.dll` は **`dotnet test` を実行するだけで自動コピーされる**（`Takoda99.Client.csproj` の `CopyToUnity` ターゲット）。手動でのコピー操作は不要
-- DLL はリポジトリにコミットしてあるため、クローン直後でも Unity を開けば動く
+- DLL は `.gitignore` で除外している（リビルドのたびにバイト列が変わり、作業ツリーが汚れるため）。**クローン後、Unity を開く前に一度だけ次を実行する**
+
+```bash
+dotnet test "pureC#/Takoda99.Client.slnx"
+```
 
 `View/ValueObjects` の変換関数は現在**素の値（`evalNormalized` / `creditLife` / `orderCount` 等）を引数に取る**。これは参照方法が未確定だった時期の実装であり、そのままでも動作する。`pureC#` の値オブジェクト型（`StoreSummaryState` 等）を直接受けるオーバーロードは、必要になった時点で追加してよい。
 

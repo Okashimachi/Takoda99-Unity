@@ -88,16 +88,32 @@ ref と runtime の両方が揃っているため、こちらで配置する必�
 
 ## 5. Git 管理の方針
 
-**DLLはリポジトリにコミットする。**
+**`Takoda99.Client.dll` は `.gitignore` で除外し、各自がビルドして生成する。** 節目の配布が必要になったら **GitHub Release への添付**で行う。
 
-| | 採用（コミットする） | 不採用（`.gitignore`） |
+### 除外する理由
+
+当初はコミットする方針だったが、**リビルドのたびにDLLのバイト列が変わる**ことが分かったため変更した（挙動は同じで、差は MVID 等のメタデータ）。コミットし続けると、`pureC#` をビルドした人の作業ツリーに毎回DLLの差分が出る。バイナリなので差分も読めず、コンフリクトしても手で解決できない。
+
+| | 採用（`.gitignore`） | 不採用（コミット） |
 |---|---|---|
-| Unityだけを触る人 | **クローンしてUnityを開けば動く** | 先に `dotnet build` が必要 |
-| リポジトリ | バイナリが増える（合計約 770 KB） | きれい |
+| ビルドした人の作業ツリー | **汚れない** | 毎回DLLの差分が出る |
+| Unityだけを触る人 | 開く前に `dotnet test` が1回必要 | クローン直後に開ける |
+| リポジトリ | きれい | バイナリがコミットのたび増える |
 
-Unity側の作業者が `pureC#` のビルド環境や、領域分割の前提を必ずしも把握していない状況を優先する。「Unityを開いたら動かない」状態を作らないことを重視した判断。
+「Unityだけを触る人の初回1コマンド」と「ビルドする人の恒常的な churn」を比べ、前者を受け入れる判断。**`.gitignore` は追跡中のファイルには効かない**ため、`git rm --cached` で追跡を外してある。再びコミットすると（`git add -f`）churn が戻るので、リポジトリへは戻さない。
 
-`.meta` ファイルも同様にコミットする（Unityが生成する。§7）。
+### `.meta` はコミットする
+
+`Takoda99.Client.dll.meta` は追跡したままにする。内容が安定していて churn せず、Unityが割り当てるGUIDを固定できるため。
+
+### 節目の配布（GitHub Release）
+
+動作確認が済んだ時点のDLLを配りたい場合は、リポジトリに戻さずタグ付きの Release に添付する。
+
+```bash
+dotnet test "pureC#/Takoda99.Client.slnx"
+gh release create <tag> "Unity/Assets/Plugins/Takoda99/Takoda99.Client.dll" --title "<tag>" --notes "<動作確認の範囲>"
+```
 
 ## 6. Unity側の設定
 
@@ -143,9 +159,17 @@ dotnet test "pureC#/Takoda99.Client.slnx"
 
 > この煩わしさは、ビルド成果物をコミットすることの代償。「Unityだけを触る人がクローン直後に動かせる」ことを優先した判断（§5）とのトレードオフであり、churn が問題になるようなら DLL を `.gitignore` して「Unityを開く前に `dotnet test` を1回実行する」運用へ切り替える。
 
-### 初回セットアップ（完了済み）
+### 初回セットアップ（クローン後に1回）
 
-`Takoda99.Client.dll` と `.meta` はリポジトリにコミット済みのため、**クローン後の追加作業は不要**。Unityを開けばそのまま参照できる。
+DLLは `.gitignore` で除外しているため、**Unityを開く前に一度ビルドする**。
+
+```bash
+dotnet test "pureC#/Takoda99.Client.slnx"
+```
+
+これで `Assets/Plugins/Takoda99/Takoda99.Client.dll` が生成される。以降は日常の更新（上記）に含まれるため、意識する必要はない。
+
+> DLLが無い状態でUnityを開くと `Takoda99.Client` が解決できずコンパイルエラーになる。その場合も上のコマンドを実行してからUnityをリフレッシュすればよい。
 
 ### DLLが古くなっていないかの確認
 
