@@ -108,3 +108,8 @@ pureC#/**/obj/
 !pureC#/**/*.csproj
 !pureC#/**/*.sln
 !pureC#/**/*.slnx
+
+# Unity/tests（Assets外。Unityを起動せずに View用派生状態を単体テストするための dotnet プロジェクト）
+Unity/tests/**/bin/
+Unity/tests/**/obj/
+!Unity/tests/**/*.csproj
