@@ -14,7 +14,9 @@ Unity 側の View 用派生状態（../../Unity/docs/.sdd/value-objects/）
 
 - 対象は「**サーバーから届いた事実、または `Dispatcher` に流れてくるローカル入力イベントを `Reducer` が畳み込んだ結果として `Store` が保持する値**」。表示演出のための状態（3段階評価・ムード・たこ焼きの見た目等）はここに含めない（それは Unity 側 `value-objects/`）。
 - `orderProgress` や `missCount` のようにサーバーへ送らないクライアントローカル値も、`Store` が保持する「ゲームの実際の状態」である以上はここに含める（[用語集](https://github.com/Okashimachi/Takoda99-Docs/blob/main/01_企画/00_用語集.md) 4章）。
-- `Takoda99-Proto` は現時点で古い可能性があるため、DTOの形をそのまま転記せず、**この仕様書が正**として値オブジェクトの形を定義する。Proto側と食い違いが判明した場合は `01-contract.md` 側の変換処理（DTO→ここの値オブジェクト）で吸収し、Proto更新を待たずに進める。
+- **値オブジェクトの形は `Takoda99-Proto` の実体（`csharp/Takoda99.Proto/Messages.cs`）に合わせる。** DTOをそのまま流用するのではなく、クライアントが扱いやすい形へ整えるが、**Protoに存在しない情報を「サーバーから届く」前提で書かない**。
+- Proto に無い情報をクライアント側で補う場合（例：`CustomerState.ArrivedAtElapsedMs`）は、**それがクライアントの推定値であることを各仕様書に明記**し、サーバー権威の値と混同させない。
+- Proto に対する不足・疑問は [docs/server-sync/](../../../../docs/server-sync/README.md) の台帳に `SV-xx` として起票し、仕様書からはその ID を参照する。契約の変更は本リポジトリでは行わない。
 
 ## 2. 仕様書一覧
 

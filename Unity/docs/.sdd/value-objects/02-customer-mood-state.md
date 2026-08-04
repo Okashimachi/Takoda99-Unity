@@ -20,7 +20,13 @@ public readonly record struct CustomerMoodState(
 
 ## 3. 変換処理
 
-入力：`CustomerState.PatienceMaxMs` と、`PatienceTimer` が管理する表示用の現在残量 `patienceLeftMsDisplay`（[03-patience-timer.md](../03-patience-timer.md) 参照。サーバー確定値 `PatienceLeftMs` をクライアント側で滑らかにカウントダウン表示するためのローカル値）
+入力：`CustomerState.PatienceMaxMs` と、`PatienceTimer` が算出する表示用の残量推定 `patienceLeftMsDisplay`（[03-patience-timer.md](../03-patience-timer.md) 参照）
+
+```
+patienceLeftMsDisplay = PatienceMaxMs - (MatchState.ElapsedMs - CustomerState.ArrivedAtElapsedMs)
+```
+
+**この値はサーバーから配信されない。** 我慢ゲージの残量を運ぶメッセージは契約に存在せず（[SV-03](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-03)）、上式はクライアントのローカル推定にすぎない。終盤短縮が適用された場合はサーバー実態とズレるため、**この値で離脱を確定させてはならない**（離脱の確定は `CustomerLeft` 受信のみ）。
 
 ```
 ratio = patienceLeftMsDisplay / PatienceMaxMs  // 0..1
