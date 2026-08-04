@@ -50,11 +50,15 @@
 - `SkipUnchangedFiles="true"` により、変更が無ければ書き込まない（Unityの不要な再インポートを避ける）
 - `.pdb`（デバッグシンボル）はローカルでは配置してよいが、`.gitignore` の `*.pdb` によりコミットされない。Unityから `pureC#` のコードへステップインしたい場合のみローカルに置く
 
-### 配置されるのは「最後にビルドした構成」のDLL
+### コピーは Debug 構成に限定する
 
-`dotnet test` は Debug 構成でビルドするため、テストを回した直後は **Debug ビルドのDLL**が配置される。`dotnet build -c Release` を実行すれば Release に置き換わる。
+コピーのターゲットには `Condition="'$(Configuration)' == 'Debug'"` を付ける。**Release ビルドではコピーしない。**
 
-開発中はどちらでも動作するが（WebGLビルドでは IL2CPP がC++へ再変換するため、managed側の最適化差は最終成果物にほとんど影響しない）、**リリース用のWebGLビルドを作る前には Release 構成でビルドし直す**こと。
+限定しない場合、同じファイルに対して構成の異なるバイナリが交互に書き込まれ、**`dotnet test` を実行しただけで作業ツリーが汚れる**（`dotnet test` は Debug、`dotnet build -c Release` は Release でビルドするため）。DLLはバイナリなので、差分が出ても人が読めず、コンフリクトしても手で解決できない。
+
+Debug を採用する理由は、**最も高頻度で実行される `dotnet test` がそのまま最新化を兼ねる**ため。Release ビルドは稀なので、そちらを除外する方が事故が少ない。
+
+WebGLビルドでは IL2CPP が managed アセンブリをC++へ再変換するため、**managed側の Debug/Release の差は最終成果物にほとんど影響しない**。リリースビルドのために構成を切り替える必要はない。
 
 ## 4. 配置するファイル
 
