@@ -24,7 +24,7 @@ pureC#/
   src/
     Takoda99.Client/           # .sdd の仕様書に基づいて実装するコード本体（netstandard2.1）
     Takoda99.Client.Tests/     # xUnit の単体テスト（net8.0）
-  third_party/
+  vendor/
     Takoda99.Proto/            # Proto の C# 契約のソース手ミラー（バージョン固定・編集禁止）
   Takoda99.Client.slnx
 ```
@@ -40,15 +40,23 @@ pureC#/
 
 ## 3. プロジェクト構成
 
-- `src/Takoda99.Client` は Unity非依存のクラスライブラリ（`netstandard2.1`。UnityのC#バージョンに合わせる）。
-- テストは xUnit（`src/Takoda99.Client.Tests`、`net8.0`）。`pureC#/` で `dotnet test` を実行する。
+```
+pureC#/
+  vendor/Takoda99.Proto/    # Takoda99-Proto のソース手ミラー（VERSION.md に取得元・固定版を明記）
+  src/
+    Takoda99.Client/            # netstandard2.1 クラスライブラリ本体（Contract/Typing/State/Net/Lifecycle）
+    Takoda99.Client.Tests/      # net8.0 + xUnit のテストプロジェクト
+```
+
+- `src/Takoda99.Client` は Unity非依存の `.NET` クラスライブラリ（`netstandard2.1`。UnityのC#バージョンと合わせる）としてビルドできる（`dotnet build`）。
+- テストは `src/Takoda99.Client.Tests`（xUnit、`dotnet test`）。Unity非依存のテストランナーで実行する。
 
 ```bash
 dotnet test "pureC#/Takoda99.Client.slnx"
 ```
 
 - `UnityEngine` への参照・`using UnityEngine` を `src/` に一切書かない（CIやレビューでチェックする）。
-- 契約（`Takoda99.Proto`）は `third_party/Takoda99.Proto/` の**ソース手ミラー**をバージョン固定で参照する（[docs/rules/02](../docs/rules/02-Unity実装ルール.md) §7）。固定バージョン・取得元は [third_party/Takoda99.Proto/README.md](./third_party/Takoda99.Proto/README.md)。**このミラーは編集しない。**
+- Takoda99-Proto の C# DTO は `vendor/Takoda99.Proto/Messages.cs` をソース手ミラーとして取り込み、`Takoda99.Client.csproj` から `<Compile Include>` で参照する（NuGet/GitHub Packages はこの開発環境から認証済み解決ができないため採用しなかった。経緯は `vendor/Takoda99.Proto/VERSION.md`）。**このミラーは編集しない。**
 - Unity側（`Unity/Assets/`）からの参照方法（DLL参照 or ソース直接取り込み）は**未確定**。決まり次第ここに追記する。それまで Unity 側の View用派生状態は、`pureC#` の値オブジェクト型ではなくプリミティブを入力に取る形で実装する（[Unity/docs/.sdd/value-objects/](../Unity/docs/.sdd/value-objects/README.md)）。
 
 ## 4. 上流との関係
