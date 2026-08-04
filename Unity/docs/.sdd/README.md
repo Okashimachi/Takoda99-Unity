@@ -32,8 +32,11 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | 04 | `04-renderer.md` | `Renderer`（受信 state → Prefab/UI/エフェクト） | 未作成 |
 | 05 | `05-debug-panel.md` | デバッグパネル（送受信 `Envelope` の生JSON表示） | 未作成 |
 | 06 | `06-scene-prefab.md` | シーン・Prefab構成方針 | 未作成 |
+| 07 | [07-purecs-dll-reference.md](./07-purecs-dll-reference.md) | `pureC#` の参照方法（DLL連携・ビルド自動コピー） | ✅ |
 
 新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。
+
+> `07-purecs-dll-reference.md` は Unity 側から `pureC#` を使うための土台。**01/02/04 など `pureC#` の型を使うモジュールを実装する前に読むこと。**
 
 `Store`から導出するView用の派生値オブジェクト（評価3段階・客のムード・たこ焼き台の状態・提灯の点灯数・順位バー等）とその変換処理は [`value-objects/`](./value-objects/README.md) に分冊している。`Renderer`等の描画モジュールを書く前に参照すること。
 
