@@ -33,12 +33,21 @@ pureC#/
 3. 仕様書のレビュー・合意後、`src/` に実装する。
 4. 実装が仕様書と食い違ったら、**まず仕様書を直してから**コードを直す（コードだけ直して仕様書を放置しない。仕様書とコードの対応が崩れたら次にこのモジュールを触る人が損をする）。
 
-## 3. プロジェクト構成（想定）
+## 3. プロジェクト構成
 
-- `src/` は Unity非依存の `.NET` クラスライブラリ（`netstandard2.1` 想定。UnityのC#バージョンと合わせる）としてビルドできる状態を保つ。
-- テストは xUnit / NUnit 等、Unity非依存のテストランナーで実行する。
+```
+pureC#/
+  vendor/Takoda99.Proto/    # Takoda99-Proto のソース手ミラー（VERSION.md に取得元・固定版を明記）
+  src/
+    Takoda99.Client/            # netstandard2.1 クラスライブラリ本体（Contract/Typing/State/Net/Lifecycle）
+    Takoda99.Client.Tests/      # net8.0 + xUnit のテストプロジェクト
+```
+
+- `src/Takoda99.Client` は Unity非依存の `.NET` クラスライブラリ（`netstandard2.1`。UnityのC#バージョンと合わせる）としてビルドできる（`dotnet build`）。
+- テストは `src/Takoda99.Client.Tests`（xUnit、`dotnet test`）。Unity非依存のテストランナーで実行する。
 - `UnityEngine` への参照・`using UnityEngine` を `src/` に一切書かない（CIやレビューでチェックする）。
-- Unity側（`Unity/Assets/`）からの参照方法（DLL参照 or ソース直接取り込み）は、プロジェクトの `.csproj` 構成が固まり次第ここに追記する。
+- Takoda99-Proto の C# DTO は `vendor/Takoda99.Proto/Messages.cs` をソース手ミラーとして取り込み、`Takoda99.Client.csproj` から `<Compile Include>` で参照する（NuGet/GitHub Packages はこの開発環境から認証済み解決ができないため採用しなかった。経緯は `vendor/Takoda99.Proto/VERSION.md`）。
+- Unity側（`Unity/Assets/`）からの参照方法（DLL参照 or ソース直接取り込み）は、Unity側の実装開始時にここへ追記する（未確定のまま）。
 
 ## 4. 上流との関係
 
