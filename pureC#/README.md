@@ -57,7 +57,7 @@ dotnet test "pureC#/Takoda99.Client.slnx"
 
 - `UnityEngine` への参照・`using UnityEngine` を `src/` に一切書かない（CIやレビューでチェックする）。
 - Takoda99-Proto の C# DTO は `vendor/Takoda99.Proto/Messages.cs` をソース手ミラーとして取り込み、`Takoda99.Client.csproj` から `<Compile Include>` で参照する（NuGet/GitHub Packages はこの開発環境から認証済み解決ができないため採用しなかった。経緯は `vendor/Takoda99.Proto/VERSION.md`）。**このミラーは編集しない。**
-- Unity側（`Unity/Assets/`）からの参照方法（DLL参照 or ソース直接取り込み）は**未確定**。決まり次第ここに追記する。それまで Unity 側の View用派生状態は、`pureC#` の値オブジェクト型ではなくプリミティブを入力に取る形で実装する（[Unity/docs/.sdd/value-objects/](../Unity/docs/.sdd/value-objects/README.md)）。
+- Unity側（`Unity/Assets/`）からは **DLL参照**で使う（[Unity/docs/.sdd/07-purecs-dll-reference.md](../Unity/docs/.sdd/07-purecs-dll-reference.md)）。`Takoda99.Client.csproj` の `CopyToUnity` ターゲットにより、**`dotnet test` を実行するだけで `Unity/Assets/Plugins/Takoda99/` へ自動コピーされる**。この領域に Unity 用の設定ファイル（`package.json` / `asmdef`）は置かない。
 
 ## 4. 上流との関係
 

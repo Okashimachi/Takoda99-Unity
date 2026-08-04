@@ -62,9 +62,14 @@ dotnet test "Unity/tests/Takoda99.View.Tests/Takoda99.View.Tests.csproj"
 
 `Assets/` 側に `MonoBehaviour` 等のUnity依存コードを足すときは、このテストプロジェクトのリンク対象を `ValueObjects/` に限ったままにする（Unity依存コードのテストは Unity Test Framework 側で行う）。
 
-### 2.2 pureC# の参照方法（未確定）
+### 2.2 pureC# の参照方法（DLL参照で確定）
 
-`pureC#/src` を `Assets/` からどう参照するか（DLL参照 or ソース直接取り込み）は**まだ決まっていない**。決まるまでの暫定として、`View/ValueObjects` の変換関数は `pureC#` の値オブジェクト型ではなく**素の値（`evalNormalized` / `creditLife` / `orderCount` 等）を引数に取る**。参照方法が決まった時点で、`pureC#` の型を直接受けるオーバーロードを追加し、本節を更新する。
+`pureC#/src` は **DLL としてビルドし、`Assets/Plugins/Takoda99/` から参照する**。詳細は [docs/.sdd/07-purecs-dll-reference.md](./docs/.sdd/07-purecs-dll-reference.md)。
+
+- `Takoda99.Client.dll` は **`dotnet test` を実行するだけで自動コピーされる**（`Takoda99.Client.csproj` の `CopyToUnity` ターゲット）。手動でのコピー操作は不要
+- DLL はリポジトリにコミットしてあるため、クローン直後でも Unity を開けば動く
+
+`View/ValueObjects` の変換関数は現在**素の値（`evalNormalized` / `creditLife` / `orderCount` 等）を引数に取る**。これは参照方法が未確定だった時期の実装であり、そのままでも動作する。`pureC#` の値オブジェクト型（`StoreSummaryState` 等）を直接受けるオーバーロードは、必要になった時点で追加してよい。
 
 ## 3. Unity側で守る制約
 

@@ -211,6 +211,12 @@ pureC#/
 
 - 依存するモジュール：`01-contract`（`Envelope` の形）、Proto の DTO
 - 依存されるモジュール：テストプロジェクトのみ。**製品コード（`Takoda99.Client` の本体機能）からは依存しない**
+
+### Unity側 View 用派生状態との通しテスト
+
+`Unity/tests/Takoda99.View.Tests` は Unity を起動しない通常の .NET テストプロジェクトであり、View用派生状態も `UnityEngine` に依存しない純粋なC#である。したがって、**同プロジェクトに `Takoda99.Client` への `ProjectReference` を足せば、`Store` → 派生状態 → アサーション の通しテストを書ける**（Unity側の参照方法とは独立に成立する）。
+
+シナリオ再生から表示分岐までを一続きで検証したい場合は、この形を使う。
 - `Takoda99.Client.Testing` 名前空間に置き、`Takoda99.Client` 本体アセンブリに含めるか別アセンブリにするかは §10 参照
 
 ## 9. テスト観点
@@ -224,6 +230,5 @@ pureC#/
 
 ## 10. 未確定事項
 
-- **Unity側の View 用派生状態を、このシナリオから通しで検証できない。** `Unity/` から `pureC#` の型を参照する方法が未確定のため、View用派生状態はプリミティブを入力に取る形で実装されており（[pureC#/README.md](../../README.md) §3）、`Store` の値オブジェクトから直接つなげられない。参照方法が決まり次第、`Store` → 派生状態 → アサーション の通しテストに拡張する
 - `ScenarioPlayer` を `Takoda99.Client` 本体に含める（`Testing` 名前空間）か、`Takoda99.Client.Testing` として別プロジェクトに分けるか。**Unity側からも同じ再生機を使いたい**場合は別プロジェクトが有利
 - シナリオJSONのスキーマ検証を実行時に行うか、テスト時のみとするか
