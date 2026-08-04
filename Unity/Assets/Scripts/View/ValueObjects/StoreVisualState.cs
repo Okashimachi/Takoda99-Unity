@@ -1,5 +1,9 @@
 // 仕様書: Unity/docs/.sdd/value-objects/01-store-visual-state.md
 // 評価3段階＋脱落の表示用状態。閾値判定のみを行い、色・演出は持たない。
+//
+// Unity は C# 9 までしか対応しないため、record struct（C# 10）を使わず readonly struct で書く。
+// Unity 側でコンパイルされる Assets/ 配下では、init アクセサ・with 式も使えない（IsExternalInit が無い）。
+// 「record にすれば短く書ける」と直したくなるが、Unity でコンパイルが通らなくなるため戻さないこと。
 
 using System.Collections.Generic;
 
@@ -11,12 +15,21 @@ namespace Takoda99.View.ValueObjects
     /// 店の評価を「高中低」3段階＋「脱落」に分類した表示用状態。
     /// 自店（主画面のアラート）と他店（99店ミニ盤面のセル色）で同じ変換規則を共有する。
     /// </summary>
-    public readonly record struct StoreVisualState(
-        string StoreId,
-        StoreEvalLevel EvalLevel,
-        bool Eliminated
-    )
+    public readonly struct StoreVisualState
     {
+        public string StoreId { get; }
+
+        public StoreEvalLevel EvalLevel { get; }
+
+        public bool Eliminated { get; }
+
+        public StoreVisualState(string StoreId, StoreEvalLevel EvalLevel, bool Eliminated)
+        {
+            this.StoreId = StoreId;
+            this.EvalLevel = EvalLevel;
+            this.Eliminated = Eliminated;
+        }
+
         /// <summary>
         /// <c>StoreState</c> / <c>StoreSummaryState</c>（どちらも <c>EvalNormalized</c>(0..1) と
         /// <c>Alive</c> を持つ）から変換する。pureC# 側の型を Unity から参照する方法が未確定のため、
@@ -90,7 +103,21 @@ namespace Takoda99.View.ValueObjects
     }
 
     /// <summary>変換の入力（<c>StoreState</c> / <c>StoreSummaryState</c> のうち分類に使う値だけ）。</summary>
-    public readonly record struct StoreVisualSource(string StoreId, double EvalNormalized, bool Alive);
+    public readonly struct StoreVisualSource
+    {
+        public string StoreId { get; }
+
+        public double EvalNormalized { get; }
+
+        public bool Alive { get; }
+
+        public StoreVisualSource(string StoreId, double EvalNormalized, bool Alive)
+        {
+            this.StoreId = StoreId;
+            this.EvalNormalized = EvalNormalized;
+            this.Alive = Alive;
+        }
+    }
 
     /// <summary>
     /// 評価3段階の閾値。<c>EvalNormalized</c> は生存店内のパーセンタイル(0..1)であり、
@@ -100,8 +127,18 @@ namespace Takoda99.View.ValueObjects
     /// 実値は未確定（仕様書 §7）。<c>Default</c> は仮置きで、確定したら差し替える。
     /// 下位淘汰閾値 <c>stormThresholdPct</c> と赤帯の下限を揃える案が候補。
     /// </remarks>
-    public readonly record struct StoreEvalThresholds(double High, double Mid)
+    public readonly struct StoreEvalThresholds
     {
+        public double High { get; }
+
+        public double Mid { get; }
+
+        public StoreEvalThresholds(double High, double Mid)
+        {
+            this.High = High;
+            this.Mid = Mid;
+        }
+
         /// <summary>仮置きの閾値（High: 上位1/3、Mid: 中位1/3）。演出確定時に差し替える。</summary>
         public static StoreEvalThresholds Default => new StoreEvalThresholds(High: 2d / 3d, Mid: 1d / 3d);
     }

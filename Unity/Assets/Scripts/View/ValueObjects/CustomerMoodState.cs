@@ -1,5 +1,7 @@
 // 仕様書: Unity/docs/.sdd/value-objects/02-customer-mood-state.md
 // 我慢ゲージ残量（クライアント推定）からムード4区分へ分類する。離脱の確定はしない（CustomerLeft がサーバー権威）。
+//
+// Unity は C# 9 までのため record struct（C# 10）を使わない（StoreVisualState.cs 冒頭の注記を参照）。
 
 namespace Takoda99.View.ValueObjects
 {
@@ -9,11 +11,18 @@ namespace Takoda99.View.ValueObjects
     /// 客の我慢ゲージ残量を「普通・いらだち・怒り・退転」に分類した表示用状態。
     /// 我慢ゲージの減算そのものは <c>PatienceTimer</c> の責務で、ここは分類だけを行う。
     /// </summary>
-    public readonly record struct CustomerMoodState(
-        string CustomerId,
-        CustomerMood Mood
-    )
+    public readonly struct CustomerMoodState
     {
+        public string CustomerId { get; }
+
+        public CustomerMood Mood { get; }
+
+        public CustomerMoodState(string CustomerId, CustomerMood Mood)
+        {
+            this.CustomerId = CustomerId;
+            this.Mood = Mood;
+        }
+
         /// <summary>
         /// 表示用の残量推定。
         /// <c>PatienceMaxMs - (MatchState.ElapsedMs - CustomerState.ArrivedAtElapsedMs)</c>。
@@ -60,8 +69,18 @@ namespace Takoda99.View.ValueObjects
     /// <summary>
     /// ムード分類の閾値（残量比 0..1）。実値は未確定（仕様書 §7）のため <c>Default</c> は仮置き。
     /// </summary>
-    public readonly record struct CustomerMoodThresholds(double Irritated, double Angry)
+    public readonly struct CustomerMoodThresholds
     {
+        public double Irritated { get; }
+
+        public double Angry { get; }
+
+        public CustomerMoodThresholds(double Irritated, double Angry)
+        {
+            this.Irritated = Irritated;
+            this.Angry = Angry;
+        }
+
         /// <summary>仮置きの閾値（残 2/3 以上で普通、1/3 以上でいらだち、それ未満で怒り）。</summary>
         public static CustomerMoodThresholds Default =>
             new CustomerMoodThresholds(Irritated: 2d / 3d, Angry: 1d / 3d);
