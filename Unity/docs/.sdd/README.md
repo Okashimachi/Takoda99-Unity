@@ -33,6 +33,12 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | 05 | `05-debug-panel.md` | デバッグパネル（送受信 `Envelope` の生JSON表示） | 未作成 |
 | 06 | `06-scene-prefab.md` | シーン・Prefab構成方針 | 未作成 |
 | 07 | [07-purecs-dll-reference.md](./07-purecs-dll-reference.md) | `pureC#` の参照方法（DLL連携・ビルド自動コピー） | ✅ |
+| 08 | [08-main-store-view.md](./08-main-store-view.md) | `MainStoreView`（主画面の自店舗：暖簾・屋台土台・お題単語・提灯・鉄板） | ✅ |
+| 09 | [09-takoyaki-stand-view.md](./09-takoyaki-stand-view.md) | `TakoyakiStandView` / `TakoyakiSlotView`（たこ焼き台24穴） | ✅ |
+| 10 | [10-sub-store-board-view.md](./10-sub-store-board-view.md) | `SubStoreBoardView` / `SubStoreTileView`（小画面の他店98店） | ✅ |
+| 11 | [11-view-sample-data.md](./11-view-sample-data.md) | `MainGameViewSampleDriver`（開発用サンプルデータ駆動） | ✅ |
+
+> 08〜10 は `04-renderer.md` の `Renderer` を構成する下位Viewである。`Renderer` 本体（受信 state からの振り分け）が未作成のため、当面は 11 のサンプルデータで駆動する。
 
 新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。
 

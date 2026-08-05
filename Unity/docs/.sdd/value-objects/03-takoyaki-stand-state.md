@@ -5,7 +5,8 @@
 ## 1. 責務
 
 - たこ焼き台の各穴が「なにもない／生地（未クリア）／焼けた（クリア済み・提供待ち）」のどれかを表す表示用状態を提供する
-- 台の物理的な穴数（同時に生地を流しておける数）と、注文個数は**別概念**であることを踏まえ、穴数と注文の対応付けを行う
+- 台の物理的な穴数（24）・**評価に応じて生地を流しておく穴数**・いま対応中の客のノルマ進捗、の3つを対応付ける
+- 台の穴数と注文個数（`OrderCount`）は**別概念**であり、生地マス数は注文個数に連動しない
 - **しない**こと：提供（`Serve`）の確定処理そのもの（`OrderProgressState` 側の責務。ここは表示するだけ）
 
 ## 2. データ定義
@@ -20,6 +21,11 @@ public readonly record struct TakoyakiStandState(
     public const int StandColumns = 6; // 横
     public const int StandRows    = 4; // 縦
     public const int StandCapacity = StandColumns * StandRows; // 24
+
+    // 生地を流しておく穴の数（評価3段階に対応）。いずれも StandColumns の倍数
+    public const int BatterCountLow  = 12;
+    public const int BatterCountMid  = 18;
+    public const int BatterCountHigh = StandCapacity; // 24
 }
 ```
 
@@ -28,22 +34,27 @@ public readonly record struct TakoyakiStandState(
 
 ## 3. 変換処理
 
-入力：`OrderProgressState`（`OrderCount`, `TypedWordCount`）
+入力：`StoreVisualState.EvalLevel`（[01-store-visual-state.md](./01-store-visual-state.md)）と `OrderProgressState`（`TypedWordCount`）
 
 ```
-occupiedCount = min(OrderCount, StandCapacity)      // 生地を流しておく対象になる穴の数
+occupiedCount =                       // 生地を流しておく穴の数。評価（＝繁盛具合）で決まる
+    EvalLevel == Low  → 12            // 1〜2行目
+    EvalLevel == Mid  → 18            // 1〜3行目
+    EvalLevel == High → 24            // 全マス
 cookedCount   = min(TypedWordCount, occupiedCount)  // タイプ完了済みぶん
 
 for i in 0..StandCapacity-1:
     Slots[i] =
         i < cookedCount    → Cooked   // タイプ完了済み。提供待ち
-        i < occupiedCount  → Batter   // 未クリアだが生地は流してある
-        else               → Empty    // 対応する注文がない穴
+        i < occupiedCount  → Batter   // 生地は流してあるが未クリア
+        else               → Empty    // 生地を流していない穴
 ```
 
-- `occupiedCount`（生地を流してある穴の数）は「注文個数」そのものではなく「注文個数と台の穴数の小さい方」。注文個数によって生地を流す数が変わり、余った穴は `Empty` のまま残る
-- 用語集4章の注文個数（4/6/8/12）はいずれも `StandCapacity`(24) 未満のため、**現行のパラメータでは `min` によるクランプは発動しない**。将来 `OrderCount` が24を超え得るようになった場合に備えた防御的な式として残す（その場合の「台に乗り切らない待機分」の表現は改めて決める）
+- **`occupiedCount` は注文個数（`OrderCount`）ではなく評価から決まる**（[03-決定ログ.md](../../../../docs/server-sync/03-決定ログ.md) の D-05。D-02 の該当部分を撤回）。「評価が上がると客が増え、台に常時流している生地の量が増える」という**繁盛具合の表現**であり、いま対応中の客の注文個数とは独立している
+- 生地マス数 12 / 18 / 24 は `TakoyakiStandState.BatterCountLow / Mid / High` として定数で持つ。View 側で数値を直書きしない
+- 「焼ける」のは**いま対応中の客のノルマのうち入力を終えた語数**（`TypedWordCount`）ぶんで、`occupiedCount` を超えない。提供（`OrderServed`）が成立して次の客に切り替わったら `TypedWordCount` が 0 に戻り、`Cooked` の穴は `Batter` へ戻る
 - 穴が埋まる順序は `Slots` の index 昇順（左上から行優先）を既定とする。ランダム配置等にするかは演出詳細
+- 12 / 18 / 24 という区切りは、`StandColumns`(6) の倍数にして**行単位で見た目が変わる**ようにしたもの。3段階が判別できることを優先した暫定値であり、演出確定時に見直す
 
 ## 4. Unity構成
 
@@ -53,17 +64,20 @@ for i in 0..StandCapacity-1:
 
 ## 5. 未確定な演出との境界
 
-- ここまで：`Empty`/`Batter`/`Cooked` の3区分、グリッド形状（6×4）、`OrderCount`・`TypedWordCount` からの導出規則
+- ここまで：`Empty`/`Batter`/`Cooked` の3区分、グリッド形状（6×4）、`EvalLevel`・`TypedWordCount` からの導出規則
 - ここから先（未確定）：焼き加減のグラデーション演出、ミスによる質感劣化の見た目、穴が埋まる順序をindex順以外にするか
 
 ## 6. テスト観点
 
-- `OrderCount < StandCapacity`（通常ケース）で、余った穴が `Empty` になるか
+- `EvalLevel` を Low→Mid→High と変えたとき、生地マスが 12→18→24 と**行単位で**増えるか（3段階が目視で判別できるか）
+- `EvalLevel` が Low / Mid のとき、生地を流していない穴が `Empty` のままか
 - `TypedWordCount` の増加に伴い、該当穴が `Batter` → `Cooked` へ index 順に切り替わるか
 - `Slots.Count` が常に `StandCapacity`(24) と一致するか（グリッド描画側で配列外参照が起きないか）
-- 客の繰り上がり（新しい `OrderProgressState` 生成）で `Slots` が全て `Empty` にリセットされてから再構成されるか
-- `TypedWordCount > OrderCount` という不整合値が渡された場合に `cookedCount` が `occupiedCount` でクランプされるか
+- 提供（客の繰り上がり）で `TypedWordCount` が 0 に戻ったとき、`Cooked` の穴が `Batter` へ戻り、`Empty` には戻らないか
+- `TypedWordCount > occupiedCount` という不整合値が渡された場合に `cookedCount` がクランプされるか
 
 ## 7. 未確定事項
 
 - ミスによる質感劣化を `TakoyakiSlotState` の追加区分にするか、演出側だけで完結させるか
+- 生地マス数 12 / 18 / 24 の実値（演出確定時に見直す暫定値）
+- `TypedWordCount` が生地マス数（12）を超えた場合の表示（現状はクランプして「全部焼けている」ように見える）。注文個数12は `BatterCountLow` と同数のため、評価が低いときは満杯になり得る
