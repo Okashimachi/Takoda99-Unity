@@ -14,7 +14,7 @@
 | # | ファイル | 内容 | 状態 |
 |---|---|---|---|
 | 01 | [01-purecs-dll-reference.md](./01-purecs-dll-reference.md) | `pureC#` を DLL としてUnityから参照する方法・ビルド時の自動コピー・`Assets/` で使える C# のバージョン制約 | ✅ |
-| 02 | `02-scene-composition.md` | 5シーン構成・`GameBootstrapper` による結線とシーン遷移・Inspector 配線チェックリスト | **未作成** |
+| 02 | [02-scene-composition.md](./02-scene-composition.md) | 5シーン構成・`GameBootstrapper` による結線とシーン遷移・Inspector 配線チェックリスト | ✅（方針のみ。`.unity`/`.prefab` アセットの作成は対象外） |
 
 ## 3. 読む順序
 
