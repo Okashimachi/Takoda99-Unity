@@ -177,7 +177,8 @@ GameObject:
   - component: {fileID: 465262871}
   - component: {fileID: 465262870}
   - component: {fileID: 465262869}
-  m_Layer: 5
+  - component: {fileID: 465262872}
+  m_Layer: 6
   m_Name: DebugCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -267,8 +268,25 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1000
   m_TargetDisplay: 0
+--- !u!114 &465262872
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 465262867}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 119b6a2921b3f92498e27c3bad40432f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Takoda99.DebugUI.DebugPanel
+  panelRoot: {fileID: 1697206980}
+  toggleButton: {fileID: 1767348879}
+  copyButton: {fileID: 2146444187}
+  logText: {fileID: 829614559}
+  maxDisplayedEntries: 50
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -518,7 +536,7 @@ GameObject:
   - component: {fileID: 829614558}
   - component: {fileID: 829614560}
   - component: {fileID: 829614559}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -675,11 +693,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.Bootstrap.GameBootstrapper
   webSocketUrl: 
   devMode: 1
-  matchmakingSceneName: MatchmakingScene
-  matchSceneName: MatchScene
+  titleSceneName: Title
+  matchmakingSceneName: MatchMaking
+  matchSceneName: MainGame
+  resultSceneName: Result
   networkClient: {fileID: 108805672}
   inputSource: {fileID: 1278404364}
-  debugPanel: {fileID: 0}
+  debugPanel: {fileID: 465262872}
 --- !u!4 &992472480
 Transform:
   m_ObjectHideFlags: 0
@@ -709,7 +729,7 @@ GameObject:
   - component: {fileID: 1187053988}
   - component: {fileID: 1187053990}
   - component: {fileID: 1187053989}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Text (Legacy)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -911,7 +931,7 @@ GameObject:
   - component: {fileID: 1668041745}
   - component: {fileID: 1668041747}
   - component: {fileID: 1668041746}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Text (Legacy)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -990,7 +1010,7 @@ GameObject:
   - component: {fileID: 1688505997}
   - component: {fileID: 1688505999}
   - component: {fileID: 1688505998}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Panel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1063,7 +1083,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1697206981}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: DebugPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1104,8 +1124,7 @@ GameObject:
   - component: {fileID: 1767348881}
   - component: {fileID: 1767348880}
   - component: {fileID: 1767348879}
-  - component: {fileID: 1767348882}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: DebugButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1214,22 +1233,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1767348877}
   m_CullTransparentMesh: 1
---- !u!114 &1767348882
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1767348877}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 119b6a2921b3f92498e27c3bad40432f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Takoda99.DebugUI.DebugPanel
-  panelRoot: {fileID: 1697206980}
-  logText: {fileID: 829614559}
-  maxDisplayedEntries: 50
-  toggleKey: 282
 --- !u!1 &2146444185
 GameObject:
   m_ObjectHideFlags: 0
@@ -1242,7 +1245,7 @@ GameObject:
   - component: {fileID: 2146444189}
   - component: {fileID: 2146444188}
   - component: {fileID: 2146444187}
-  m_Layer: 5
+  m_Layer: 6
   m_Name: Copy
   m_TagString: Untagged
   m_Icon: {fileID: 0}

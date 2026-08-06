@@ -3,8 +3,10 @@
 // （WebGLNetworkClient/UnityInputSource）を結線し、MatchClientController を起動する。
 // 画面はシーン単位で分かれているため、このオブジェクト自身は DontDestroyOnLoad で
 // シーン遷移をまたいで生存し、シーンの切り替えを一手に引き受ける（02-scene-composition.md §3）。
-// 接続先URLはコード直書きせず Inspector から与える（docs/rules/02-Unity実装ルール.md §6）。
+// 接続先URLはコード直書きせず、Assets/StreamingAssets/config.json から実行時に読み込む
+// （見つからない場合は Inspector の既定値にフォールバックする。02-scene-composition.md §4.1）。
 
+using System.Collections;
 using Takoda99.Client.Contract;
 using Takoda99.Client.Lifecycle;
 using Takoda99.Client.Net;
@@ -15,6 +17,7 @@ using Takoda99.InputSource;
 using Takoda99.Net;
 using Takoda99.Proto;
 using UnityEngine;
+using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 namespace Takoda99.Bootstrap
@@ -27,7 +30,7 @@ namespace Takoda99.Bootstrap
 
         [Header("シーン名（Build Settings に登録した名前と一致させる）")]
         [SerializeField] private string titleSceneName = "Title";
-        [SerializeField] private string matchmakingSceneName = "MatchiMaking";
+        [SerializeField] private string matchmakingSceneName = "MatchMaking";
         [SerializeField] private string matchSceneName = "MainGame";
         [SerializeField] private string resultSceneName = "Result";
 
@@ -107,16 +110,67 @@ namespace Takoda99.Bootstrap
 
         private void Start()
         {
+            StartCoroutine(LoadConfigAndStart());
+        }
+
+        /// <summary>
+        /// StreamingAssets/config.json から webSocketUrl を読み込んでから controller.Start() を呼ぶ。
+        /// これは設定ファイルの取得であり WebSocket 接続ではないため、§4「Boot では接続しない」に
+        /// 抵触しない（02-scene-composition.md §4.1）。読み込みに失敗した場合は Inspector の
+        /// webSocketUrl（既定値）にフォールバックする。
+        /// </summary>
+        private IEnumerator LoadConfigAndStart()
+        {
+            var resolvedUrl = webSocketUrl;
+
+            // Windows/Mac/Linux/Editor では streamingAssetsPath がスキーム無しのファイルパスのため
+            // UnityWebRequest には file:// を付けて渡す。Android/WebGL では既にURLとして扱えるためそのまま。
+            var configPath = System.IO.Path.Combine(Application.streamingAssetsPath, "config.json");
+            if (Application.platform != RuntimePlatform.Android && Application.platform != RuntimePlatform.WebGLPlayer)
+            {
+                configPath = "file://" + configPath;
+            }
+            using (var request = UnityWebRequest.Get(configPath))
+            {
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    try
+                    {
+                        var config = JsonUtility.FromJson<BootstrapFileConfig>(request.downloadHandler.text);
+                        if (config != null && !string.IsNullOrEmpty(config.webSocketUrl))
+                        {
+                            resolvedUrl = config.webSocketUrl;
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"{nameof(GameBootstrapper)}: config.json の解析に失敗したため既定値にフォールバックします。{ex.Message}", this);
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"{nameof(GameBootstrapper)}: config.json を読み込めなかったため既定値にフォールバックします（{request.error}）。開発時は Assets/StreamingAssets/config.example.json をコピーして config.json を作成してください。", this);
+                }
+            }
+
             // Boot が行うのは「生成」だけ。**ここで接続してはいけない。**
             // サーバーは接続後の最初の1メッセージを最大3秒しか待たず、それを過ぎると表示名が失われる。
             // したがって接続は「名前確定後」（DecideDisplayName）まで遅らせる
             // （matchmaking/02-display-name.md §5 ★「名前入力 → 接続 → 即送信」の順）。
             controller.Start(new BootstrapConfig
             {
-                WebSocketUrl = webSocketUrl,
+                WebSocketUrl = resolvedUrl,
                 ProtoVersion = "v0.3.0",
                 DevMode = devMode,
             });
+        }
+
+        [System.Serializable]
+        private sealed class BootstrapFileConfig
+        {
+            public string webSocketUrl;
         }
 
         private void OnDestroy()

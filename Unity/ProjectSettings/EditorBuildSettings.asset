@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Title.unity
     guid: 4e2ad37cb81ec1e4c986837437eca406
   - enabled: 1
-    path: Assets/Scenes/MatchiMaking.unity
+    path: Assets/Scenes/MatchMaking.unity
     guid: 3b74d32d40408e14dbbb8520557b9da5
   - enabled: 1
     path: Assets/Scenes/MainGame.unity
