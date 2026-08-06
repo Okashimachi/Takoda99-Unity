@@ -1,0 +1,33 @@
+{
+  "name": "queue-accumulates",
+  "description": "複数CustomerArrived。行列の並び順と先頭の繰り上がり",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": { "customerId": "c-01", "attribute": "Normal", "orderCount": 1, "words": ["たこ"], "patienceMaxMs": 12000 }
+    },
+    {
+      "atMs": 1200,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": { "customerId": "c-02", "attribute": "Normal", "orderCount": 1, "words": ["やき"], "patienceMaxMs": 12000 }
+    },
+    {
+      "atMs": 1400,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": { "customerId": "c-03", "attribute": "Normal", "orderCount": 1, "words": ["ふね"], "patienceMaxMs": 12000 }
+    },
+    { "atMs": 2000, "kind": "input", "keys": "tako" },
+    {
+      "atMs": 2500,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": { "customerId": "c-04", "attribute": "Normal", "orderCount": 1, "words": ["かぜ"], "patienceMaxMs": 12000 }
+    }
+  ]
+}

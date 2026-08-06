@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Unity（IL2CPP）でも参照できるよう netstandard2.1 を狙う（Takoda99-Proto と合わせる）。 -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>10</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>Takoda99.Client</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Takoda99-Proto はソース手ミラーで取り込む（vendor/VERSION.md 参照）。
+      このプロジェクトからは読み取り専用の外部ソースとして参照するのみで、内容は変更しない。
+    -->
+    <Compile Include="..\..\vendor\Takoda99.Proto\Messages.cs" Link="Vendor\Takoda99.Proto\Messages.cs" />
+  </ItemGroup>
+
+  <!--
+    ビルド成果物を Unity 側へ自動コピーする（Unity/docs/.sdd/07-purecs-dll-reference.md §3）。
+    テストプロジェクトがこのプロジェクトを参照しているため、dotnet test でもこのターゲットが走る。
+    これにより「古いDLLのまま Unity が動く」事故を構造的に防ぐ。
+    第三者DLL（System.Text.Json 等）はバージョン変更時のみ差し替えるため、ここでは扱わない。
+
+    Debug 構成に限定しているのは、Git にコミットするDLLを1構成へ固定するため。
+    限定しないと、dotnet test（Debug）と dotnet build -c Release でバイナリが入れ替わり、
+    テストを実行しただけで作業ツリーが汚れる（バイナリのため手でマージもできない）。
+  -->
+  <Target Name="CopyToUnity" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <PropertyGroup>
+      <!-- 区切りは / で書く。プロパティ値の \ は Linux（CI）で分離子として解釈されないため。 -->
+      <Takoda99UnityPluginDir>$(MSBuildProjectDirectory)/../../../Unity/Assets/Plugins/Takoda99</Takoda99UnityPluginDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="$(Takoda99UnityPluginDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

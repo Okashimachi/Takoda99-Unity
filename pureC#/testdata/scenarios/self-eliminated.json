@@ -1,0 +1,23 @@
+{
+  "name": "self-eliminated",
+  "description": "自店のStoreEliminated -> リザルト遷移、以後の入力が無効になるか",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    {
+      "atMs": 0,
+      "kind": "receive",
+      "type": "MatchStart",
+      "payload": {
+        "matchId": "m-01",
+        "selfStoreId": "s-self",
+        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
+        "phase": "Early",
+        "stores": []
+      }
+    },
+    { "atMs": 1000, "kind": "receive", "type": "CreditUpdate", "payload": { "life": 0, "delta": -1, "reason": "CustomerLeft" } },
+    { "atMs": 1500, "kind": "receive", "type": "StoreEliminated", "payload": { "storeId": "s-self", "reason": "SelfCollapse", "finalRank": 42 } },
+    { "atMs": 2000, "kind": "input", "keys": "takoyaki" },
+    { "atMs": 3000, "kind": "receive", "type": "MatchEnd", "payload": { "finalRank": 42, "stats": { "servedCount": 10, "avgAccuracy": 0.9, "avgElapsedMs": 4000 } } }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "unknown-message-type",
+  "description": "未知typeを流しても落ちず、後続のメッセージが正常に処理されるか（前方互換）",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    { "atMs": 500, "kind": "receive", "type": "SomeFutureMessage", "payload": { "foo": "bar" } },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-01",
+        "attribute": "Normal",
+        "orderCount": 1,
+        "words": ["たこ"],
+        "patienceMaxMs": 12000
+      }
+    }
+  ]
+}

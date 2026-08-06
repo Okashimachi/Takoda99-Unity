@@ -18,20 +18,35 @@ pureC#/docs/.sdd/*.md（↑を pureC# 各モジュールの実装粒度まで具
 pureC#/src/*.cs（仕様書の実装）
 ```
 
-## 2. 仕様書一覧（モジュール対応）
+## 2. 仕様書一覧（＝実装の単位・依存順）
 
 [Takoda99-Client-Docs 第3章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/03_モジュール分割とレイヤー責務.md) のモジュール一覧に対応させる。ファイルはモジュール1つにつき1本。
 
-| # | ファイル | モジュール | 状態 |
-|---|---|---|---|
-| 01 | `01-contract.md` | `Contract`（Proto参照の使い方） | 未作成 |
-| 02 | `02-dispatcher.md` | `Dispatcher` | 未作成 |
-| 03 | `03-store-reducer.md` | `Store` / `Reducer` | 未作成 |
-| 04 | `04-typing-judge.md` | `TypingJudge` | 未作成 |
-| 05 | `05-romaji-table.md` | `RomajiTable` | 未作成 |
-| 06 | `06-match-client-controller.md` | `MatchClientController` | 未作成 |
+**番号は依存順（＝実装順）。** 上から順に実装すれば、常に「依存先が実装済み」の状態で進められる。
 
-新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。
+| # | ファイル | モジュール | 依存先 | 仕様書 | 実装 |
+|---|---|---|---|---|---|
+| 01 | [01-contract.md](./01-contract.md) | `Contract`（Proto参照・Envelope コーデック） | なし | ✅ | ✅ |
+| 02 | [02-romaji-table.md](./02-romaji-table.md) | `RomajiTable`（テーブル・かな分割） | なし | ✅ | ✅ |
+| 03 | [03-typing-judge.md](./03-typing-judge.md) | `TypingJudge`（打鍵判定） | 02 | ✅ | ✅ |
+| 04 | [04-store-reducer.md](./04-store-reducer.md) | `Store` / `Reducer`（状態管理） | 01 | ✅ | ✅ |
+| 05 | [05-dispatcher.md](./05-dispatcher.md) | `Dispatcher`（振り分け・送信キュー） | 01, 04 | ✅ | ✅ |
+| 06 | [06-match-client-controller.md](./06-match-client-controller.md) | `MatchClientController`（統括・ライフサイクル） | 01, 03, 04, 05 | ✅ | ✅ |
+| 07 | [07-scenario-player.md](./07-scenario-player.md) | `ScenarioPlayer`（サンプルデータ再生・テスト専用） | 01 | ✅ | 未 |
+
+新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。実装が完了したら「実装」列を ✅ にする。
+
+> `07-scenario-player.md` はテスト専用モジュール。**サーバーのロジックは一切再現せず、サーバー権威の値はシナリオに書かれたものをそのまま流す。** サーバー未接続でクライアントの状態遷移・表示分岐を検証するために使う。
+
+### 1仕様書 ＝ 1ブランチ ＝ 1PR
+
+各仕様書は**単独のブランチ／PRで実装しきれる粒度**にしてある（[docs/rules/03-Git運用.md](../../../docs/rules/03-Git運用.md) §6 の「1 Issue ＝ 1ブランチ ＝ 1PR」に対応）。
+
+- ブランチ名は仕様書が分かる形にする（例：`feature/03-typing-judge`）。
+- 依存先がまだ `develop` にマージされていない状態で次に進む場合は、**統合用ブランチ `integ/xxx`**（ローカル限定・push しない）を使う（[03-Git運用.md](../../../docs/rules/03-Git運用.md) §7）。
+- 02 と 04 は依存が競合しないため**並行して進められる**（01 のマージ後）。
+
+`03-store-reducer.md` が保持する値オブジェクトの形（データ定義そのもの）は [`value-objects/`](./value-objects/README.md) に分冊している。`Store`/`Reducer` のふるまいを書く前に参照すること。
 
 ## 3. 仕様書の書式
 

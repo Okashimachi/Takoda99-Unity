@@ -8,6 +8,7 @@
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
+[Bb]in/
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
@@ -103,7 +104,23 @@ node_modules/
 */.idea/*
 
 # pureC#（Unity非依存のクラスライブラリ）。上のUnity向けルールでの誤除外を打ち消す。
-pureC#/src/**/bin/
-pureC#/src/**/obj/
+pureC#/**/bin/
+pureC#/**/obj/
 !pureC#/**/*.csproj
 !pureC#/**/*.sln
+!pureC#/**/*.slnx
+
+# Unity/tests（Assets外。Unityを起動せずに View用派生状態を単体テストするための dotnet プロジェクト）
+Unity/tests/**/bin/
+Unity/tests/**/obj/
+!Unity/tests/**/*.csproj
+
+# pureC# のビルド成果物。日常は各自 dotnet test で生成する。
+# 節目の配布は GitHub Release への添付で行う（Unity/docs/.sdd/07-purecs-dll-reference.md §5）。
+/Unity/Assets/Plugins/Takoda99/*.dll
+
+# 接続先URL等のローカル設定（本番URL等の秘密情報を含み得る）。
+# サンプルの config.example.json のみコミットする（foundation/02-scene-composition.md §4.1）。
+/Unity/Assets/StreamingAssets/config.json
+
+/Unity/Assets/Fonts/*

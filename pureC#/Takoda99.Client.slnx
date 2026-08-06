@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Takoda99.Client.Tests/Takoda99.Client.Tests.csproj" />
+    <Project Path="src/Takoda99.Client/Takoda99.Client.csproj" />
+  </Folder>
+</Solution>

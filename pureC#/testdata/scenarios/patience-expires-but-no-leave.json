@@ -1,0 +1,22 @@
+{
+  "name": "patience-expires-but-no-leave",
+  "description": "我慢ゲージの推定値が0になってもCustomerLeftが来ない。客が行列に残り続けるか（サーバー権威の確認）",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-01",
+        "attribute": "Normal",
+        "orderCount": 2,
+        "words": ["たこ", "やき"],
+        "patienceMaxMs": 3000
+      }
+    },
+    { "atMs": 4500, "kind": "wait" },
+    { "atMs": 6000, "kind": "wait" }
+  ]
+}

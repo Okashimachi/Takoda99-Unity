@@ -23,9 +23,10 @@ Unity/
   Assets/           # .sdd の仕様書に基づいて実装するUnityプロジェクト本体
   Packages/
   ProjectSettings/
+  tests/            # Unityを起動せずに実行する単体テスト（Assets外・下記 §2.1）
 ```
 
-`docs/` は `Assets/` の外に置く（Unityのアセットインポート対象に含めないため）。仕様書の書き方・一覧は [docs/.sdd/README.md](./docs/.sdd/README.md) を参照。
+`docs/` と `tests/` は `Assets/` の外に置く（Unityのアセットインポート対象に含めないため）。仕様書の書き方・一覧は [docs/.sdd/README.md](./docs/.sdd/README.md) を参照。
 
 ### Assets/ 配下の構成
 
@@ -50,6 +51,41 @@ Assets/Scripts/
 4. 実装が仕様書と食い違ったら、**まず仕様書を直してから**コードを直す。
 
 > `pureC#/` との違いは「Unity固有の要素（MonoBehaviour・Prefab・シーン・Input System・WebGL制約）を仕様書に書いてよい／書くべき」点のみ。進め方のルールは共通。
+
+### 2.1 View用派生状態のテスト
+
+`Assets/Scripts/View/ValueObjects/`（[docs/.sdd/value-objects/](./docs/.sdd/value-objects/README.md) の実装）は**純粋関数のみ**で `UnityEngine` に依存しないため、Unityエディタを起動せずに単体テストできる。`tests/Takoda99.View.Tests` が同ソースを**リンク参照**（コピーではない）してテストする。
+
+```bash
+dotnet test "Unity/tests/Takoda99.View.Tests/Takoda99.View.Tests.csproj"
+```
+
+`Assets/` 側に `MonoBehaviour` 等のUnity依存コードを足すときは、このテストプロジェクトのリンク対象を `ValueObjects/` に限ったままにする（Unity依存コードのテストは Unity Test Framework 側で行う）。
+
+### Unity互換性のチェック（C# 9）
+
+上のテストは `net8.0` / `LangVersion 10` でビルドするため、**C# 10 の構文を書いてもテストは通ってしまう**。一方 Unity のコンパイラは C# 9 までなので、Unityでだけコンパイルが落ちる。
+
+そのズレを検知するため、Unityと同じ条件でコンパイルするだけのプロジェクトを置いている。
+
+```bash
+dotnet build "Unity/tests/Takoda99.View.LangVersionCheck/Takoda99.View.LangVersionCheck.csproj"
+```
+
+Unityを起動せずに互換性を確認できる。CIでも実行している（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）。
+
+### 2.2 pureC# の参照方法（DLL参照で確定）
+
+`pureC#/src` は **DLL としてビルドし、`Assets/Plugins/Takoda99/` から参照する**。詳細は [docs/.sdd/foundation/01-purecs-dll-reference.md](./docs/.sdd/foundation/01-purecs-dll-reference.md)。
+
+- `Takoda99.Client.dll` は **`dotnet test` を実行するだけで自動コピーされる**（`Takoda99.Client.csproj` の `CopyToUnity` ターゲット）。手動でのコピー操作は不要
+- DLL は `.gitignore` で除外している（リビルドのたびにバイト列が変わり、作業ツリーが汚れるため）。**クローン後、Unity を開く前に一度だけ次を実行する**
+
+```bash
+dotnet test "pureC#/Takoda99.Client.slnx"
+```
+
+`View/ValueObjects` の変換関数は現在**素の値（`evalNormalized` / `creditLife` / `orderCount` 等）を引数に取る**。これは参照方法が未確定だった時期の実装であり、そのままでも動作する。`pureC#` の値オブジェクト型（`StoreSummaryState` 等）を直接受けるオーバーロードは、必要になった時点で追加してよい。
 
 ## 3. Unity側で守る制約
 

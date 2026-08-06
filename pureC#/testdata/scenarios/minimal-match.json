@@ -1,0 +1,22 @@
+{
+  "name": "minimal-match",
+  "description": "MatchStart -> 客1人来店 -> 全単語打鍵 -> OrderServed 送信。最短の正常系",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": {
+        "customerId": "c-01",
+        "attribute": "Normal",
+        "orderCount": 2,
+        "words": ["たこ", "やき"],
+        "patienceMaxMs": 12000
+      }
+    },
+    { "atMs": 1500, "kind": "input", "keys": "tako" },
+    { "atMs": 2000, "kind": "input", "keys": "yaki" }
+  ]
+}

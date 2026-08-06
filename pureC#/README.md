@@ -20,8 +20,13 @@
 ```
 pureC#/
   docs/
-    .sdd/           # 仕様書駆動開発（Spec-Driven Development）の仕様書一式
-  src/              # .sdd の仕様書に基づいて実装するコード本体
+    .sdd/                      # 仕様書駆動開発（Spec-Driven Development）の仕様書一式
+  src/
+    Takoda99.Client/           # .sdd の仕様書に基づいて実装するコード本体（netstandard2.1）
+    Takoda99.Client.Tests/     # xUnit の単体テスト（net8.0）
+  vendor/
+    Takoda99.Proto/            # Proto の C# 契約のソース手ミラー（バージョン固定・編集禁止）
+  Takoda99.Client.slnx
 ```
 
 仕様書とソースの対応関係・書き方のルールは [docs/.sdd/README.md](./docs/.sdd/README.md) を参照。
@@ -33,12 +38,26 @@ pureC#/
 3. 仕様書のレビュー・合意後、`src/` に実装する。
 4. 実装が仕様書と食い違ったら、**まず仕様書を直してから**コードを直す（コードだけ直して仕様書を放置しない。仕様書とコードの対応が崩れたら次にこのモジュールを触る人が損をする）。
 
-## 3. プロジェクト構成（想定）
+## 3. プロジェクト構成
 
-- `src/` は Unity非依存の `.NET` クラスライブラリ（`netstandard2.1` 想定。UnityのC#バージョンと合わせる）としてビルドできる状態を保つ。
-- テストは xUnit / NUnit 等、Unity非依存のテストランナーで実行する。
+```
+pureC#/
+  vendor/Takoda99.Proto/    # Takoda99-Proto のソース手ミラー（VERSION.md に取得元・固定版を明記）
+  src/
+    Takoda99.Client/            # netstandard2.1 クラスライブラリ本体（Contract/Typing/State/Net/Lifecycle）
+    Takoda99.Client.Tests/      # net8.0 + xUnit のテストプロジェクト
+```
+
+- `src/Takoda99.Client` は Unity非依存の `.NET` クラスライブラリ（`netstandard2.1`。UnityのC#バージョンと合わせる）としてビルドできる（`dotnet build`）。
+- テストは `src/Takoda99.Client.Tests`（xUnit、`dotnet test`）。Unity非依存のテストランナーで実行する。
+
+```bash
+dotnet test "pureC#/Takoda99.Client.slnx"
+```
+
 - `UnityEngine` への参照・`using UnityEngine` を `src/` に一切書かない（CIやレビューでチェックする）。
-- Unity側（`Unity/Assets/`）からの参照方法（DLL参照 or ソース直接取り込み）は、プロジェクトの `.csproj` 構成が固まり次第ここに追記する。
+- Takoda99-Proto の C# DTO は `vendor/Takoda99.Proto/Messages.cs` をソース手ミラーとして取り込み、`Takoda99.Client.csproj` から `<Compile Include>` で参照する（NuGet/GitHub Packages はこの開発環境から認証済み解決ができないため採用しなかった。経緯は `vendor/Takoda99.Proto/VERSION.md`）。**このミラーは編集しない。**
+- Unity側（`Unity/Assets/`）からは **DLL参照**で使う（[Unity/docs/.sdd/foundation/01-purecs-dll-reference.md](../Unity/docs/.sdd/foundation/01-purecs-dll-reference.md)）。`Takoda99.Client.csproj` の `CopyToUnity` ターゲットにより、**`dotnet test` を実行するだけで `Unity/Assets/Plugins/Takoda99/` へ自動コピーされる**。この領域に Unity 用の設定ファイル（`package.json` / `asmdef`）は置かない。
 
 ## 4. 上流との関係
 
