@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3797930531394475526
 RectTransform:
   m_ObjectHideFlags: 0
@@ -159,6 +159,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4497216581260785866}
+  - component: {fileID: -3797809602833044246}
   m_Layer: 5
   m_Name: Takoyaki
   m_TagString: Untagged
@@ -187,3 +188,17 @@ RectTransform:
   m_AnchoredPosition: {x: -70, y: -130}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &-3797809602833044246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8246824364052668311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be2c13b11df440a7b278cfa31894eab0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.TakoyakiSlotView
+  raw: {fileID: 2469944296103242616}
+  done: {fileID: 2828690630351452983}
