@@ -4,16 +4,21 @@
 
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using DG.Tweening;
 using System.Threading;
 using UnityEngine;
 
 namespace Takoda99.View
 {
-    /// <summary>ResultScene にアタッチし、注入された個数分だけ TakoyakiObj を少しずつ生成する。</summary>
+    /// <summary>ResultScene にアタッチし、注入された個数分だけ TakoyakiObj を少しずつ生成する。自身は左右に揺れ続ける。</summary>
     public sealed class TakoyakiCreator : MonoBehaviour
     {
         [SerializeField] private GameObject takoyakiPrefab;
         [SerializeField] private float spawnIntervalSeconds = 0.05f;
+
+        [Header("左右の揺れ")]
+        [SerializeField] private float swayDistance = 1f;
+        [SerializeField] private float swayDurationSeconds = 1f;
 
         [Header("テストモード")]
         [SerializeField] private bool testMode;
@@ -23,9 +28,15 @@ namespace Takoda99.View
         private int injectedTakoyakiCount;
         private bool hasInjectedCount;
         private CancellationTokenSource spawnCts;
+        private Tween swayTween;
 
         private void Start()
         {
+            swayTween = transform
+                .DOLocalMoveX(transform.localPosition.x + swayDistance, swayDurationSeconds)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetEase(Ease.InOutSine);
+
             if (testMode)
             {
                 Spawn(testTakoyakiCount).Forget();
@@ -40,6 +51,7 @@ namespace Takoda99.View
         {
             spawnCts?.Cancel();
             spawnCts?.Dispose();
+            swayTween?.Kill();
         }
 
         /// <summary>外部（サーバーから受け取ったリザルト情報）から、造ったたこ焼きの数を注入する。</summary>
