@@ -30,6 +30,8 @@ Unity側 View用派生状態（本ディレクトリの対象）
 
 新しい派生値オブジェクトが増えたら、この表に行を追加してから仕様書ファイルを作る。
 
+> **例外：`MatchmakingViewState` は本ディレクトリに仕様書を持たない。** 実装は他の値オブジェクトと同じ `Assets/Scripts/View/ValueObjects/` にあるが、**`Store` から導出する「試合中の表示区分」ではなく、試合前の画面遷移そのもの**であるため、仕様は [01-matchmaking-flow.md](../matchmaking/01-matchmaking-flow.md) §2〜§3・§8.4 が正典。**同じモジュールの仕様を二重に書かない**という [README.md](../README.md) §5-4 の方針に従う。
+
 ## 3. 仕様書の書式
 
 各ファイルは以下を含める：

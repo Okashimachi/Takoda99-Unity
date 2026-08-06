@@ -80,7 +80,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 
 ### [`value-objects/`](./value-objects/README.md) — 派生状態
 
-`StoreVisualState` / `CustomerMoodState` / `TakoyakiStandState` / `CreditLifeLanternState` / `RankBarViewState` / `SubStoreTileState`。一覧は [README.md](./value-objects/README.md)。
+`StoreVisualState` / `CustomerMoodState` / `TakoyakiStandState` / `CreditLifeLanternState` / `RankBarViewState` / `SubStoreTileState` / `MatchmakingViewState`。一覧は [README.md](./value-objects/README.md)。
 
 ## 4. 仕様書の書式
 
@@ -110,6 +110,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 |---|---|
 | `foundation/` | `Assets/Scripts/Bootstrap/`、`Assets/Plugins/Takoda99/` |
 | `platform/` | `Assets/Scripts/Net/`、`Assets/Scripts/Input/`、`Assets/Scripts/Debug/` |
+| `matchmaking/` | `Assets/Scripts/View/MatchmakingScreenView.cs` |
 | `match-view/` | `Assets/Scripts/View/`、`Assets/Scripts/Timer/` |
 | `value-objects/` | `Assets/Scripts/View/ValueObjects/`（テストは `Unity/tests/Takoda99.View.Tests/`） |
 

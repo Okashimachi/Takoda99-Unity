@@ -51,8 +51,12 @@ public interface IMatchClientController
     /// <summary>ブートストラップ設定を受けて開始する（Boot → Title）。</summary>
     void Start(BootstrapConfig config);
 
-    /// <summary>プレイ開始操作（Title → Connecting）。</summary>
-    void BeginPlay();
+    /// <summary>
+    /// プレイ開始操作（Title → Connecting）。
+    /// <paramref name="displayName"/> は接続確立と同時に送る <c>MatchmakingJoin</c> に載せる（§3.6）。
+    /// 空文字を許す（サーバーがフォールバック名を割り当てる）。
+    /// </summary>
+    void BeginPlay(string displayName);
 
     /// <summary>キュー離脱操作（Matchmaking → Title）。</summary>
     void LeaveMatchmaking();
@@ -76,7 +80,7 @@ public interface IMatchClientController
 | From → To | トリガー |
 |---|---|
 | Boot → Title | ブートストラップ設定読込完了・バージョン OK |
-| Title → Connecting | `BeginPlay()` |
+| Title → Connecting | `BeginPlay(displayName)`（§3.6） |
 | Connecting → Matchmaking | 接続確立 → `MatchmakingJoin` 送信 |
 | Matchmaking → InMatch | `MatchStart` 受信 |
 | InMatch → Spectating | **自店の** `StoreEliminated` 受信（試合は継続中） |
@@ -132,6 +136,47 @@ public sealed class BootstrapConfig
 ```
 - **接続先 URL とバージョンゲートだけはクライアント自身のブートストラップ設定**として持つ（クライアントは外部DBを直接取得しない、の唯一の例外。[第5章 §5.1](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/05_メッセージディスパッチ層.md)）。
 
+> **表示名は `BootstrapConfig` に入れない。** `Start(config)` が呼ばれる時点（Boot）ではまだ名前が決まっておらず、名前が確定するのは `BeginPlay` の直前だからである（§3.6）。設定と実行時の入力を同じ器に混ぜない。
+
+### 3.6 表示名の保持と送信
+
+`MatchmakingJoin` に載せる表示名は、**`BeginPlay(displayName)` で受け取り、本モジュールがフィールドに保持する。**
+
+```
+名前入力（Unity: WriteNameModal）
+  → BeginPlay(displayName)   ← ここで受け取り _displayName に保持
+  → networkClient.Connect(url)
+  → 接続確立（OnConnectionChanged）
+  → sendQueue.Enqueue(MatchmakingJoin, new MatchmakingJoin { DisplayName = _displayName })
+```
+
+#### 送信箇所は2つある
+
+`HandleConnectionChanged` の中で `MatchmakingJoin` を積む箇所が**2つ**あり、**両方に `_displayName` を載せる。**
+
+| # | 条件 | 用途 |
+|---|---|---|
+| 1 | `Phase == Connecting` | 初回接続 |
+| 2 | `Phase == Matchmaking` | **再接続時の再送**（待機列から外れているため。[05-dispatcher §3.4](./05-dispatcher.md)） |
+
+> **2 を直し忘れると、通常は名前が出るのに再接続したときだけ名前が消える。** 型エラーにならず、再現条件も限られるため気付きにくい。両方を1つのヘルパーに寄せて、送信箇所を1箇所にすること。
+
+#### 順序の制約（★守らないと名前が失われる）
+
+**`MatchmakingJoin` は接続確立後に送る「最初の」メッセージでなければならない。** サーバーは接続後の最初の1メッセージを最大3秒しか待たず、**別種のメッセージが先に来ると即座に空名で続行する**（[01-matchmaking-flow.md](../../../Unity/docs/.sdd/matchmaking/01-matchmaking-flow.md) §4.1）。
+
+- `SendQueue` はキュー順に flush するため、**接続前に他のメッセージを積むと `MatchmakingJoin` より先に出てしまう**
+- 疎通確認の ping 等を接続直後に挟まない
+- `BeginPlay` より前に `Enqueue` を呼ぶ経路を作らない
+
+#### 空文字の扱い
+
+**空でも送る。** 送らないと3秒待たされた末にどのみち空名になるため、待たせるだけ損になる（サーバーはフォールバック名を割り当てる）。`displayName` の検証・切り詰めは**行わない**（サーバーが正規化する。[02-display-name.md](../../../Unity/docs/.sdd/matchmaking/02-display-name.md) §4）。
+
+#### ⚠ 実装の前提（未解決）
+
+**この節は、Proto の C# ミラーに `MatchmakingJoin.DisplayName` が入るまで実装できない。** 現在のミラーは `public sealed class MatchmakingJoin { }` で、載せるフィールドが無い。上流への実装指示は [05-表示名の実装指示.md](../../../docs/server-sync/05-表示名の実装指示.md)。**ミラーを本リポジトリで編集して先回りしない**（絶対原則7）。
+
 ## 4. 依存関係
 
 - 依存するモジュール：**全モジュール**（[01](./01-contract.md) / [03](./03-typing-judge.md) / [04](./04-store-reducer.md) / [05](./05-dispatcher.md)、`IClock`）
@@ -154,6 +199,11 @@ public sealed class BootstrapConfig
 | 10 | 提供後の先頭入れ替わり | 次の客に `BeginOrder` される |
 | 11 | `Rematch()` | 接続が張り直される（既存接続を再利用しない） |
 | 12 | 接続断 | 入力が止まり `OnConnectionTrouble` が発火する |
+| 13 | `BeginPlay("たこ焼")` → 接続確立 | `MatchmakingJoin.DisplayName == "たこ焼"` で送られる |
+| 14 | `BeginPlay("")` → 接続確立 | **空でも `MatchmakingJoin` が送られる**（送信を省略しない） |
+| 15 | 接続確立後の送信順序 | `MatchmakingJoin` が**最初の**送信メッセージである |
+| 16 | **再接続**（Matchmaking 中に切断→再確立） | 再送される `MatchmakingJoin` にも**同じ `DisplayName` が載る**（§3.6） |
+| 17 | `BeginPlay` を経ずに接続 | `MatchmakingJoin` が送られない（名前未確定のまま接続する経路を作らない） |
 
 > `INetworkClient` / `IRenderer` / `IInputSource` / `IClock` はすべてフェイクを用意し、Unity なしで全経路をテストする。
 
@@ -161,5 +211,6 @@ public sealed class BootstrapConfig
 
 - 同一試合への再接続復帰の可否（サーバー仕様待ち。入ったら §3.4 と第7章 §5 を同時に更新）。
 - `Spectating` を独立画面にするか（Unity 側の裁量。共通契約は phase 区別と入力停止のみ）。
-- `Title` でのモード選択・表示名入力の具体（アート未確定）。なお現行 proto の `MatchmakingJoin` は**空ペイロード**で表示名を持たないため、表示名入力を入れるなら Proto の人間承認フローが要る。
+- ~~`Title` での表示名入力の具体~~ → **設計は確定（§3.6）。** 実装は Proto の C# ミラーに `MatchmakingJoin.DisplayName` が入るのを待つ（[05-表示名の実装指示.md](../../../docs/server-sync/05-表示名の実装指示.md)）。画面側の仕様は [Unity/docs/.sdd/matchmaking/](../../../Unity/docs/.sdd/matchmaking/README.md)
+- `Title` でのモード選択（アート未確定）。
 - `--mode solo` / モックモードの結線方法（[第8章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/08_エラーとオフラインと開発モード.md)）。`INetworkClient` のフェイク実装を `DevMode` で差し込む形を想定。
