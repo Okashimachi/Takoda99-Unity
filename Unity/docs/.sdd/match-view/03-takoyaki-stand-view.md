@@ -1,6 +1,6 @@
 # 09-TakoyakiStandView / TakoyakiSlotView
 
-> 参照する上流：[Takoda99-Client-Docs 第3章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/03_モジュール分割とレイヤー責務.md)（`Renderer`）／[用語集](https://github.com/Okashimachi/Takoda99-Docs/blob/main/01_企画/00_用語集.md)（`Order` / `Serve` / `Evaluation`）。値の形は [value-objects/03-takoyaki-stand-state.md](./value-objects/03-takoyaki-stand-state.md) が正典。
+> 参照する上流：[Takoda99-Client-Docs 第3章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/03_モジュール分割とレイヤー責務.md)（`Renderer`）／[用語集](https://github.com/Okashimachi/Takoda99-Docs/blob/main/01_企画/00_用語集.md)（`Order` / `Serve` / `Evaluation`）。値の形は [03-takoyaki-stand-state.md](../value-objects/03-takoyaki-stand-state.md) が正典。
 
 主画面のたこ焼き台（`root/MainStoreCanvas/Main/MainStore/Takoyakis`）の描画。
 
@@ -104,8 +104,8 @@ Takoyakis                 ← TakoyakiStandView
 ## 5. 依存関係
 
 - 依存する `pureC#` モジュール：なし
-- 依存するUnity側モジュール：`MainStoreView`（[08](./08-main-store-view.md)）、`Takoda99.View.ValueObjects.TakoyakiStandState`
-- 依存されるモジュール：`Renderer`（未作成）、`MainGameViewSampleDriver`（[11](./11-view-sample-data.md)）
+- 依存するUnity側モジュール：`MainStoreView`（[08](./02-main-store-view.md)）、`Takoda99.View.ValueObjects.TakoyakiStandState`
+- 依存されるモジュール：`Renderer`（未作成）、`MainGameViewSampleDriver`（[11](./06-view-sample-data.md)）
 
 ## 6. テスト・確認観点
 
@@ -117,5 +117,5 @@ Takoyakis                 ← TakoyakiStandView
 
 ## 7. 未確定事項
 
-- 生地マス数 12 / 18 / 24 の実値（[value-objects/03](./value-objects/03-takoyaki-stand-state.md) §7）
+- 生地マス数 12 / 18 / 24 の実値（[value-objects/03](../value-objects/03-takoyaki-stand-state.md) §7）
 - 焼き上がりのアニメーション・提供時の消失演出

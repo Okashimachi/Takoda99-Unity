@@ -23,8 +23,8 @@ takoda99-unity の実装コードを書くときのルール（AI に書かせ�
 
 | 領域 | 領域のREADME | 仕様書（.sdd）の索引 |
 |---|---|---|
-| `Unity/` | [Unity/README.md](../../Unity/README.md) | [Unity/docs/.sdd/README.md](../../Unity/docs/.sdd/README.md) |
-| `pureC#/` | [pureC#/README.md](../../pureC%23/README.md) | [pureC#/docs/.sdd/README.md](../../pureC%23/docs/.sdd/README.md) |
+| `Unity/` | [README.md](../../Unity/README.md) | [README.md](../../Unity/docs/.sdd/README.md) |
+| `pureC#/` | [README.md](../../pureC%23/README.md) | [README.md](../../pureC%23/docs/.sdd/README.md) |
 
 共通ルール：
 
@@ -35,10 +35,10 @@ takoda99-unity の実装コードを書くときのルール（AI に書かせ�
 
 ## 3. Unity/Assets/ 側のディレクトリ構成
 
-構成の詳細は [Unity/README.md](../../Unity/README.md) §1 を参照。要点のみ：
+構成の詳細は [README.md](../../Unity/README.md) §1 を参照。要点のみ：
 
 - `View/` `Input/` `Net/`（WebGL実装）`Timer/` 以外は、**`pureC#/src` の実装をそのまま参照する**（Unity内で再実装・二重管理しない）。
-- 参照方法は **DLL参照**で確定済み。`pureC#` を DLL としてビルドし `Assets/Plugins/Takoda99/` から使う（[Unity/docs/.sdd/07-purecs-dll-reference.md](../../Unity/docs/.sdd/07-purecs-dll-reference.md)）。DLLは `dotnet test` の実行で自動コピーされるため、手動コピーの手順を増やさない。
+- 参照方法は **DLL参照**で確定済み。`pureC#` を DLL としてビルドし `Assets/Plugins/Takoda99/` から使う（[01-purecs-dll-reference.md](../../Unity/docs/.sdd/foundation/01-purecs-dll-reference.md)）。DLLは `dotnet test` の実行で自動コピーされるため、手動コピーの手順を増やさない。
 
 ## 4. デバッグパネルを最初に作る
 

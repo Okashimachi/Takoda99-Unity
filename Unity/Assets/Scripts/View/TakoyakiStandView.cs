@@ -1,4 +1,4 @@
-// 仕様書: Unity/docs/.sdd/09-takoyaki-stand-view.md
+// 仕様書: Unity/docs/.sdd/match-view/03-takoyaki-stand-view.md
 // たこ焼き台全体（6列×4行＝24穴）。root/MainStoreCanvas/Main/MainStore/Takoyakis にアタッチする。
 //
 // slots / mainStore は Inspector で手動配線しない。Takoyakis 直下の4つの行オブジェクト

@@ -76,7 +76,7 @@ Unityを起動せずに互換性を確認できる。CIでも実行している�
 
 ### 2.2 pureC# の参照方法（DLL参照で確定）
 
-`pureC#/src` は **DLL としてビルドし、`Assets/Plugins/Takoda99/` から参照する**。詳細は [docs/.sdd/07-purecs-dll-reference.md](./docs/.sdd/07-purecs-dll-reference.md)。
+`pureC#/src` は **DLL としてビルドし、`Assets/Plugins/Takoda99/` から参照する**。詳細は [docs/.sdd/foundation/01-purecs-dll-reference.md](./docs/.sdd/foundation/01-purecs-dll-reference.md)。
 
 - `Takoda99.Client.dll` は **`dotnet test` を実行するだけで自動コピーされる**（`Takoda99.Client.csproj` の `CopyToUnity` ターゲット）。手動でのコピー操作は不要
 - DLL は `.gitignore` で除外している（リビルドのたびにバイト列が変わり、作業ツリーが汚れるため）。**クローン後、Unity を開く前に一度だけ次を実行する**

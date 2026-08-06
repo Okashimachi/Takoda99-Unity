@@ -1,4 +1,4 @@
-// 仕様書: Unity/docs/.sdd/10-sub-store-board-view.md
+// 仕様書: Unity/docs/.sdd/match-view/04-sub-store-board-view.md
 // 小画面（root/SubStoreCanvas）の他店98店ぶんのミニ盤面。SubStoreCreator を置き換える。
 
 using System.Collections.Generic;

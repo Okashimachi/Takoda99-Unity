@@ -19,6 +19,6 @@ NuGet/GitHub Packages ではなく**ソース手ミラー**を採用する（[Ta
 | 追加 | `ForcedEliminationWarning.selfAtRisk`（自店が淘汰圏内か。閾値比較をクライアントにさせない） |
 | 追加 | `StoreSummary.finalRank`（`int?`・脱落店のみ。**欠落を 0 と読まないこと**） |
 | 追加 | `CustomerView.patienceStartedAtServerMs`（我慢ゲージの起点・サーバー基準の単調時刻） |
-- 同期方法: Proto 側でバージョンが上がったら、このディレクトリのファイルを手動で置き換え、`pureC#/docs/.sdd/01-contract.md` のテスト観点を再実行する（[docs/rules/02-Unity実装ルール.md](../../docs/rules/02-Unity実装ルール.md) §7）。
+- 同期方法: Proto 側でバージョンが上がったら、このディレクトリのファイルを手動で置き換え、`pureC#/docs/.sdd/01-contract.md` のテスト観点を再実行する（[02-Unity実装ルール.md](../../../docs/rules/02-Unity実装ルール.md) §7）。
 
 このディレクトリは Takoda99-Proto の正典をそのまま複製したものであり、**このリポジトリ側で内容を変更しない**（絶対原則7）。

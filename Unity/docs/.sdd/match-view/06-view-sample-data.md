@@ -1,6 +1,6 @@
 # 11-MainGameViewSampleDriver
 
-> 参照する上流：なし（**開発用の足場**であり、上流の仕様を実装するモジュールではない）。ただし [docs/rules/01-責務と絶対原則.md](../../../docs/rules/01-責務と絶対原則.md) の「クライアントに経営ロジックを持たせない」に触れないこと。
+> 参照する上流：なし（**開発用の足場**であり、上流の仕様を実装するモジュールではない）。ただし [01-責務と絶対原則.md](../../../../docs/rules/01-責務と絶対原則.md) の「クライアントに経営ロジックを持たせない」に触れないこと。
 
 `WebGLNetworkClient` / `Dispatcher` / `Store` の配線が済むまでの間、主画面・小画面のViewを**サンプルデータで駆動して見た目を確認する**ための開発用コンポーネント。
 
@@ -67,14 +67,14 @@ namespace Takoda99.View.Sample
 ## 4. ふるまいの詳細
 
 - 他店の初期値は「全店 `creditLife = 3` / `alive = true`」。`9` キーで押した回数ぶんだけ `StoreId` 昇順に `alive = false` を送り、脱落演出（`life0` → 3秒 → 順位表示）を確認する
-- 脱落時に渡す順位は「98 − これまでの脱落数 + 1」という**サンプル専用の仮値**。[SV-15](../../../docs/server-sync/01-プロトコル契約の差分.md#sv-15) が確定するまでの表示確認用であり、この計算式を本番コードへ持ち込まない
+- 脱落時に渡す順位は「98 − これまでの脱落数 + 1」という**サンプル専用の仮値**。[SV-15](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-15) が確定するまでの表示確認用であり、この計算式を本番コードへ持ち込まない
 - `typedHiraganaLength` / `typedRomaLength` はクランプのみ行う（打鍵判定はしない）
 - サンプル値は Inspector 上の値がそのまま View へ渡る。View 側でのクランプ・エッジケース処理が働くことを確認する目的も兼ねる
 
 ## 5. 依存関係
 
 - 依存する `pureC#` モジュール：なし
-- 依存するUnity側モジュール：`MainStoreView`（[08](./08-main-store-view.md)）／`TakoyakiStandView`（[09](./09-takoyaki-stand-view.md)）／`SubStoreBoardView`（[10](./10-sub-store-board-view.md)）
+- 依存するUnity側モジュール：`MainStoreView`（[08](./02-main-store-view.md)）／`TakoyakiStandView`（[09](./03-takoyaki-stand-view.md)）／`SubStoreBoardView`（[10](./04-sub-store-board-view.md)）
 - 依存されるモジュール：なし
 
 ## 6. テスト・確認観点
@@ -84,4 +84,4 @@ namespace Takoda99.View.Sample
 
 ## 7. 未確定事項
 
-- 実データ配線（`Renderer`／[04-renderer.md](./04-renderer.md) 未作成）が入った時点で本コンポーネントを削除するか、デバッグパネル（[05-debug-panel.md](./05-debug-panel.md) 未作成）へ統合するか
+- 実データ配線（`Renderer`／[01-renderer.md](./01-renderer.md) 未作成）が入った時点で本コンポーネントを削除するか、デバッグパネル（[03-debug-panel.md](../platform/03-debug-panel.md) 未作成）へ統合するか

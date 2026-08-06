@@ -1,4 +1,4 @@
-// 仕様書: Unity/docs/.sdd/10-sub-store-board-view.md
+// 仕様書: Unity/docs/.sdd/match-view/04-sub-store-board-view.md
 // 1店舗ぶんのタイルの見た目（SubStorePanel Prefab）。脱落の判定・順位の算出はしない。
 
 using Takoda99.View.ValueObjects;
