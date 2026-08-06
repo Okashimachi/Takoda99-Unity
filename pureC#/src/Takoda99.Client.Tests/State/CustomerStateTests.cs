@@ -83,5 +83,17 @@ namespace Takoda99.Client.Tests.State
             Assert.Equal(6, customer.OrderCount);
             Assert.Equal(18_000, customer.PatienceMaxMs);
         }
+
+        [Fact]
+        public void PatienceStartedAtServerMsは受信値のまま我慢ゲージの起点として保持される()
+        {
+            var view = TestMessages.CustomerView("c9", patienceStartedAtServerMs: 4_200);
+
+            var customer = CustomerState.FromCustomerView(view, arrivedAtElapsedMs: 5_000);
+
+            Assert.Equal(4_200, customer.PatienceStartedAtServerMs);
+            // ArrivedAtElapsedMs はサーバー時刻とのドリフト検知用で、起点には使わない
+            Assert.Equal(5_000, customer.ArrivedAtElapsedMs);
+        }
     }
 }

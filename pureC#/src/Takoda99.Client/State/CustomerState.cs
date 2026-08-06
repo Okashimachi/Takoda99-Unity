@@ -11,7 +11,8 @@ namespace Takoda99.Client.State
     /// </summary>
     /// <remarks>
     /// 我慢ゲージの残量は保持しない。契約に <c>patienceLeftMs</c> を運ぶメッセージが存在せず（SV-03）、
-    /// 残量はクライアントの推定値にしかならないため、表示用の算出は Unity 側 <c>PatienceTimer</c> が行う。
+    /// 残量はクライアントの推定値にしかならないため、表示用の算出は Unity 側 <c>PatienceTimer</c> が
+    /// <see cref="PatienceStartedAtServerMs"/> を起点に行う。
     /// <see cref="CustomerAttribute"/> は仕様書の定義（Proto と同一）に従い、Proto の列挙をそのまま使う。
     /// </remarks>
     public readonly record struct CustomerState(
@@ -20,7 +21,8 @@ namespace Takoda99.Client.State
         int PatienceMaxMs,           // CustomerView.patienceMaxMs
         int OrderCount,              // = 打つ単語数
         IReadOnlyList<string> Words, // お題単語。サーバー発行
-        long ArrivedAtElapsedMs      // 来店時点の MatchState.ElapsedMs。クライアントの推定値（Proto に無い）
+        long PatienceStartedAtServerMs, // CustomerView.patienceStartedAtServerMs（Proto v0.3.0）。我慢ゲージ表示の起点
+        long ArrivedAtElapsedMs      // 受信時点の MatchState.ElapsedMs。サーバー時刻の対応づけに使う（表示の起点には使わない）
     )
     {
         /// <summary>
@@ -35,6 +37,7 @@ namespace Takoda99.Client.State
                 PatienceMaxMs: view.PatienceMaxMs,
                 OrderCount: view.OrderCount,
                 Words: view.Words ?? new List<string>(),
+                PatienceStartedAtServerMs: view.PatienceStartedAtServerMs,
                 ArrivedAtElapsedMs: arrivedAtElapsedMs);
         }
 

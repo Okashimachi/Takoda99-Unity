@@ -13,7 +13,8 @@ namespace Takoda99.Client.State
         double EvalNormalized,
         int Rank,
         int CreditLife,
-        bool Alive
+        bool Alive,
+        int? FinalRank // 脱落済みの店のみ。null は「まだ脱落していない」（Proto v0.3.0）
     )
     {
         public static StoreSummaryState From(StoreSummary summary)
@@ -24,7 +25,8 @@ namespace Takoda99.Client.State
                 EvalNormalized: summary.EvalNormalized,
                 Rank: summary.Rank,
                 CreditLife: summary.CreditLife,
-                Alive: summary.Alive);
+                Alive: summary.Alive,
+                FinalRank: summary.FinalRank);
         }
 
         /// <summary>
@@ -56,7 +58,9 @@ namespace Takoda99.Client.State
             var result = new List<StoreSummaryState>(summaries.Count);
             foreach (var summary in summaries)
             {
-                result.Add(summary.StoreId == message.StoreId ? summary with { Alive = false } : summary);
+                result.Add(summary.StoreId == message.StoreId
+                    ? summary with { Alive = false, FinalRank = message.FinalRank }
+                    : summary);
             }
 
             return result;

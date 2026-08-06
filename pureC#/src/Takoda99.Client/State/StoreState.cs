@@ -16,6 +16,8 @@ namespace Takoda99.Client.State
         double EvalRaw,
         double EvalNormalized, // 0..1。EvaluationUpdate では normalized、StoreSummary では evalNormalized（SV-09）
         int Rank,
+        double StarRating, // 0..5。表示専用（Proto v0.3.0）。分配重み・淘汰には使わない
+        double StarDelta,  // 前ティックからの星の増減（Proto v0.3.0）
         bool Alive,
         IReadOnlyList<string> StoreQueue // CustomerId の並び。先頭が対応中。クライアントがローカル構築する
     )
@@ -35,16 +37,20 @@ namespace Takoda99.Client.State
                 EvalRaw: 0d,
                 EvalNormalized: self?.EvalNormalized ?? 0d,
                 Rank: self?.Rank ?? 0,
+                StarRating: 0d,
+                StarDelta: 0d,
                 Alive: self?.Alive ?? true,
                 StoreQueue: new string[0]);
         }
 
-        /// <summary>自店専用メッセージ。評価・順位を受信値で置換する。</summary>
+        /// <summary>自店専用メッセージ。評価・順位・星を受信値で置換する。星は再計算しない。</summary>
         public StoreState Apply(EvaluationUpdate message) => this with
         {
             EvalRaw = message.EvalRaw,
             EvalNormalized = message.Normalized,
             Rank = message.Rank,
+            StarRating = message.StarRating,
+            StarDelta = message.StarDelta,
         };
 
         /// <summary>
