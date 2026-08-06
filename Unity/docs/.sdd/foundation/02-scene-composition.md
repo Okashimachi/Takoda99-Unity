@@ -59,6 +59,26 @@ Boot
 
 サーバーは接続を受けると最初の1メッセージを**最大3秒**しか待たず、それを過ぎると表示名が空になりフォールバック名が割り当たる（[matchmaking/01](../matchmaking/01-matchmaking-flow.md) §4.1）。したがって接続は「名前が確定した瞬間」まで遅らせる必要がある。
 
+### 4.1 接続先URLの取得元（`StreamingAssets/config.json`）
+
+**接続先URL（`webSocketUrl`）は Inspector 直書きではなく、`Assets/StreamingAssets/config.json` から実行時に読み込む。**
+
+- `Assets/StreamingAssets/` 配下はビルド時にそのままコピーされ、WebGLでも同一オリジンの静的ファイルとして `UnityWebRequest` で取得できる（ファイルI/Oが使えないWebGL制約と両立する）
+- `config.json` 本体は各自のローカル値（開発用/本番URL）を持つため**コミットしない**（`.gitignore` 対象）。サンプルとして `config.example.json` をコミットする
+- 読み込みは `GameBootstrapper.Awake` の直後、`Start` 内で `UnityWebRequest` により非同期に行う。**これは「接続」ではなく設定ファイルの取得であり、§4 の「Bootでは接続しない」に抵触しない**（WebSocket自体はまだ開かない）
+- 読み込みに失敗した場合（ファイルが無い等）は Inspector の `webSocketUrl`（既定値）にフォールバックする。**開発者がローカルに `config.json` を用意し忘れても起動自体は継続できるようにする**
+
+```json
+// Assets/StreamingAssets/config.example.json（コミット対象・サンプル）
+{ "webSocketUrl": "ws://localhost:8080/ws" }
+```
+
+```
+Assets/StreamingAssets/
+  config.example.json   ← コミットする（サンプル）
+  config.json            ← コミットしない（各自のローカル値。.gitignore対象）
+```
+
 ```
 Boot（生成のみ）
   → Title（Start ボタン）
@@ -82,7 +102,7 @@ Boot（生成のみ）
 
 | フィールド | 割り当て |
 |---|---|
-| `webSocketUrl` | ローカル開発用のURL（**本番URLはコミットしない**） |
+| `webSocketUrl` | フォールバック用の既定値のみ（**本番URLはコミットしない**）。通常は `Assets/StreamingAssets/config.json` から上書きされる（§4.1） |
 | `titleSceneName` / `matchmakingSceneName` / `matchSceneName` / `resultSceneName` | `Title` / `MatchiMaking` / `MainGame` / `Result` |
 | `networkClient` | `BootStrap/Net` |
 | `inputSource` | `BootStrap/Input` |
@@ -132,11 +152,11 @@ Start ボタンは**シーンを切り替えるだけ**で、`BeginPlay()` を�
 
 ### 実装
 
-`Assets/Scripts/View/TitleScreenView.cs`（**未実装**）
+`Assets/Scripts/View/TitleScreenView.cs`
 
 ## 8. 未確定事項
 
-- **`TitleScreenView`（§7）／`MatchmakingScreenView`／`Renderer` が各シーンに未アタッチ。** スクリプトはあるが（`TitleScreenView` は未作成）、シーン側の配線が済んでいない
+- **`TitleScreenView`（§7）／`MatchmakingScreenView`／`Renderer` が各シーンに未アタッチ。** スクリプトは揃ったが、シーン側の配線（Inspector 割り当て）はUnityエディタでの人手作業が必要で未着手
 - **`Result` シーンの設計**（`MatchEnd` 受信後の表示内容）。シーンは存在するが中身が無い
 - `LeaveMatchmaking()` / `BackToTitle()` 実行時の遷移（現状 `Title` フェーズへ戻れば `Title` シーンがロードされるが、導線が画面に無い）
 - `MainGame` シーンに残っている `MainGameViewSampleDriver`（[11](../match-view/06-view-sample-data.md)）と `Renderer` の共存。実データ駆動に切り替える際に無効化が要る
