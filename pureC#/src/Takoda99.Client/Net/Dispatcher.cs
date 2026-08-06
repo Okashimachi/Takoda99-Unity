@@ -90,6 +90,8 @@ public sealed class Dispatcher : IDispatcher
                         WaitingCount = matchmakingStatus.WaitingCount,
                         MinPlayers = matchmakingStatus.MinPlayers,
                         CountdownMs = matchmakingStatus.CountdownMs,
+                        SelfStoreId = matchmakingStatus.SelfStoreId,
+                        Participants = matchmakingStatus.Participants,
                     };
 
             case MessageType.MatchStart:

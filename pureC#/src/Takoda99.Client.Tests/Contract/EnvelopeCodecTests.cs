@@ -50,14 +50,15 @@ public class EnvelopeCodecTests
     [Fact]
     public void EncodeEnvelope_空payloadでもpayloadキーを出力する()
     {
-        var json = _codec.EncodeEnvelope(MessageType.MatchmakingJoin, new MatchmakingJoin());
+        var json = _codec.EncodeEnvelope(MessageType.MatchmakingLeave, new MatchmakingLeave());
 
-        Assert.Equal("""{"type":"MatchmakingJoin","payload":{}}""", json);
+        Assert.Equal("""{"type":"MatchmakingLeave","payload":{}}""", json);
     }
 
     [Fact]
-    public void EncodeEnvelope_nullのオプショナルフィールドは出力しない()
+    public void EncodeEnvelope_countdownMsはnullでも無条件シリアライズされる()
     {
+        // v0.5.0 で countdownMs から JsonIgnore(WhenWritingNull) が外れた（VERSION.md 参照）。
         var json = _codec.EncodeEnvelope(MessageType.MatchmakingStatus, new MatchmakingStatus
         {
             WaitingCount = 3,
@@ -65,7 +66,20 @@ public class EnvelopeCodecTests
             CountdownMs = null,
         });
 
-        Assert.DoesNotContain("countdownMs", json);
+        Assert.Contains("\"countdownMs\":null", json);
+    }
+
+    [Fact]
+    public void EncodeEnvelope_nullのオプショナルフィールドは出力しない()
+    {
+        var json = _codec.EncodeEnvelope("StoreSummary", new StoreSummary
+        {
+            StoreId = "s1",
+            DisplayName = "たこ焼き",
+            FinalRank = null,
+        });
+
+        Assert.DoesNotContain("finalRank", json);
     }
 
     [Fact]

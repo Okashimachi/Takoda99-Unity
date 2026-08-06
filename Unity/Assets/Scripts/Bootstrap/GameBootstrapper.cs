@@ -52,9 +52,8 @@ namespace Takoda99.Bootstrap
         public IEnvelopeLog Log { get; private set; }
 
         /// <summary>
-        /// WriteNameModal で確定した表示名。**現時点ではサーバーへ送れない**（Proto の C# ミラーに
-        /// `MatchmakingJoin.displayName` が無い。matchmaking/02-display-name.md §2 / REQ-01）。
-        /// ミラーが直るまでは保持のみ行い、送信は行わない。
+        /// WriteNameModal で確定した表示名。接続確立直後の MatchmakingJoin にそのまま乗せる
+        /// （Proto v0.4.0 で `MatchmakingJoin.displayName` が追加された。REQ-01 対応）。
         /// </summary>
         public string DisplayName { get; private set; } = "";
 
@@ -162,7 +161,7 @@ namespace Takoda99.Bootstrap
             controller.Start(new BootstrapConfig
             {
                 WebSocketUrl = resolvedUrl,
-                ProtoVersion = "v0.3.0",
+                ProtoVersion = "v0.5.0",
                 DevMode = devMode,
             });
         }
@@ -199,7 +198,7 @@ namespace Takoda99.Bootstrap
         public void DecideDisplayName(string displayName)
         {
             DisplayName = displayName ?? "";
-            controller.BeginPlay();
+            controller.BeginPlay(DisplayName);
         }
 
         /// <summary>キュー離脱（MatchmakingLeave 送信 → Title へ）。</summary>

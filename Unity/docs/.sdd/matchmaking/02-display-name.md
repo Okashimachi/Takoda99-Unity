@@ -11,42 +11,27 @@
 - **しない**こと：表示名の検証・切り詰め・不適切語のフィルタを**クライアントの責任として実装しない**（§4。サーバーが正規化する）
 - **しない**こと：他店の表示名をクライアントで生成・補完する（サーバーが必ず値を配る）
 
-## 2. ⚠ 実装の前提：上流の変更待ち（合意済み・作業中）
+## 2. 実装状況（2026-08-07：REQ-01 対応完了）
 
-**送信部分（§5・§6）は、Proto の C# ミラーに `MatchmakingJoin.displayName` が入るまで実装できない。** 受信部分（§3 の他店名取得）は現契約のままで実装できる。
+**送信部分（§5・§6）・受信部分（§3）とも実装済み。** Proto v0.4.0 で `MatchmakingJoin.displayName` が C# ミラーへ追加され、v0.5.0 ミラー更新（[VERSION.md](../../../../pureC%23/vendor/Takoda99.Proto/VERSION.md)）に追従した。
 
-| 言語 | v0.3.0 時点 | |
+| 言語 | 現時点 | |
 |---|---|---|
-| **Go（正典）** | `DisplayName string \`json:"displayName,omitempty"\`` | ✅ **これが正しい** |
-| C# | `public sealed class MatchmakingJoin { }` | ❌ フィールド無し |
+| **Go（正典）** | `DisplayName string \`json:"displayName,omitempty"\`` | ✅ |
+| C# | `public sealed class MatchmakingJoin { public string DisplayName { get; set; } = ""; }` | ✅ 反映済み |
 
-Proto のコミット `d567a98`（2026-08-04）が Go のみを変更し、後続の v0.3.0 で C# に反映されなかった。**サーバーは `displayName` を読む実装になっている**ため、C# の型どおりに `{}` を送ると**全プレイヤーの表示名が空になり、フォールバック名が割り当たる**。
+`MatchClientController.BeginPlay(string displayName)` が表示名を保持し、接続確立直後・再接続時いずれの `MatchmakingJoin` にも同じ値を乗せて送る（`GameBootstrapper.DecideDisplayName` から配線）。
 
-### 依頼済みの内容（2026-08-06 合意）
-
-サーバーマネージャと合意し、**上流での実装内容を確定させた**。指示書は [05-表示名の実装指示.md](../../../../docs/server-sync/05-表示名の実装指示.md)。
-
-| # | 宛先 | 内容 |
-|---|---|---|
-| A | Proto | C# ミラーに `displayName` を追加 |
-| B | サーバー | 表示名の最大長を 24 → **6文字** へ |
-| C | サーバー | フォールバック名・Bot名も6文字以内にし、書式を共有 |
-| D | Docs | 正典の「24文字」の記述を更新 |
-
-### このリポジトリで守ること
-
-1. **`pureC#/vendor/Takoda99.Proto/Messages.cs` を編集しない。** ミラーは正典の複製であり、こちら側で内容を変えない（[01-責務と絶対原則.md](../../../../docs/rules/01-責務と絶対原則.md) 絶対原則7）
-2. **送信側の封筒を手組みして `displayName` を注入する回避策も採らない。** 契約に無いフィールドをこのリポジトリの実装で足すことになり、同じ原則に抵触する
-3. 上流のタグが切られたら [05-表示名の実装指示.md](../../../../docs/server-sync/05-表示名の実装指示.md#こちら側の追従手順上流タグ確定後) の手順で追従する
-
-### 先に実装してよいもの
-
-上流待ちなのは**「`MatchmakingJoin` に名前を載せて送る」ところだけ**。以下は今のうちに作ってよい。
+### 実装済みの内容
 
 - 入力UI（`WriteNameModal` / `NameInputField` / `Decide`）と、`characterLimit = 6`
-- 「名前確定 → 接続」の**順序**（[01-matchmaking-flow.md](./01-matchmaking-flow.md) §8.5）。名前を保持しておき、送信だけ後から繋ぐ
-- `BeginPlay(displayName)` の配線（[06-match-client-controller.md](../../../../pureC%23/docs/.sdd/06-match-client-controller.md) §3.6）。**`MatchmakingJoin` に代入する1行だけがミラー待ち**
+- 「名前確定 → 接続」の**順序**（[01-matchmaking-flow.md](./01-matchmaking-flow.md) §8.5）。名前を保持しておき、送信は接続確立直後に行う
+- `BeginPlay(displayName)` の配線（[06-match-client-controller.md](../../../../pureC%23/docs/.sdd/06-match-client-controller.md) §3.6）。接続時・再接続時の両方の `MatchmakingJoin` に同じ値が乗る
 - 受信した名前の表示（§3・§4）
+
+### まだ上流待ちのもの
+
+サーバー側の表示名長の正規化（§4のB・C・D）は別件（[05-表示名の実装指示.md](../../../../docs/server-sync/05-表示名の実装指示.md)）として引き続き上流依頼中。現行は最大24文字のまま。
 
 ## 3. 他店の表示名の取得
 
@@ -111,7 +96,7 @@ Proto のコミット `d567a98`（2026-08-04）が Go のみを変更し、後�
 
 ## 8. 未確定事項
 
-- **上流の実装待ち**（§2）。[05-表示名の実装指示.md](../../../../docs/server-sync/05-表示名の実装指示.md) の A〜D
+- **サーバー側の表示名長の正規化**（§2の残課題）。[05-表示名の実装指示.md](../../../../docs/server-sync/05-表示名の実装指示.md) のB〜D
 - **フォールバック名・Bot名の書式**（上流 C で共有依頼中）。表示幅の設計に影響する
 - **サーバー側の文字数の数え方**（コードポイント / バイト / rune）。`TMP_InputField.characterLimit` は UTF-16 コードユニット数で数えるため厳密には一致しない。**サーバーの数え方が正**
 - 小画面に他店の表示名を出すか（現在の画面案では出していない。値は届いている）

@@ -86,6 +86,8 @@ public sealed class MatchmakingStatusAction : IAction
     public int WaitingCount { get; init; }
     public int MinPlayers { get; init; }
     public int? CountdownMs { get; init; }
+    public string SelfStoreId { get; init; } = "";
+    public IReadOnlyList<MatchmakingParticipant> Participants { get; init; } = System.Array.Empty<MatchmakingParticipant>();
 }
 
 // ── ローカル Action（04-store-reducer.md §3.2） ─────────────────────

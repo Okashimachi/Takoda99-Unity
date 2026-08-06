@@ -1,5 +1,6 @@
 // 仕様書: Unity/docs/.sdd/matchmaking/01-matchmaking-flow.md §10 テスト観点
 
+using System.Collections.Generic;
 using Takoda99.View.ValueObjects;
 using Xunit;
 
@@ -16,11 +17,14 @@ namespace Takoda99.View.Tests
             bool hasReceivedStatus = true,
             int waitingCount = 0,
             int minPlayers = 0,
-            int? countdownMs = null)
+            int? countdownMs = null,
+            string selfStoreId = null,
+            IReadOnlyList<(string StoreId, string DisplayName)> participants = null)
         {
             return MatchmakingViewState.From(
                 connectionFailed, nameDecided, connected, matchStarted,
-                hasReceivedStatus, waitingCount, minPlayers, countdownMs);
+                hasReceivedStatus, waitingCount, minPlayers, countdownMs,
+                selfStoreId, participants);
         }
 
         [Fact]
@@ -139,6 +143,32 @@ namespace Takoda99.View.Tests
             Assert.Equal(MatchmakingPanel.WaitingPanel, connecting.Panel);
             Assert.Equal(MatchmakingPanel.WaitingPanel, joining.Panel);
             Assert.Equal(MatchmakingPanel.MatchingPanel, waiting.Panel);
+        }
+
+        [Fact]
+        public void Waiting中はparticipantsをそのまま並べ自店にIsSelfを立てる()
+        {
+            var participants = new List<(string StoreId, string DisplayName)>
+            {
+                ("s1", "たこ1"),
+                ("s2", "たこ2"),
+            };
+
+            var state = Make(waitingCount: 2, minPlayers: 20, selfStoreId: "s2", participants: participants);
+
+            Assert.Equal(2, state.Participants.Count);
+            Assert.Equal("s1", state.Participants[0].StoreId);
+            Assert.False(state.Participants[0].IsSelf);
+            Assert.Equal("s2", state.Participants[1].StoreId);
+            Assert.True(state.Participants[1].IsSelf);
+        }
+
+        [Fact]
+        public void participants未指定なら空リストになる()
+        {
+            var state = Make(waitingCount: 0, minPlayers: 20);
+
+            Assert.Empty(state.Participants);
         }
     }
 }
