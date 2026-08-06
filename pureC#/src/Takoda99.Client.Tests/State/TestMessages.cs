@@ -13,7 +13,8 @@ namespace Takoda99.Client.Tests.State
             double evalNormalized = 0.5,
             int rank = 1,
             int creditLife = 3,
-            string displayName = "たまちゃん屋")
+            string displayName = "たまちゃん屋",
+            int? finalRank = null)
         {
             return new StoreSummary
             {
@@ -23,6 +24,7 @@ namespace Takoda99.Client.Tests.State
                 Rank = rank,
                 CreditLife = creditLife,
                 Alive = alive,
+                FinalRank = finalRank,
             };
         }
 
@@ -30,8 +32,10 @@ namespace Takoda99.Client.Tests.State
             string selfStoreId = "store-01",
             Phase phase = Phase.Early,
             int maxStores = 99,
-            int matchTimeLimitMs = 300_000,
             int initialLife = 3,
+            double stormThresholdPct = 0.1,
+            int finalStageAliveThreshold = 10,
+            int finalRushAliveThreshold = 3,
             List<StoreSummary>? stores = null)
         {
             return new MatchStart
@@ -41,9 +45,11 @@ namespace Takoda99.Client.Tests.State
                 Phase = phase,
                 Params = new GameParametersPublicSubset
                 {
-                    MatchTimeLimitMs = matchTimeLimitMs,
                     InitialLife = initialLife,
                     MaxStores = maxStores,
+                    StormThresholdPct = stormThresholdPct,
+                    FinalStageAliveThreshold = finalStageAliveThreshold,
+                    FinalRushAliveThreshold = finalRushAliveThreshold,
                 },
                 Stores = stores ?? new List<StoreSummary> { Summary(selfStoreId) },
             };
@@ -53,6 +59,7 @@ namespace Takoda99.Client.Tests.State
             string customerId = "customer-01",
             int orderCount = 4,
             int patienceMaxMs = 20_000,
+            long patienceStartedAtServerMs = 0,
             CustomerAttribute attribute = CustomerAttribute.Normal,
             List<string>? words = null)
         {
@@ -62,6 +69,7 @@ namespace Takoda99.Client.Tests.State
                 Attribute = attribute,
                 OrderCount = orderCount,
                 PatienceMaxMs = patienceMaxMs,
+                PatienceStartedAtServerMs = patienceStartedAtServerMs,
                 Words = words ?? new List<string> { "たこ", "やき", "ソース", "あおのり" },
             };
         }

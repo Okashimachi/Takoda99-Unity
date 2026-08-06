@@ -37,7 +37,7 @@ public class MatchClientControllerTests
         _controller.Start(new BootstrapConfig { WebSocketUrl = "wss://example" });
         _controller.BeginPlay();
         _networkClient.SetState(ConnectionState.Connected);
-        _dispatcher.HandleRaw("""{"type":"MatchStart","payload":{"matchId":"m1","selfStoreId":"s1","params":{"matchTimeLimitMs":60000,"initialLife":3,"maxStores":99},"phase":"Early","stores":[]}}""");
+        _dispatcher.HandleRaw("""{"type":"MatchStart","payload":{"matchId":"m1","selfStoreId":"s1","params":{"initialLife":3,"maxStores":99},"phase":"Early","stores":[]}}""");
     }
 
     [Fact]

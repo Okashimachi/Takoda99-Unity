@@ -63,22 +63,27 @@ namespace Takoda99.Client.Tests.State
         [Fact]
         public void ElapsedMsはMatchStart受信時刻を起点としたローカル計測値()
         {
-            var state = MatchState.FromMatchStart(TestMessages.MatchStart(matchTimeLimitMs: 300_000), 10_000);
+            var state = MatchState.FromMatchStart(TestMessages.MatchStart(), 10_000);
             Assert.Equal(0, state.ElapsedMs);
 
             state = state.Tick(25_000);
 
             Assert.Equal(15_000, state.ElapsedMs);
-            Assert.Equal(285_000, state.RemainingMs);
         }
 
         [Fact]
-        public void 制限時間を超過してもRemainingMsは0で止まる()
+        public void 表示用閾値はMatchStartのparamsからそのまま保持される()
         {
-            var state = MatchState.FromMatchStart(TestMessages.MatchStart(matchTimeLimitMs: 1_000), 0)
-                .Tick(5_000);
+            var state = MatchState.FromMatchStart(
+                TestMessages.MatchStart(
+                    stormThresholdPct: 0.2,
+                    finalStageAliveThreshold: 12,
+                    finalRushAliveThreshold: 4),
+                0);
 
-            Assert.Equal(0, state.RemainingMs);
+            Assert.Equal(0.2, state.StormThresholdPct);
+            Assert.Equal(12, state.FinalStageAliveThreshold);
+            Assert.Equal(4, state.FinalRushAliveThreshold);
         }
     }
 }
