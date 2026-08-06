@@ -3,14 +3,17 @@
 // SetTakoyakiCount(int) 経由の暫定インターフェースとする（契約確定後、呼び出し元を差し替える）。
 
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using System.Threading;
 using UnityEngine;
 
 namespace Takoda99.View
 {
-    /// <summary>ResultScene にアタッチし、注入された個数分だけ TakoyakiObj を生成する。</summary>
+    /// <summary>ResultScene にアタッチし、注入された個数分だけ TakoyakiObj を少しずつ生成する。</summary>
     public sealed class TakoyakiCreator : MonoBehaviour
     {
         [SerializeField] private GameObject takoyakiPrefab;
+        [SerializeField] private float spawnIntervalSeconds = 0.05f;
 
         [Header("テストモード")]
         [SerializeField] private bool testMode;
@@ -19,17 +22,24 @@ namespace Takoda99.View
         private readonly List<GameObject> spawned = new List<GameObject>();
         private int injectedTakoyakiCount;
         private bool hasInjectedCount;
+        private CancellationTokenSource spawnCts;
 
         private void Start()
         {
             if (testMode)
             {
-                Spawn(testTakoyakiCount);
+                Spawn(testTakoyakiCount).Forget();
             }
             else if (hasInjectedCount)
             {
-                Spawn(injectedTakoyakiCount);
+                Spawn(injectedTakoyakiCount).Forget();
             }
+        }
+
+        private void OnDestroy()
+        {
+            spawnCts?.Cancel();
+            spawnCts?.Dispose();
         }
 
         /// <summary>外部（サーバーから受け取ったリザルト情報）から、造ったたこ焼きの数を注入する。</summary>
@@ -40,11 +50,11 @@ namespace Takoda99.View
 
             if (!testMode)
             {
-                Spawn(injectedTakoyakiCount);
+                Spawn(injectedTakoyakiCount).Forget();
             }
         }
 
-        private void Spawn(int count)
+        private async UniTaskVoid Spawn(int count)
         {
             Clear();
 
@@ -54,14 +64,31 @@ namespace Takoda99.View
                 return;
             }
 
+            spawnCts = new CancellationTokenSource();
+            var token = spawnCts.Token;
+
             for (var i = 0; i < count; i++)
             {
+                if (token.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 spawned.Add(Instantiate(takoyakiPrefab, transform));
+
+                if (i < count - 1)
+                {
+                    await UniTask.Delay(System.TimeSpan.FromSeconds(spawnIntervalSeconds), cancellationToken: token);
+                }
             }
         }
 
         private void Clear()
         {
+            spawnCts?.Cancel();
+            spawnCts?.Dispose();
+            spawnCts = null;
+
             foreach (var obj in spawned)
             {
                 if (obj != null)
