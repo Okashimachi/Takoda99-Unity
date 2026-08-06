@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e4b0f27c8a3416d95b2c7e10df6a852, type: 3}
+  m_Name: CustomerSpriteLibrary
+  m_EditorClassIdentifier: 
+  _sets:
+  - _attribute: 0
+    _label: mob
+    _queued: {fileID: 8551990734021326575, guid: 4a033e5e9e04b8147bb5c8a2564a6004, type: 3}
+    _ordering: {fileID: 8471677006900690195, guid: e6e7683fc1de14140bfd15583eb824e3, type: 3}
+    _waitingForServe: {fileID: 8471677006900690195, guid: e6e7683fc1de14140bfd15583eb824e3, type: 3}
+    _delighted: {fileID: -3310115176177403817, guid: 570ac067368b62f408a19f712b1532cd, type: 3}
+    _angry: {fileID: 5504304195627425092, guid: d2b7f96dfe6ead144b7e285b53d7c410, type: 3}
+    _leaving: {fileID: 4598710883640555501, guid: 6474a72a50e28ce4b8afdfbf72ca6f55, type: 3}
+  - _attribute: 1
+    _label: comedian
+    _queued: {fileID: -2462965217385810958, guid: d4ac1cc3ecd5ab94999657bb7c513479, type: 3}
+    _ordering: {fileID: 7584666272594601215, guid: 42ea29fcff1c48745bfd90a160d47519, type: 3}
+    _waitingForServe: {fileID: -5658764820803658508, guid: fc603ebb021719a47b9210ef64460477, type: 3}
+    _delighted: {fileID: 496896508873006158, guid: 2a5905e0e8a6c0344831c87ec1ff2dae, type: 3}
+    _angry: {fileID: -6911616976974815629, guid: 44fa837e152edb4459f66f02c2cf26a9, type: 3}
+    _leaving: {fileID: 1727618474829155482, guid: 5cc9ce3802129834b82dbfd887b134bc, type: 3}
+  - _attribute: 2
+    _label: obachan
+    _queued: {fileID: -2368777513903679350, guid: 638e154e8addc1341a6e0e99c59c54e7, type: 3}
+    _ordering: {fileID: 3553156994138196320, guid: 01411497097f1dd4cb71242ca03d47af, type: 3}
+    _waitingForServe: {fileID: 7380619220109643404, guid: 2dee0fca995242f44afe881a84cdceed, type: 3}
+    _delighted: {fileID: 5496557357921767351, guid: 40e4f9fdb7d46464da46f59be98452b6, type: 3}
+    _angry: {fileID: -2041928566567716003, guid: 081d1ac54ee5eb6489c712fa319d0ff4, type: 3}
+    _leaving: {fileID: -8155884707606788206, guid: 07643a7ad9a0458449cbb1737d4ee580, type: 3}
+  - _attribute: 3
+    _label: jk
+    _queued: {fileID: -6394763106529764425, guid: 21a57daa28a2c2a40ba2cf1478de970f, type: 3}
+    _ordering: {fileID: -7525645771848628838, guid: ff07296d037085845bb1b208b39670d5, type: 3}
+    _waitingForServe: {fileID: -3963875598376602839, guid: c0675a71ecae0c34a8ca1b2bacd2aaad, type: 3}
+    _delighted: {fileID: -1245820541318427889, guid: efa4fbfd4d7d22441a24d07b89868f91, type: 3}
+    _angry: {fileID: -8623434053579713458, guid: beab22229efe1bf4c9f4963240fe54de, type: 3}
+    _leaving: {fileID: -6708226688512783023, guid: 99ccd689783e4df4594160cd4ff7b74a, type: 3}
+  _fallbackAttribute: 0
