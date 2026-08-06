@@ -8,25 +8,45 @@ namespace Takoda99.View.Tests
     public class TakoyakiStandStateTests
     {
         [Fact]
-        public void 注文個数が穴数未満なら余った穴はEmpty()
+        public void EvalLevelがLowなら生地マスは12個で1から2行目まで()
         {
-            var stand = TakoyakiStandState.From(orderCount: 4, typedWordCount: 0);
+            var stand = TakoyakiStandState.From(StoreEvalLevel.Low, typedWordCount: 0);
 
-            Assert.Equal(TakoyakiSlotState.Batter, stand.Slots[3]);
-            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[4]);
+            Assert.Equal(TakoyakiSlotState.Batter, stand.Slots[11]);
+            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[12]);
             Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[TakoyakiStandState.StandCapacity - 1]);
+        }
+
+        [Fact]
+        public void EvalLevelがMidなら生地マスは18個で1から3行目まで()
+        {
+            var stand = TakoyakiStandState.From(StoreEvalLevel.Mid, typedWordCount: 0);
+
+            Assert.Equal(TakoyakiSlotState.Batter, stand.Slots[17]);
+            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[18]);
+        }
+
+        [Fact]
+        public void EvalLevelがHighなら生地マスは全24個()
+        {
+            var stand = TakoyakiStandState.From(StoreEvalLevel.High, typedWordCount: 0);
+
+            foreach (var slot in stand.Slots)
+            {
+                Assert.Equal(TakoyakiSlotState.Batter, slot);
+            }
         }
 
         [Fact]
         public void TypedWordCountの増加でindex順にBatterからCookedへ変わる()
         {
-            var stand = TakoyakiStandState.From(orderCount: 4, typedWordCount: 2);
+            var stand = TakoyakiStandState.From(StoreEvalLevel.Low, typedWordCount: 2);
 
             Assert.Equal(TakoyakiSlotState.Cooked, stand.Slots[0]);
             Assert.Equal(TakoyakiSlotState.Cooked, stand.Slots[1]);
             Assert.Equal(TakoyakiSlotState.Batter, stand.Slots[2]);
-            Assert.Equal(TakoyakiSlotState.Batter, stand.Slots[3]);
-            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[4]);
+            Assert.Equal(TakoyakiSlotState.Batter, stand.Slots[11]);
+            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[12]);
         }
 
         [Fact]
@@ -36,58 +56,44 @@ namespace Takoda99.View.Tests
             Assert.Equal(6, TakoyakiStandState.StandColumns);
             Assert.Equal(4, TakoyakiStandState.StandRows);
 
-            Assert.Equal(24, TakoyakiStandState.From(0, 0).Slots.Count);
-            Assert.Equal(24, TakoyakiStandState.From(12, 12).Slots.Count);
-            Assert.Equal(24, TakoyakiStandState.From(99, 99).Slots.Count);
+            Assert.Equal(24, TakoyakiStandState.From(StoreEvalLevel.Low, 0).Slots.Count);
+            Assert.Equal(24, TakoyakiStandState.From(StoreEvalLevel.Mid, 12).Slots.Count);
+            Assert.Equal(24, TakoyakiStandState.From(StoreEvalLevel.High, 99).Slots.Count);
         }
 
         [Fact]
-        public void 客の繰り上がりで全穴がEmptyにリセットされてから再構成される()
+        public void 客の繰り上がりでCookedがBatterへ戻りEmptyには戻らない()
         {
-            var served = TakoyakiStandState.From(orderCount: 4, typedWordCount: 4);
+            var served = TakoyakiStandState.From(StoreEvalLevel.Low, typedWordCount: 4);
             Assert.Equal(TakoyakiSlotState.Cooked, served.Slots[0]);
 
-            var idle = TakoyakiStandState.Idle;
-            foreach (var slot in idle.Slots)
-            {
-                Assert.Equal(TakoyakiSlotState.Empty, slot);
-            }
-
-            var next = TakoyakiStandState.From(orderCount: 6, typedWordCount: 0);
-            Assert.Equal(TakoyakiSlotState.Batter, next.Slots[5]);
-            Assert.Equal(TakoyakiSlotState.Empty, next.Slots[6]);
+            var idle = TakoyakiStandState.Idle(StoreEvalLevel.Low);
+            Assert.Equal(TakoyakiSlotState.Batter, idle.Slots[0]);
+            Assert.Equal(TakoyakiSlotState.Batter, idle.Slots[11]);
+            Assert.Equal(TakoyakiSlotState.Empty, idle.Slots[12]);
         }
 
         [Fact]
-        public void TypedWordCountがOrderCountを超えてもoccupiedCountでクランプされる()
+        public void TypedWordCountが生地マス数を超えてもoccupiedCountでクランプされる()
         {
-            var stand = TakoyakiStandState.From(orderCount: 4, typedWordCount: 10);
+            var stand = TakoyakiStandState.From(StoreEvalLevel.Low, typedWordCount: 30);
 
-            Assert.Equal(TakoyakiSlotState.Cooked, stand.Slots[3]);
-            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[4]);
-        }
-
-        [Fact]
-        public void OrderCountが穴数を超える場合はStandCapacityでクランプされる()
-        {
-            var stand = TakoyakiStandState.From(orderCount: 30, typedWordCount: 0);
-
-            foreach (var slot in stand.Slots)
+            for (var i = 0; i < TakoyakiStandState.BatterCountLow; i++)
             {
-                Assert.Equal(TakoyakiSlotState.Batter, slot);
+                Assert.Equal(TakoyakiSlotState.Cooked, stand.Slots[i]);
             }
+
+            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[TakoyakiStandState.BatterCountLow]);
         }
 
         [Fact]
         public void 負値が渡されても配列外参照にならない()
         {
-            var stand = TakoyakiStandState.From(orderCount: -1, typedWordCount: -5);
+            var stand = TakoyakiStandState.From(StoreEvalLevel.Low, typedWordCount: -5);
 
             Assert.Equal(24, stand.Slots.Count);
-            foreach (var slot in stand.Slots)
-            {
-                Assert.Equal(TakoyakiSlotState.Empty, slot);
-            }
+            Assert.Equal(TakoyakiSlotState.Batter, stand.Slots[0]);
+            Assert.Equal(TakoyakiSlotState.Empty, stand.Slots[12]);
         }
     }
 }
