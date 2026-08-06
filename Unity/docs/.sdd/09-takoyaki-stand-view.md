@@ -33,12 +33,14 @@ namespace Takoda99.View
         public void SetState(TakoyakiSlotState state);
     }
 
-    /// <summary>たこ焼き台全体（6列×4行＝24穴）。root/.../MainStore/Takoyakis にアタッチする。</summary>
+    /// <summary>
+    /// たこ焼き台全体（6列×4行＝24穴）。root/.../MainStore/Takoyakis にアタッチする。
+    /// <c>slots</c> / <c>mainStore</c> は Inspector で手動配線しない。Awake で自身の子階層（行オブジェクト×4、
+    /// 各6個の TakoyakiSlotView）と親階層の MainStoreView を自動収集する。Takoyakis への参照だけで
+    /// 全24穴を操作できるようにするための設計（手動での24要素配列アタッチを避ける）。
+    /// </summary>
     public sealed class TakoyakiStandView : MonoBehaviour
     {
-        [SerializeField] private MainStoreView mainStore;
-        [SerializeField] private TakoyakiSlotView[] slots; // 長さ24。行優先・左上原点
-
         /// <summary>いま対応中の客のノルマのうち、入力を終えた語数。</summary>
         public void SetTypedWordCount(int typedWordCount);
     }
@@ -67,7 +69,7 @@ Takoyakis                 ← TakoyakiStandView
 - `Start`：`SetState(Empty)` で全非表示に初期化する
 
 `TakoyakiStandView`
-- `Awake`：`slots.Length == TakoyakiStandState.StandCapacity`(24) を検証し、違えば `Debug.LogError`
+- `Awake`：`transform` の直接の子（行オブジェクト、順不同で数は問わない）を上から順に走査し、各行の子に付いた `TakoyakiSlotView` を左から順に集めて `slots` を構築する。`GetComponentInParent<MainStoreView>()` で `mainStore` を取得する。`slots.Length != TakoyakiStandState.StandCapacity`(24) や `mainStore == null` の場合は `Debug.LogError`
 - `OnEnable`：`mainStore.EvalLevelChanged += OnEvalLevelChanged` を登録し、`mainStore.EvalLevel` で初期化する
 - `OnDisable`：購読を解除する
 - `Update`：**使わない**
@@ -75,7 +77,7 @@ Takoyakis                 ← TakoyakiStandView
 ### 3.3 Inspector 公開値
 
 - `TakoyakiSlotView`：`raw` / `done`
-- `TakoyakiStandView`：`mainStore`（同じ `MainStore` 配下の `MainStoreView`）、`slots`（24個）
+- `TakoyakiStandView`：**なし**。`slots` は `Takoyakis` の子階層から、`mainStore` は親階層から実行時に自動収集するため、Inspector での手動配線は不要（シーン構成が本仕様書 §3.1 の階層と一致していれば `Takoyakis` に本コンポーネントをアタッチするだけでよい）
 
 ## 4. ふるまいの詳細
 
