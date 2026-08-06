@@ -41,8 +41,12 @@ public interface IMatchClientController
     /// <summary>ブートストラップ設定を受けて開始する（Boot → Title）。</summary>
     void Start(BootstrapConfig config);
 
-    /// <summary>プレイ開始操作（Title → Connecting）。</summary>
-    void BeginPlay();
+    /// <summary>
+    /// プレイ開始操作（Title → Connecting）。<paramref name="displayName"/> は接続確立直後の
+    /// MatchmakingJoin にそのまま乗せる（Proto v0.4.0 / REQ-01）。空/未指定ならサーバーが
+    /// フォールバック名を割り当てる。
+    /// </summary>
+    void BeginPlay(string displayName = "");
 
     /// <summary>キュー離脱操作（Matchmaking → Title）。</summary>
     void LeaveMatchmaking();

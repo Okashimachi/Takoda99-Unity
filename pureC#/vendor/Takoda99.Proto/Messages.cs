@@ -90,11 +90,42 @@ public sealed class CustomerView
 }
 
 // MatchStats はリザルトの統計。
+// AttributeTally は客属性ごとの捌き／取りこぼしの内訳（リザルト演出用）。
+public sealed class AttributeTally
+{
+    [JsonPropertyName("served")] public int Served { get; set; }
+    [JsonPropertyName("left")] public int Left { get; set; }
+}
+
+// MatchStats はリザルトの統計。**自店ぶんのみ**（他店の最終状態は StoreListUpdate の
+// 最後のスナップショットに finalRank 込みで入っているので、そちらを保持して使う）。
+//
+// ⚠ 最大コンボは**サーバーからは返せない**。サーバーは打鍵列を受け取らず（OrderServed は
+// 客1人ぶんの elapsedMs / missCount のみ）、連続無ミス数を知る手段が無い。加えて「コンボ」は
+// 企画転換で概念ごと廃止されている。リザルトに出すならクライアント側で自前に数えること。
 public sealed class MatchStats
 {
     [JsonPropertyName("servedCount")] public int ServedCount { get; set; }
     [JsonPropertyName("avgAccuracy")] public double AvgAccuracy { get; set; } // 0..1
     [JsonPropertyName("avgElapsedMs")] public int AvgElapsedMs { get; set; }
+
+    // 我慢切れで帰られた客の数（＝取りこぼし）。
+    [JsonPropertyName("leftCount")] public int LeftCount { get; set; }
+
+    // 打鍵の生の合計。AvgAccuracy は客ごとの精度の平均なので、
+    // 「全体で何打鍵中いくつミスしたか」はこちらでないと出せない。
+    [JsonPropertyName("totalKeystrokes")] public int TotalKeystrokes { get; set; }
+    [JsonPropertyName("totalMisses")] public int TotalMisses { get; set; }
+
+    // 1客を捌くのに要した最短・最長（ms）。提供0なら 0。
+    [JsonPropertyName("fastestMs")] public int FastestMs { get; set; }
+    [JsonPropertyName("slowestMs")] public int SlowestMs { get; set; }
+
+    // 属性別の内訳。
+    [JsonPropertyName("normal")] public AttributeTally Normal { get; set; } = new();
+    [JsonPropertyName("bonus")] public AttributeTally Bonus { get; set; } = new();
+    [JsonPropertyName("claimer")] public AttributeTally Claimer { get; set; } = new();
+    [JsonPropertyName("buzz")] public AttributeTally Buzz { get; set; } = new();
 }
 
 // GameParameters の唯一の on-wire 契約（公開サブセット）。フルスキーマはサーバー内部（AGENTS §4）。
@@ -111,6 +142,13 @@ public sealed class GameParametersPublicSubset
     [JsonPropertyName("finalStageAliveThreshold")] public int FinalStageAliveThreshold { get; set; }
     // 最終盤演出へ切り替える生存店数。
     [JsonPropertyName("finalRushAliveThreshold")] public int FinalRushAliveThreshold { get; set; }
+
+    // Late フェーズでの我慢ゲージの減り方の補正。サーバーは Late の間 dt / PatienceLateMul で
+    // 我慢を減らす（既定 0.6 → 約1.67倍速）。PatienceMaxMs は書き換わらず**減る速度だけ**が変わり、
+    // 行列内の来店済みの客にも即座に効く。この値が無いと Late 突入以降ゲージがズレ続ける。
+    [JsonPropertyName("patienceLateMul")] public double PatienceLateMul { get; set; }
+    // 「もうすぐ帰る」警告表示へ切り替える残り時間（ms）。サーバーは判定に使わない（表示専用）。
+    [JsonPropertyName("patienceAlertMs")] public int PatienceAlertMs { get; set; }
 }
 
 // ── メッセージ封筒 ────────────────────────────────────────
@@ -157,7 +195,16 @@ public sealed class OrderServed
     [JsonPropertyName("clientTimestamp")] public long ClientTimestamp { get; set; }
 }
 
-public sealed class MatchmakingJoin { }
+// MatchmakingJoin はマッチングキュー参加操作時に送る。
+// DisplayName は盤面表示名（任意）。空/未指定ならサーバーがフォールバック名を割り当てる。
+//
+// Go 正典の `omitempty` に厳密対応する指定は C# に無いが、サーバーは空文字とキー欠落を
+// 同じ「名前なし」として扱うため実害は無い。同ファイル内の他の文字列フィールドに揃えて
+// 無条件シリアライズにしている。
+public sealed class MatchmakingJoin
+{
+    [JsonPropertyName("displayName")] public string DisplayName { get; set; } = "";
+}
 
 public sealed class MatchmakingLeave { }
 
@@ -243,15 +290,48 @@ public sealed class MatchEnd
 {
     [JsonPropertyName("finalRank")] public int FinalRank { get; set; }
     [JsonPropertyName("stats")] public MatchStats Stats { get; set; } = new();
+
+    // 自店がどう終わったか。優勝（最後まで残った）なら空文字。
+    [JsonPropertyName("reason")] public string Reason { get; set; } = "";
+
+    // 試合の総経過時間（試合開始からの積算 ms）。自店が途中で脱落していても
+    // **試合が終わるまでの時間**が入る。
+    [JsonPropertyName("matchElapsedMs")] public long MatchElapsedMs { get; set; }
+
+    // 終了時点の残り信用。自滅なら 0。
+    [JsonPropertyName("creditLeft")] public int CreditLeft { get; set; }
+
+    // 最終評価。順位計算には使われない表示用の値。
+    [JsonPropertyName("evalRaw")] public double EvalRaw { get; set; }
+    [JsonPropertyName("evalNormalized")] public double EvalNormalized { get; set; }
 }
 
+// MatchmakingParticipant はマッチング待機中の参加者1人ぶん。
+// 表示名は最大6文字に正規化済み。名前を送らなかった参加者にもサーバーがフォールバック名を
+// 割り当てて配るので、クライアント側で生成・補完しないこと。
+public sealed class MatchmakingParticipant
+{
+    [JsonPropertyName("storeId")] public string StoreId { get; set; } = "";
+    [JsonPropertyName("displayName")] public string DisplayName { get; set; } = "";
+}
+
+// MatchmakingStatus は待機者へ配信する待機状況。
+//
+// ⚠ **宛先ごとに内容が違う**（SelfStoreId が受信者自身を指すため）。
+//
+// Participants の並び順は試合開始後の MatchStart.stores[] の先頭部分と一致する
+// （待機プールの順がそのまま席順になり、定員に足りない分の Bot はその後ろへ付く）。
 // CountdownMs はカウントダウン中のみ（Waiting 中は省略）。
 public sealed class MatchmakingStatus
 {
     [JsonPropertyName("waitingCount")] public int WaitingCount { get; set; }
     [JsonPropertyName("minPlayers")] public int MinPlayers { get; set; }
+    [JsonPropertyName("countdownMs")] public int? CountdownMs { get; set; }
 
-    [JsonPropertyName("countdownMs")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? CountdownMs { get; set; }
+    // 受信者自身の識別子。マッチング画面で自分を強調表示するために配る。
+    // 試合開始後の MatchStart.selfStoreId と同じ値。
+    [JsonPropertyName("selfStoreId")] public string SelfStoreId { get; set; } = "";
+
+    // 待機中の参加者一覧。Bot は含まない（定員補完は試合開始時に行われるため）。
+    [JsonPropertyName("participants")] public List<MatchmakingParticipant> Participants { get; set; } = new();
 }

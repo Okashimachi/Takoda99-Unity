@@ -6,8 +6,27 @@ NuGet/GitHub Packages ではなく**ソース手ミラー**を採用する（[Ta
 
 - 取得元: https://github.com/Okashimachi/Takoda99-Proto
 - ファイル: `csharp/Takoda99.Proto/Messages.cs`
-- 固定バージョン: タグ **`v0.3.0`**（`main` の同ファイルと一致）
-- 取得日: 2026-08-06
+- 固定バージョン: タグ **`v0.5.0`**（`main` の同ファイルと一致）
+- 取得日: 2026-08-07
+
+### v0.4.0 → v0.5.0 の差分（[Proto PR #7](https://github.com/Okashimachi/Takoda99-Proto/pull/7)、Unity REQ-03対応）
+
+| 種別 | 内容 |
+|---|---|
+| 追加 | `MatchmakingParticipant`（`storeId` / `displayName`）を新設 |
+| 追加 | `MatchmakingStatus.selfStoreId`（受信者自身の識別子。マッチング画面で自分を強調表示するために配る） |
+| 追加 | `MatchmakingStatus.participants`（`List<MatchmakingParticipant>`。待機中の参加者一覧、Botは含まない。並び順は`MatchStart.stores[]`の先頭部分と一致） |
+| 変更 | `MatchmakingStatus.countdownMs`から`JsonIgnore(WhenWritingNull)`が外れ、無条件シリアライズに統一（Waiting中は値自体が省略されない点に注意） |
+
+### v0.3.1 → v0.4.0 の差分（[Proto PR #6](https://github.com/Okashimachi/Takoda99-Proto/pull/6)）
+
+| 種別 | 内容 |
+|---|---|
+| 追加 | `AttributeTally`（`served` / `left`）を新設、`MatchStats`に`normal`/`bonus`/`claimer`/`buzz`の属性別内訳を追加 |
+| 追加 | `MatchStats.leftCount` / `totalKeystrokes` / `totalMisses` / `fastestMs` / `slowestMs` |
+| 追加 | `GameParametersPublicSubset.patienceLateMul` / `patienceAlertMs` |
+| 追加 | `MatchmakingJoin.displayName`（盤面表示名、任意） |
+| 追加 | `MatchEnd.reason` / `matchElapsedMs` / `creditLeft` / `evalRaw` / `evalNormalized` |
 
 ### v0.2.0 → v0.3.0 の差分（[Proto PR #4](https://github.com/Okashimachi/Takoda99-Proto/pull/4)）
 

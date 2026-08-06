@@ -3,13 +3,12 @@
 // MatchmakingViewState.Panel に従って切り替える。どのパネルを出すかの判定は値オブジェクト側に
 // あり、この MonoBehaviour は表示の反映だけを行う（value-objects/README.md §1）。
 //
-// ⚠ 未実装（上流待ち。実装するとルール違反になるため意図的に空けてある）
-//   1. 表示名の送信 … Proto の C# ミラーに MatchmakingJoin.displayName が無い
-//      （02-display-name.md §2 / docs/server-sync REQ-01）。名前は保持のみ行う。
-//   2. PaticipantsList（99人の名前一覧）… マッチング中に参加者名を配る契約が存在しない
-//      （MatchmakingStatus は waitingCount / minPlayers / countdownMs のみ）。REQ-03 の回答待ち。
+// 表示名の送信（REQ-01・Proto v0.4.0）と PaticipantsList（REQ-03・Proto v0.5.0）は
+// どちらも上流の契約更新により実装済み。表示名は GameBootstrapper.DecideDisplayName から
+// MatchClientController.BeginPlay へ渡り、接続確立直後の MatchmakingJoin に乗る。
 
 using System;
+using System.Collections.Generic;
 using Takoda99.Client.Net;
 using Takoda99.Client.State;
 using Takoda99.View.ValueObjects;
@@ -34,6 +33,8 @@ namespace Takoda99.View
         [Header("MatchingPanel")]
         [SerializeField] private TextMeshProUGUI timerText;             // Timer/Text (TMP)
         [SerializeField] private TextMeshProUGUI participantsNumText;   // PaticipantsNumPanel/Text (TMP)
+        [SerializeField] private RectTransform participantsContainer;   // PaticipantsList/Paticipants
+        [SerializeField] private PaticipantView participantPrefab;      // Prefabs/MatchMakingCanvas/Paticipant
 
         /// <summary>入力欄の上限。UX のための制限であり、サーバー正規化（24文字）の代替ではない（02-display-name.md §4）。</summary>
         public const int DisplayNameInputLimit = 6;
@@ -43,6 +44,7 @@ namespace Takoda99.View
         private IDispatcher dispatcher;
         private IDisposable subscription;
         private Bootstrap.GameBootstrapper bootstrap;
+        private readonly List<PaticipantView> participantViews = new();
 
         private void OnEnable()
         {
@@ -124,6 +126,13 @@ namespace Takoda99.View
                 || state.Phase == ClientPhase.Result;
             var connected = state.Phase == ClientPhase.Matchmaking || matchStarted;
 
+            var participants = new (string StoreId, string DisplayName)[state.MatchmakingParticipants.Count];
+            for (var i = 0; i < participants.Length; i++)
+            {
+                var p = state.MatchmakingParticipants[i];
+                participants[i] = (p.StoreId, p.DisplayName);
+            }
+
             var view = MatchmakingViewState.From(
                 state.Connection == ConnectionState.Failed,
                 nameDecided,
@@ -132,7 +141,9 @@ namespace Takoda99.View
                 hasReceivedStatus,
                 state.WaitingCount,
                 state.MinPlayers,
-                state.CountdownMs);
+                state.CountdownMs,
+                state.SelfStoreId,
+                participants);
 
             Apply(view);
         }
@@ -155,6 +166,33 @@ namespace Takoda99.View
                 timerText.text = view.CountdownMs.HasValue
                     ? Mathf.CeilToInt(view.CountdownMs.Value / 1000f).ToString()
                     : string.Empty;
+            }
+
+            ApplyParticipants(view.Participants);
+        }
+
+        /// <summary>参加者一覧を表示ぶんだけ生成し、増減に合わせてプレハブを足し引きする。</summary>
+        private void ApplyParticipants(IReadOnlyList<MatchmakingParticipantView> participants)
+        {
+            if (participantsContainer == null || participantPrefab == null)
+            {
+                return;
+            }
+
+            while (participantViews.Count < participants.Count)
+            {
+                var instance = Instantiate(participantPrefab, participantsContainer);
+                participantViews.Add(instance);
+            }
+
+            for (var i = 0; i < participantViews.Count; i++)
+            {
+                var active = i < participants.Count;
+                participantViews[i].gameObject.SetActive(active);
+                if (active)
+                {
+                    participantViews[i].Apply(participants[i].DisplayName, participants[i].IsSelf);
+                }
             }
         }
 

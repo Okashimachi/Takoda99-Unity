@@ -5,8 +5,27 @@
 // pureC# 側の型（ConnectionState / ClientPhase 等）を Unity から参照する方法が未確定のため、
 // 入力は素の値で受ける（pureC#/README.md §3、StoreVisualState.cs と同様の方針）。
 
+using System.Collections.Generic;
+
 namespace Takoda99.View.ValueObjects
 {
+    /// <summary>参加者一覧の1件ぶんの表示用の値。<c>IsSelf</c> は自店強調表示に使う。</summary>
+    public readonly struct MatchmakingParticipantView
+    {
+        public string StoreId { get; }
+
+        public string DisplayName { get; }
+
+        public bool IsSelf { get; }
+
+        public MatchmakingParticipantView(string storeId, string displayName, bool isSelf)
+        {
+            StoreId = storeId;
+            DisplayName = displayName;
+            IsSelf = isSelf;
+        }
+    }
+
     public enum MatchmakingScreenState
     {
         NameEntry,    // 表示名の入力中。★まだ接続していない（02-display-name.md §5）
@@ -42,12 +61,26 @@ namespace Takoda99.View.ValueObjects
         /// <summary>カウントダウン中のみ値を持つ。null は「カウントダウンしていない」（§3 の注記）。</summary>
         public int? CountdownMs { get; }
 
+        /// <summary>待機中の参加者一覧。Bot は含まない。MatchmakingStatus.participants から作る（v0.5.0 / REQ-03）。</summary>
+        public IReadOnlyList<MatchmakingParticipantView> Participants { get; }
+
         public MatchmakingViewState(MatchmakingScreenState State, int WaitingCount, int MinPlayers, int? CountdownMs)
+            : this(State, WaitingCount, MinPlayers, CountdownMs, System.Array.Empty<MatchmakingParticipantView>())
+        {
+        }
+
+        public MatchmakingViewState(
+            MatchmakingScreenState State,
+            int WaitingCount,
+            int MinPlayers,
+            int? CountdownMs,
+            IReadOnlyList<MatchmakingParticipantView> Participants)
         {
             this.State = State;
             this.WaitingCount = WaitingCount;
             this.MinPlayers = MinPlayers;
             this.CountdownMs = CountdownMs;
+            this.Participants = Participants;
         }
 
         /// <summary>
@@ -101,6 +134,12 @@ namespace Takoda99.View.ValueObjects
         /// <param name="countdownMs">
         /// 直近の <c>MatchmakingStatus.countdownMs</c>。キーごと欠落している間は null（§3・§5.2）。
         /// </param>
+        /// <param name="selfStoreId">
+        /// 直近の <c>MatchmakingStatus.selfStoreId</c>。参加者一覧の中で自店を強調表示するための識別子。
+        /// </param>
+        /// <param name="participants">
+        /// 直近の <c>MatchmakingStatus.participants</c>（storeId, displayName）。Bot は含まない。
+        /// </param>
         public static MatchmakingViewState From(
             bool connectionFailed,
             bool nameDecided,
@@ -109,7 +148,9 @@ namespace Takoda99.View.ValueObjects
             bool hasReceivedStatus,
             int waitingCount,
             int minPlayers,
-            int? countdownMs)
+            int? countdownMs,
+            string selfStoreId = null,
+            IReadOnlyList<(string StoreId, string DisplayName)> participants = null)
         {
             if (matchStarted)
             {
@@ -139,7 +180,26 @@ namespace Takoda99.View.ValueObjects
             }
 
             var state = countdownMs.HasValue ? MatchmakingScreenState.CountingDown : MatchmakingScreenState.Waiting;
-            return new MatchmakingViewState(state, waitingCount, minPlayers, countdownMs);
+            return new MatchmakingViewState(state, waitingCount, minPlayers, countdownMs, ToParticipantViews(participants, selfStoreId));
+        }
+
+        private static IReadOnlyList<MatchmakingParticipantView> ToParticipantViews(
+            IReadOnlyList<(string StoreId, string DisplayName)> participants,
+            string selfStoreId)
+        {
+            if (participants == null || participants.Count == 0)
+            {
+                return System.Array.Empty<MatchmakingParticipantView>();
+            }
+
+            var result = new MatchmakingParticipantView[participants.Count];
+            for (var i = 0; i < participants.Count; i++)
+            {
+                var p = participants[i];
+                result[i] = new MatchmakingParticipantView(p.StoreId, p.DisplayName, p.StoreId == selfStoreId);
+            }
+
+            return result;
         }
     }
 }

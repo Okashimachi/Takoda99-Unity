@@ -62,6 +62,18 @@ public class MatchClientControllerTests
     }
 
     [Fact]
+    public void BeginPlayに渡した表示名がMatchmakingJoinに乗る()
+    {
+        _controller.Start(new BootstrapConfig { WebSocketUrl = "wss://example" });
+        _controller.BeginPlay("たこ焼き");
+        _networkClient.SetState(ConnectionState.Connected);
+
+        var sent = Assert.Single(_networkClient.Sent, s => s.Type == MessageType.MatchmakingJoin);
+        var payload = Assert.IsType<MatchmakingJoin>(sent.Payload);
+        Assert.Equal("たこ焼き", payload.DisplayName);
+    }
+
+    [Fact]
     public void MatchStart受信でInMatchへ()
     {
         GoToInMatch();
@@ -90,7 +102,7 @@ public class MatchClientControllerTests
     public void MatchEndでResultへ_InMatchから()
     {
         GoToInMatch();
-        _dispatcher.HandleRaw("""{"type":"MatchEnd","payload":{"finalRank":1,"stats":{"servedCount":10,"avgAccuracy":0.9,"avgElapsedMs":1000}}}""");
+        _dispatcher.HandleRaw("""{"type":"MatchEnd","payload":{"finalRank":1,"reason":"","stats":{"servedCount":10,"avgAccuracy":0.9,"avgElapsedMs":1000,"normal":{},"bonus":{},"claimer":{},"buzz":{}}}}""");
 
         Assert.Equal(ClientPhase.Result, _controller.Phase);
     }
@@ -100,7 +112,7 @@ public class MatchClientControllerTests
     {
         GoToInMatch();
         _dispatcher.HandleRaw("""{"type":"StoreEliminated","payload":{"storeId":"s1","reason":"SelfCollapse","finalRank":50}}""");
-        _dispatcher.HandleRaw("""{"type":"MatchEnd","payload":{"finalRank":50,"stats":{"servedCount":1,"avgAccuracy":0.5,"avgElapsedMs":1000}}}""");
+        _dispatcher.HandleRaw("""{"type":"MatchEnd","payload":{"finalRank":50,"reason":"SelfCollapse","stats":{"servedCount":1,"avgAccuracy":0.5,"avgElapsedMs":1000,"normal":{},"bonus":{},"claimer":{},"buzz":{}}}}""");
 
         Assert.Equal(ClientPhase.Result, _controller.Phase);
     }
@@ -174,7 +186,7 @@ public class MatchClientControllerTests
     public void Rematchで接続が張り直される()
     {
         GoToInMatch();
-        _dispatcher.HandleRaw("""{"type":"MatchEnd","payload":{"finalRank":1,"stats":{"servedCount":1,"avgAccuracy":1,"avgElapsedMs":100}}}""");
+        _dispatcher.HandleRaw("""{"type":"MatchEnd","payload":{"finalRank":1,"reason":"","stats":{"servedCount":1,"avgAccuracy":1,"avgElapsedMs":100}}}""");
 
         _controller.Rematch();
 

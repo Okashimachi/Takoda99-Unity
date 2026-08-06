@@ -19,6 +19,7 @@ public sealed class MatchClientController : IMatchClientController
 
     private readonly IDisposable _storeSubscription;
     private BootstrapConfig _config = new();
+    private string _displayName = "";
     private string? _servingCustomerId;
     private ClientPhase _lastNotifiedPhase = ClientPhase.Boot;
 
@@ -54,8 +55,9 @@ public sealed class MatchClientController : IMatchClientController
         _store.Apply(new LocalLifecycleChangedAction(ClientPhase.Title));
     }
 
-    public void BeginPlay()
+    public void BeginPlay(string displayName = "")
     {
+        _displayName = displayName ?? "";
         _store.Apply(new LocalLifecycleChangedAction(ClientPhase.Connecting));
         _networkClient.Connect(_config.WebSocketUrl);
     }
@@ -98,12 +100,12 @@ public sealed class MatchClientController : IMatchClientController
             if (Phase == ClientPhase.Connecting)
             {
                 _store.Apply(new LocalLifecycleChangedAction(ClientPhase.Matchmaking));
-                _sendQueue.Enqueue(MessageType.MatchmakingJoin, new MatchmakingJoin());
+                _sendQueue.Enqueue(MessageType.MatchmakingJoin, new MatchmakingJoin { DisplayName = _displayName });
             }
             else if (Phase == ClientPhase.Matchmaking)
             {
                 // 再接続成功：待機プールから外れているため MatchmakingJoin を再送する（05-dispatcher.md §3.4）。
-                _sendQueue.Enqueue(MessageType.MatchmakingJoin, new MatchmakingJoin());
+                _sendQueue.Enqueue(MessageType.MatchmakingJoin, new MatchmakingJoin { DisplayName = _displayName });
             }
 
             _sendQueue.Flush();

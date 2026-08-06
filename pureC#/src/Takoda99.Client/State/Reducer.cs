@@ -22,7 +22,7 @@ public static class Reducer
             ForcedEliminationWarningAction a => state.With(storm: new StormWarning { UntilTick = a.UntilTick, ThresholdPct = a.ThresholdPct }),
             StoreEliminatedAction a => ApplyStoreEliminated(state, a),
             MatchEndAction a => state.With(result: new MatchResult { FinalRank = a.FinalRank, Stats = a.Stats }, phase: ClientPhase.Result),
-            MatchmakingStatusAction a => state.With(waitingCount: a.WaitingCount, minPlayers: a.MinPlayers, countdownMs: a.CountdownMs, clearCountdownMs: a.CountdownMs is null),
+            MatchmakingStatusAction a => state.With(waitingCount: a.WaitingCount, minPlayers: a.MinPlayers, countdownMs: a.CountdownMs, clearCountdownMs: a.CountdownMs is null, selfStoreId: a.SelfStoreId, matchmakingParticipants: a.Participants),
 
             LocalOrderBeganAction a => state.With(currentOrder: new CurrentOrder { CustomerId = a.CustomerId, OrderCount = a.OrderCount }),
             LocalKeyJudgedAction a => ApplyLocalKeyJudged(state, a),

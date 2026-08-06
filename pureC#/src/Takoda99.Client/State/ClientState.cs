@@ -60,6 +60,7 @@ public sealed class ClientState
     public int WaitingCount { get; init; }
     public int MinPlayers { get; init; }
     public int? CountdownMs { get; init; }
+    public IReadOnlyList<MatchmakingParticipant> MatchmakingParticipants { get; init; } = System.Array.Empty<MatchmakingParticipant>();
 
     // 試合の同定・公開パラメータ
     public string MatchId { get; init; } = "";
@@ -98,6 +99,7 @@ public sealed class ClientState
         int? minPlayers = null,
         int? countdownMs = null,
         bool clearCountdownMs = false,
+        IReadOnlyList<MatchmakingParticipant>? matchmakingParticipants = null,
         string? matchId = null,
         string? selfStoreId = null,
         GameParametersPublicSubset? gameParams = null,
@@ -126,6 +128,7 @@ public sealed class ClientState
             WaitingCount = waitingCount ?? WaitingCount,
             MinPlayers = minPlayers ?? MinPlayers,
             CountdownMs = clearCountdownMs ? null : (countdownMs ?? CountdownMs),
+            MatchmakingParticipants = matchmakingParticipants ?? MatchmakingParticipants,
             MatchId = matchId ?? MatchId,
             SelfStoreId = selfStoreId ?? SelfStoreId,
             Params = gameParams ?? Params,

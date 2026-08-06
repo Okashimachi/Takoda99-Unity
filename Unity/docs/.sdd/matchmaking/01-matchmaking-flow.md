@@ -122,8 +122,8 @@ MatchMakingCanvas               ← MatchmakingScreenView
 ├── WaitingPanel                ← Connecting / Joining
 └── MatchingPanel               ← Waiting / CountingDown
     ├── PaticipantsNumPanel     （待機人数）
-    ├── PaticipantsList         ← ⚠ 未実装（§9.1）
-    │   └── Paticipants         （Paticipant Prefab の親）
+    ├── PaticipantsList         （§9.1・Proto v0.5.0で実装可能）
+    │   └── Paticipants         （Paticipant Prefab の親。参加人数ぶん生成し自店を強調表示）
     └── Timer                   （countdownMs）
 ```
 
@@ -181,18 +181,18 @@ Boot（生成のみ・接続しない）
 - 依存するUnity側モジュール：`WebGLNetworkClient`（[01-network-client.md](../platform/01-network-client.md)）、`GameBootstrapper`（[02-scene-composition.md](../foundation/02-scene-composition.md)）
 - 依存されるモジュール：試合画面（`MatchStart` を受け取る側）
 
-### 9.1 ⚠ `PaticipantsList` は実装しない（上流待ち）
+### 9.1 `PaticipantsList`（Proto v0.5.0 / REQ-03 対応済み）
 
-**マッチング中に参加者の一覧・表示名を配る契約が存在しない**（[SV-17](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-17) / 依頼は [REQ-03](../../../../docs/server-sync/04-上流への依頼.md#req-03)）。
+**マッチング中に参加者の一覧・表示名を配る契約が Proto v0.5.0 で追加された**（[REQ-03](../../../../docs/server-sync/04-上流への依頼.md#req-03)。`MatchmakingStatus.participants` / `selfStoreId`）。
 
-| 画面要素 | 現契約で実装できるか |
+| 画面要素 | 実装状況 |
 |---|---|
 | `PaticipantsNumPanel`（待機人数） | ✅ `MatchmakingStatus.waitingCount` |
 | `Timer`（締切） | ✅ `MatchmakingStatus.countdownMs` |
-| `PaticipantsList`（99人の名前一覧） | ❌ **不可**。名前も識別子も届かない |
-| 自分だけ赤で強調 | ❌ **不可**。`selfStoreId` は `MatchStart` まで届かない |
+| `PaticipantsList`（待機中の参加者名一覧） | ✅ `MatchmakingStatus.participants`。Bot は含まない（定員補完は `MatchStart` 時） |
+| 自分だけ赤で強調 | ✅ `MatchmakingStatus.selfStoreId` と `participants[].storeId` を突き合わせて判定 |
 
-**空欄の99枠を先に描くこともしない。** 実データと乖離した見た目を作ることになり、「他店の表示名をクライアントで生成・補完しない」（[02-display-name.md](./02-display-name.md) §1）に反する。REQ-03 の回答を待って実装する。
+**参加者一覧は受信ぶんだけ `Paticipants` の下に `Paticipant` プレハブを生成する。** 空欄の枠を先に描かない（実データと乖離した見た目を作らないため。「他店の表示名をクライアントで生成・補完しない」[02-display-name.md](./02-display-name.md) §1 に整合）。`MatchmakingScreenView.ApplyParticipants` が人数の増減に合わせてプレハブを足し引きする。
 
 ## 10. テスト観点
 
@@ -207,5 +207,4 @@ Boot（生成のみ・接続しない）
 - ~~`Rejected` のときにどのパネルを出すか~~ → **決定（2026-08-06）**：`WaitingPanel` に接続失敗の文言。503 専用UIは作らない（§8.2）
 - ~~`Rejected`（503）時の再接続ポリシー~~ → **決定（2026-08-06）**：自動リトライを持たない（§8.2）
 - 試合中に接続が切れた場合の扱い（[SV-08](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-08)）。**サーバー側の再同期手段が無いため未解決**
-- **`PaticipantsList` の実装可否（§9.1）。** [REQ-03](../../../../docs/server-sync/04-上流への依頼.md#req-03) の回答待ち
 - 待機画面の見た目（人数の出し方・カウントダウンの演出）
