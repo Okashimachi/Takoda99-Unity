@@ -205,6 +205,9 @@ namespace Takoda99.Bootstrap
         /// <summary>キュー離脱（MatchmakingLeave 送信 → Title へ）。</summary>
         public void LeaveMatchmaking() => controller.LeaveMatchmaking();
 
+        /// <summary>Result の Title ボタンから呼ぶ（Result → Title）。</summary>
+        public void BackToTitle() => controller.BackToTitle();
+
         // ── Renderer の自己登録 ───────────────────────────────────────
 
         /// <summary>試合画面の <see cref="View.Renderer"/> が自分自身を登録する（01-renderer.md）。</summary>
