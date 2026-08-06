@@ -23,10 +23,12 @@ public readonly record struct CustomerMoodState(
 入力：`CustomerState.PatienceMaxMs` と、`PatienceTimer` が算出する表示用の残量推定 `patienceLeftMsDisplay`（[03-patience-timer.md](../03-patience-timer.md) 参照）
 
 ```
-patienceLeftMsDisplay = PatienceMaxMs - (MatchState.ElapsedMs - CustomerState.ArrivedAtElapsedMs)
+patienceLeftMsDisplay = PatienceMaxMs - (nowServerMsEstimated - CustomerState.PatienceStartedAtServerMs)
 ```
 
-**この値はサーバーから配信されない。** 我慢ゲージの残量を運ぶメッセージは契約に存在せず（[SV-03](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-03)）、上式はクライアントのローカル推定にすぎない。終盤短縮が適用された場合はサーバー実態とズレるため、**この値で離脱を確定させてはならない**（離脱の確定は `CustomerLeft` 受信のみ）。
+**この値はサーバーから配信されない。** 我慢ゲージの**残量**を運ぶメッセージは契約に存在せず（[SV-03](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-03)）、上式はクライアントのローカル推定にすぎない。終盤短縮が適用された場合はサーバー実態とズレるため、**この値で離脱を確定させてはならない**（離脱の確定は `CustomerLeft` 受信のみ）。
+
+> **起点は Proto v0.3.0 で `CustomerView.patienceStartedAtServerMs`（サーバー基準の単調時刻）に変わった。** 受信時刻を起点にしていた頃と違い、**受信遅延ぶんの初期ズレが出ない**。`nowServerMsEstimated` はクライアントが推定するサーバー時刻で、サーバー時刻の同期手段は契約に無いため当面はオフセット推定で代用する（[SV-03](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-03) の未回答項目4）。
 
 ```
 ratio = patienceLeftMsDisplay / PatienceMaxMs  // 0..1
