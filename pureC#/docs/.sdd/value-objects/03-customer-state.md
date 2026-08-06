@@ -5,7 +5,7 @@
 ## 1. 責務
 
 - 自店の行列に存在する客1体ぶんの、サーバーから受信した事実を保持する
-- **しない**こと：我慢ゲージの残量を保持しない（§4参照。残量はサーバーから配信されず、Unity側 `PatienceTimer` が表示専用に算出する）
+- **しない**こと：我慢ゲージの残量を保持しない（§4参照。残量はサーバーから配信されず、Unity側 `PatienceTimer` が起点 `PatienceStartedAtServerMs` から表示専用に算出する）
 - **しない**こと：いらだち3段階＋退転の**ムード表示状態**を持たない（Unity側 `value-objects/02-customer-mood-state.md` の責務）
 
 ## 2. 前提：客のメッセージは自店専用
@@ -23,25 +23,33 @@ public readonly record struct CustomerState(
     int PatienceMaxMs,          // CustomerView.patienceMaxMs
     int OrderCount,             // = 打つ単語数
     IReadOnlyList<string> Words, // お題単語。サーバー発行
-    long ArrivedAtElapsedMs     // 来店時点の MatchState.ElapsedMs。我慢ゲージ表示の起点
+    long PatienceStartedAtServerMs, // CustomerView.patienceStartedAtServerMs（Proto v0.3.0）。我慢ゲージ表示の起点
+    long ArrivedAtElapsedMs     // 受信時点の MatchState.ElapsedMs。サーバー時刻の対応づけに使う
 );
 ```
 
-`ArrivedAtElapsedMs` は Proto に無いクライアント側の追加フィールド。我慢ゲージの表示にはカウントダウンの起点が必要だが、**サーバーは残量も来店時刻も送らない**ため、受信時点のローカル経過時間を自前で記録する。
+`PatienceStartedAtServerMs` は **Proto v0.3.0 で追加された、行列に入った時点の「試合開始からの経過ms」**（サーバー実装 `internal/game/session.go` の `c.patienceStartedAtMs = s.elapsedMs`）。我慢ゲージがこれを起点に描かれることで、**受信遅延ぶんのズレが表示に出なくなった**。
+
+> **時刻同期は不要。** これは絶対時刻ではなく `MatchState.ElapsedMs` と同じ土俵の値（試合開始 = 0）であり、`MatchStart` 受信を 0 として自前で進めた時計とそのまま突き合わせられる（[client-integration §3.3](https://github.com/Okashimachi/Takoda99-Server/blob/main/docs/client-integration.md)）。
+
+`ArrivedAtElapsedMs` は Proto に無いクライアント側の追加フィールドで、受信時点のローカル経過時間。**サーバーの経過時刻とローカル時計のドリフト検知**にのみ使う（表示の起点には使わない）。
 
 ## 4. 我慢ゲージ残量を保持しない理由
 
-**現契約に我慢ゲージの残量（`patienceLeftMs`）を運ぶメッセージは存在しない。** `CustomerView` が持つのは `patienceMaxMs` のみで、周期的な同期メッセージも無い。クライアントが知り得るのは以下だけ。
+**現契約に我慢ゲージの残量（`patienceLeftMs`）を運ぶメッセージは存在しない。** `CustomerView`（v0.3.0）が持つのは `patienceMaxMs` と `patienceStartedAtServerMs` で、残量の周期的な同期メッセージは無い。クライアントが知り得るのは以下だけ。
 
 - 来店時の最大値 `patienceMaxMs`
+- カウントダウンの起点 `patienceStartedAtServerMs`（**v0.3.0 で追加**）
 - 離脱した事実（`CustomerLeft`。`reason` は `LeaveReason.Timeout`）
 
-したがって残量は「`PatienceMaxMs - (現在のElapsedMs - ArrivedAtElapsedMs)`」という**クライアントの推定値**にしかならず、サーバー権威の値として `CustomerState` に持たせるのは誤り。表示用の推定値は Unity側 `PatienceTimer` が算出する。
+したがって残量は「`PatienceMaxMs - (現在のサーバー推定時刻 - PatienceStartedAtServerMs)`」という**クライアントの推定値**にしかならず、サーバー権威の値として `CustomerState` に持たせるのは誤り。表示用の推定値は Unity側 `PatienceTimer` が算出する。
 
 **既知の乖離リスク**（[SV-03](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-03) として調整中）:
 
-- 終盤短縮係数 `patienceLateMul`（用語集8章）が適用されると、サーバー側の残り時間は縮むが**クライアントは検知できない**
-- ネットワーク遅延・WebGLでのタブ非アクティブによりローカル計測が遅れる
+- **★`Late` フェーズでゲージの減る速度が変わる。** サーバーは `stepPatience` で `effectiveDt = dtMs / Patience.LateMul` として**行列内の全客**の残量を削る。**`patienceMaxMs` は書き換わらず、減る速度だけが変わる**ため、線形にカウントダウンするクライアントは Late 突入以降ズレ続ける。しかも**来店済みの客にも即座に適用される**（Mid に来た客が待っている最中に Late へ移行したら、その瞬間から加速する）
+- **`LateMul` は `GameParametersPublicSubset` に含まれない。** クライアントは倍率を知る手段が無く、**現契約では Late 以降の我慢ゲージを正しく描けない**
+- WebGLでのタブ非アクティブによりローカル計測が遅れる。ただし起点が試合経過時刻のため、**復帰時に正しい残量へ復元できる**（受信時刻起点だった頃より影響は小さい）
+- ~~ネットワーク遅延ぶんの初期ズレ~~ → **v0.3.0 で解消**（起点がサーバー基準になったため）
 
 ## 5. 加工プロセス
 

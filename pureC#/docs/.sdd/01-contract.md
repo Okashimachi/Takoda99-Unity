@@ -42,6 +42,40 @@ public interface IEnvelopeCodec
 - `Envelope` 型そのものは `Takoda99.Proto.Envelope` を使う（再定義しない）。
 - 戻り値を `null` にして例外を投げないのは、ディスパッチ層が「破棄＋ログで継続」できるようにするため。
 
+## 2.1 ⚠ 既知のミラー追従漏れ：`MatchmakingJoin.DisplayName`
+
+**`MatchmakingJoin` は Go 正典に `displayName` を持つが、参照している C# ミラーには存在しない（Proto v0.3.0 時点）。**
+
+| 言語 | v0.3.0 時点 | |
+|---|---|---|
+| Go（正典）`proto/messages.go` | `DisplayName string \`json:"displayName,omitempty"\`` | ✅ **これが正しい** |
+| C# `csharp/Takoda99.Proto/Messages.cs` | `public sealed class MatchmakingJoin { }` | ❌ フィールド無し |
+
+Proto のコミット `d567a98`（2026-08-04）が Go のみを変更し、後続の v0.3.0 で C# に反映されなかったことによる。
+
+**サーバーは `displayName` を読む実装になっている**（`cmd/server/main.go` の `awaitJoinName`）ため、**C# の型どおりに `{}` を送ると全プレイヤーの表示名が空になり、フォールバック名が割り当たる。**
+
+### この仕様書での扱い
+
+**`Contract` はこの欠落を埋めない。**
+
+- **`pureC#/vendor/Takoda99.Proto/Messages.cs` を編集しない。** ミラーは正典の複製であり、こちら側で内容を変えない（[docs/rules/01](../../../docs/rules/01-責務と絶対原則.md) 絶対原則7 / [vendor/VERSION.md](../../vendor/Takoda99.Proto/VERSION.md)）
+- **`IEnvelopeCodec` の送信側で `displayName` を注入する回避策も採らない。** 契約に無いフィールドを**このリポジトリの実装で足す**ことになり、§1「DTO・メッセージ型をここで定義しない」に正面から反する
+- **上流の修正を待つ。** 依頼文は [docs/server-sync/04-上流への依頼.md](../../../docs/server-sync/04-上流への依頼.md#req-01)（REQ-01・C# ミラーのみを対象）に用意済み
+
+**手で直さない理由**（[SV-16](../../../docs/server-sync/01-プロトコル契約の差分.md#sv-16) / [D-10](../../../docs/server-sync/03-決定ログ.md#d-10--残存-sv-項目の解決sv-08--09--12--14--16)）：
+
+1. **ミラーの価値は上流とバイト一致していることにある。** v0.3.0 追従時、`diff vendor/Messages.cs upstream` の一致で正しさを担保した。一度手で書き換えると、以後「こちらの修正」と「上流のドリフト」を区別できなくなる
+2. **上流が別の形で直す可能性がある。** `omitempty` に対応するのが既定値省略か `JsonIgnoreCondition.WhenWritingNull` かを先に決め打ちすると**黙って食い違う**。この食い違いは**型エラーにならず、実行時に表示名が消えるだけ**なので気付けない
+
+### 影響範囲
+
+**`MatchmakingJoin` を送る機能（＝マッチング画面）はこれが解決するまで実装しない。** 使う側の仕様は [Unity/docs/.sdd/matchmaking/02-display-name.md](../../../Unity/docs/.sdd/matchmaking/02-display-name.md) に用意済みで、ミラーが直り次第着手できる。
+
+**他のメッセージには影響しない。** `Contract` の他の部分（`Envelope` コーデック・受信側の全 DTO）は正常に使える。
+
+> **上流修正後にやること**：[vendor/VERSION.md](../../vendor/Takoda99.Proto/VERSION.md) の手順でミラーを差し替え、`diff` で上流一致を確認し、本節を削除する。
+
 ## 3. ふるまいの詳細
 
 ### 3.1 デシリアライズ（受信）
@@ -89,3 +123,4 @@ public interface IEnvelopeCodec
 
 - **JSON シリアライザの選定（要判断）。** Proto の `Messages.cs` は `System.Text.Json` 前提（`Envelope.Payload` が `JsonElement`）だが、Unity では `com.unity.nuget.newtonsoft-json` が事実上の標準で、WebGL/IL2CPP でのリフレクション制約もある。`IEnvelopeCodec` の裏に隠す設計にしてあるので後から差し替えられるが、**`Envelope.Payload` の型が `JsonElement` に固定されている点は Proto 側の変更が要る可能性がある**（変更する場合は Proto の人間承認フロー）。
 - Proto の C# 配布方法（NuGet / GitHub Packages / ソース手ミラー）が未確定。決まり次第 [pureC#/README.md](../../README.md) §3 に追記する。
+- **`MatchmakingJoin.DisplayName` のミラー追従漏れ（§2.1）。** 上流 Proto の修正待ち（[REQ-01](../../../docs/server-sync/04-上流への依頼.md#req-01)）。解決したら §2.1 を削除する。

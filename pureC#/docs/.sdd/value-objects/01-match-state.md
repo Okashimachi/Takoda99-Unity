@@ -4,8 +4,10 @@
 
 ## 1. 責務
 
-- 試合全体の進行状況（フェーズ・生存数・火力・制限時間）を1つの値として保持する
+- 試合全体の進行状況（フェーズ・生存数・火力・表示用閾値）を1つの値として保持する
 - **しない**こと：フェーズ移行の判定ロジック自体（生存数・経過時間の閾値判定）は持たない。判定は常にサーバー権威で、`MatchState` は配信された結果を保持するだけ
+
+> **Proto v0.3.0 で試合の制限時間は廃止された。** 終了条件は「生存店 = 1」のみになり、`GameParametersPublicSubset.matchTimeLimitMs` が削除された（[Takoda99-Docs 01_全体仕様 §8.3](https://github.com/Okashimachi/Takoda99-Docs)）。残り時間の表示は成立しない。
 
 ## 2. データ定義
 
@@ -17,7 +19,9 @@ public readonly record struct MatchState(
     Phase Phase,
     int AliveCount,
     int MaxStores,
-    int MatchTimeLimitMs,
+    double StormThresholdPct,        // 淘汰圏の帯（順位バーの常時表示に使う）
+    int FinalStageAliveThreshold,    // 終盤演出へ切り替える生存店数
+    int FinalRushAliveThreshold,     // 最終盤演出へ切り替える生存店数
     int HeatLevel,
     long StartedAtLocalMs, // MatchStart を受信したクライアントローカル時刻
     long ElapsedMs         // クライアントのローカル計測値。サーバー由来ではない（§3・§5参照）
@@ -28,7 +32,7 @@ public readonly record struct MatchState(
 
 | 入力イベント | 更新内容 |
 |---|---|
-| `MatchStart` | `MatchId` / `Phase` を受信値で設定。`MaxStores` = `params.maxStores`、`MatchTimeLimitMs` = `params.matchTimeLimitMs`。`AliveCount` は `stores` のうち `alive == true` の件数を数えて設定する。`StartedAtLocalMs` に受信時刻を記録し `ElapsedMs = 0` |
+| `MatchStart` | `MatchId` / `Phase` を受信値で設定。`MaxStores` / `StormThresholdPct` / `FinalStageAliveThreshold` / `FinalRushAliveThreshold` は `params` の同名フィールドをそのまま保持する。`AliveCount` は `stores` のうち `alive == true` の件数を数えて設定する。`StartedAtLocalMs` に受信時刻を記録し `ElapsedMs = 0` |
 | `PhaseChange` | `Phase` を受信値で置換 |
 | `DifficultyUpdate` | `HeatLevel` を受信値で置換 |
 | `EvaluationUpdate` | `aliveCount` を含むため `AliveCount` を置換（このメッセージは自店専用だが `aliveCount` は試合全体の値） |
@@ -37,7 +41,7 @@ public readonly record struct MatchState(
 
 ### `HeatLevel` の初期値について
 
-`GameParametersPublicSubset` は `matchTimeLimitMs` / `initialLife` / `maxStores` の**3項目のみ**であり、**火力の初期値は配信されない**。`MatchStart` にも `heatLevel` は含まれない。
+`GameParametersPublicSubset`（v0.3.0）は `initialLife` / `maxStores` / `stormThresholdPct` / `finalStageAliveThreshold` / `finalRushAliveThreshold` の**5項目**であり、**火力の初期値は配信されない**。`MatchStart` にも `heatLevel` は含まれない。
 
 したがって `HeatLevel` は **最初の `DifficultyUpdate` を受信するまで 0** とする。火力を表示や演出に使う場合は、未受信状態（0）を「不明」として扱えるようにしておくこと。
 
@@ -46,7 +50,8 @@ public readonly record struct MatchState(
 **現契約に試合経過時間を運ぶメッセージは存在しない。** `MatchStart` にも `elapsedMs` は含まれない。そのため経過時間は `MatchStart` の受信時刻を起点としたクライアントのローカル計測でしかない。
 
 - サーバー確定値による補正の経路が無いため、**ズレても検知・補正できない**
-- タイマー表示は `MatchTimeLimitMs - ElapsedMs` で算出する
+- v0.3.0 で制限時間が廃止されたため、**残り時間（カウントダウン）は算出できない**。表示に使う場合は経過時間のカウントアップに限る
+- ズレても勝敗に影響しない用途（演出・ログ）に留めること
 - この制約は [docs/server-sync SV-07](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-07) として調整中
 
 ## 4. 不変条件
@@ -66,6 +71,7 @@ public readonly record struct MatchState(
 - `MatchStart` の `phase` が `Early` 以外だった場合でも、その値がそのまま反映されるか（途中参加を想定しない場合でも決め打ちしない）
 - `DifficultyUpdate` 未受信の間 `HeatLevel` が 0 のままか
 - `EvaluationUpdate` と `StoreListUpdate` の双方から `AliveCount` が更新されること、および両者の値が食い違った場合に後着が勝つこと
+- `params` の表示用閾値3項目が改変されずそのまま保持されること
 
 ## 7. 未確定事項
 
