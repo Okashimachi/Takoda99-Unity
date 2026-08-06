@@ -7,32 +7,37 @@
 - 接続確立から `MatchStart` 受信までの**画面と通信の進行**を持つ
 - 待機人数・カウントダウンの表示用状態を提供する
 - **しない**こと：マッチングの成立判定（サーバー権威。`MatchStart` が来たことが唯一の真実）
-- **しない**こと：試合中の描画（[08-main-store-view.md](../08-main-store-view.md) 以降の責務）。`MatchStart` を受け取ったら状態を引き渡して退場する
-- **しない**こと：`WebSocket` の接続処理そのもの（`WebGLNetworkClient` / [01-network-client.md](../01-network-client.md) の責務）
+- **しない**こと：試合中の描画（[02-main-store-view.md](../match-view/02-main-store-view.md) 以降の責務）。`MatchStart` を受け取ったら状態を引き渡して退場する
+- **しない**こと：`WebSocket` の接続処理そのもの（`WebGLNetworkClient` / [01-network-client.md](../platform/01-network-client.md) の責務）
 
 ## 2. 画面の状態
 
 ```csharp
 public enum MatchmakingScreenState
 {
-    Connecting,   // WebSocket 接続中。まだ何も送っていない
+    NameEntry,    // 表示名の入力中。★まだ接続していない（02-display-name.md §5）
+    Connecting,   // 名前確定後。WebSocket 接続中
     Joining,      // MatchmakingJoin 送信済み。MatchmakingStatus をまだ受けていない
     Waiting,      // 待機中。waitingCount / minPlayers を表示
     CountingDown, // カウントダウン中。countdownMs を表示
-    Starting,     // MatchStart 受信。試合画面へ遷移中
+    Starting,     // MatchStart 受信。試合シーンへ遷移中
     Rejected,     // 接続を拒否された（同時接続上限など）
 }
 ```
 
+> **`NameEntry` は「接続していない」ことを表すために要る。** 接続してから名前を入力させると、サーバーの3秒の待ち受け（§4.1）を超えて表示名が失われる。この状態を持たずに「接続中」から始めると、その順序違反をコンパイル時にも実行時にも検知できない。
+
 ## 3. 公開インターフェース
 
 ```csharp
-public readonly record struct MatchmakingViewState(
-    MatchmakingScreenState State,
-    int WaitingCount,
-    int MinPlayers,
-    int? CountdownMs   // カウントダウン中のみ。null は「カウントダウンしていない」
-);
+public readonly struct MatchmakingViewState  // Unity は C# 9 までのため record struct は使えない
+{
+    MatchmakingScreenState State { get; }
+    int WaitingCount { get; }
+    int MinPlayers { get; }
+    int? CountdownMs { get; }   // カウントダウン中のみ。null は「カウントダウンしていない」
+    MatchmakingPanel Panel { get; }  // 表示すべきパネル（§8.4）
+}
 ```
 
 > **`CountdownMs` は `int?`。** `MatchmakingStatus.countdownMs` は待機中は**キーごと存在しない**（[client-integration §3.1](https://github.com/Okashimachi/Takoda99-Server/blob/main/docs/client-integration.md)）。**欠落を 0 として扱うと「あと0秒」と表示され、いつまでも始まらない画面になる。**
@@ -95,15 +100,32 @@ public readonly record struct MatchmakingViewState(
 自分宛てに1通。受信したら `Starting` へ遷移し、試合画面へ引き渡す。
 
 - `selfStoreId` で `stores[]` の中の自店を特定する
-- **`params` の値を表示に使う**（[pureC#/docs/.sdd/value-objects/01-match-state.md](../../../../pureC%23/docs/.sdd/value-objects/01-match-state.md)）
+- **`params` の値を表示に使う**（[01-match-state.md](../../../../pureC%23/docs/.sdd/value-objects/01-match-state.md)）
 - `stores[]` には**全店の `displayName` が入っている**。他店名の取得経路は [02-display-name.md](./02-display-name.md) §3
 - 定員に満たないぶんは **Bot が補完**される。`stores[]` の件数は常に `maxStores`
 
 ## 7. Unity構成
 
-- **Inspector 公開値**：接続先URL。**本番URLをコードや仕様書に直書きしない**（[docs/rules/03-Git運用.md](../../../../docs/rules/03-Git運用.md)「秘密情報（本番URL・トークン）をコミットしない」）。Inspector か外部設定から与える
-- **シーン**：試合シーンとは別シーン、または同一シーン内の別 Canvas。`MatchStart` 受信時に切り替える
+- **シーン**：`MatchiMaking` シーン（試合シーン `MainGame` とは**別シーン**。[02-scene-composition.md](../foundation/02-scene-composition.md) §2 で確定）。`MatchStart` 受信＝`ClientPhase.InMatch` 到達時に `GameBootstrapper` がシーンごと切り替える
+- **接続先URL**は `GameBootstrapper`（`Boot` シーン）が持つ。**本番URLをコードや仕様書に直書きしない**（[03-Git運用.md](../../../../docs/rules/03-Git運用.md)「秘密情報（本番URL・トークン）をコミットしない」）
 - 接続の実体は `WebGLNetworkClient` に委譲し、このモジュールは**送受信するメッセージの意味だけ**を持つ
+
+### 7.1 シーン階層
+
+```
+MatchMakingCanvas               ← MatchmakingScreenView
+├── BG
+├── WriteNameModal              ← NameEntry
+│   └── NameInput
+│       ├── NameInputField      （TMP_InputField・characterLimit = 6）
+│       └── Decide              （Button → GameBootstrapper.DecideDisplayName）
+├── WaitingPanel                ← Connecting / Joining
+└── MatchingPanel               ← Waiting / CountingDown
+    ├── PaticipantsNumPanel     （待機人数）
+    ├── PaticipantsList         ← ⚠ 未実装（§9.1）
+    │   └── Paticipants         （Paticipant Prefab の親）
+    └── Timer                   （countdownMs）
+```
 
 ## 8. ふるまいの詳細
 
@@ -111,19 +133,66 @@ public readonly record struct MatchmakingViewState(
 
 **状態が空**として画面を組む（§5.1）。`WaitingCount` / `MinPlayers` は「未取得」を表現できる形にする。
 
-### 8.2 同時接続上限
+### 8.2 同時接続上限（今回は想定しない）
 
-サーバーの同時接続上限は **200**（99人＋再接続・観戦の余裕）。超過すると **503** が返る。`Rejected` へ遷移し、再試行の導線を出す。
+サーバーの同時接続上限は **200**（99人＋再接続・観戦の余裕）。超過すると **503** が返る。
+
+**ハッカソン用途では上限に達しないため、503 専用のUI・再試行導線は作らない**（2026-08-06 決定）。
+
+ただし **`Rejected` 状態そのものは残す。** 503 以外の接続失敗（サーバー未起動・URL誤り・ネットワーク断）は開発中に頻繁に起きるうえ、これを表示しないと**「Decide を押したのに何も起こらない」画面**になって原因が分からなくなる。`WaitingPanel` に接続失敗の文言を出すところまでを実装し、自動リトライは持たない。
 
 ### 8.3 脱落しても接続を切らない
 
 これは試合中の話だが、接続のライフサイクルとして関係するため記す。**自店が脱落してもサーバーは接続を保持し、`StoreListUpdate` / `StoreEliminated` / `MatchEnd` を送り続ける**（観戦とリザルトのため）。マッチング画面側で `StoreEliminated` を根拠に切断処理を書かないこと。
 
+### 8.4 3パネルの切り替え
+
+`MatchMakingCanvas` 直下の3パネルは、`MatchmakingViewState.Panel` に従って**表示/非表示だけ**で切り替える（シーンを分けない）。
+
+| `MatchmakingScreenState` | パネル |
+|---|---|
+| `NameEntry` | `WriteNameModal` |
+| `Connecting` / `Joining` | `WaitingPanel` |
+| `Waiting` / `CountingDown` | `MatchingPanel` |
+| `Starting` | なし（シーン遷移中） |
+| `Rejected` | `WaitingPanel`（接続失敗の文言を出す。§8.2） |
+
+**この遷移は不可逆だが、そのためのラッチを別途持たない。** 「名前が確定した」「最初の `MatchmakingStatus` を受けた」はどちらも一度成立したら戻らないため、上の対応表をそのまま適用するだけで単調に進む。
+
+> **`CountingDown` → `Waiting` の巻き戻り（§5.2）はパネルの巻き戻りではない。** どちらも `MatchingPanel` に対応するため、カウントダウンが中断しても画面は切り替わらず、`Timer` の表示だけが消える。**「不可逆」と §5.2 は矛盾しない。**
+
+### 8.5 名前確定と接続の順序
+
+**`WriteNameModal` の Decide を押して初めて接続する。** `Boot` シーンでも `Title` シーンでも接続しない。
+
+```
+Boot（生成のみ・接続しない）
+  → Title（Start ボタン）
+  → MatchiMaking シーンをロード ＝ WriteNameModal
+  → Decide 押下 ＝ 表示名確定 → ここで初めて Connect
+  → 接続確立と同時に MatchmakingJoin 送信（WaitingPanel）
+```
+
+先に接続してしまうと、名前の入力に3秒以上かかった時点で表示名が失われる（§4.1・[02-display-name.md](./02-display-name.md) §5 ★）。**`Boot` シーンで「通信の確認」として実接続を行ってはいけない。**
+
 ## 9. 依存関係
 
-- 依存する `pureC#` モジュール：`Contract`（Proto の DTO 型）、`Dispatcher`
-- 依存するUnity側モジュール：`WebGLNetworkClient`（[01-network-client.md](../01-network-client.md)・未作成）
+- 依存する `pureC#` モジュール：`Contract`（Proto の DTO 型）、`Dispatcher`、`Store`
+- 依存するUnity側モジュール：`WebGLNetworkClient`（[01-network-client.md](../platform/01-network-client.md)）、`GameBootstrapper`（[02-scene-composition.md](../foundation/02-scene-composition.md)）
 - 依存されるモジュール：試合画面（`MatchStart` を受け取る側）
+
+### 9.1 ⚠ `PaticipantsList` は実装しない（上流待ち）
+
+**マッチング中に参加者の一覧・表示名を配る契約が存在しない**（[SV-17](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-17) / 依頼は [REQ-03](../../../../docs/server-sync/04-上流への依頼.md#req-03)）。
+
+| 画面要素 | 現契約で実装できるか |
+|---|---|
+| `PaticipantsNumPanel`（待機人数） | ✅ `MatchmakingStatus.waitingCount` |
+| `Timer`（締切） | ✅ `MatchmakingStatus.countdownMs` |
+| `PaticipantsList`（99人の名前一覧） | ❌ **不可**。名前も識別子も届かない |
+| 自分だけ赤で強調 | ❌ **不可**。`selfStoreId` は `MatchStart` まで届かない |
+
+**空欄の99枠を先に描くこともしない。** 実データと乖離した見た目を作ることになり、「他店の表示名をクライアントで生成・補完しない」（[02-display-name.md](./02-display-name.md) §1）に反する。REQ-03 の回答を待って実装する。
 
 ## 10. テスト観点
 
@@ -135,6 +204,8 @@ public readonly record struct MatchmakingViewState(
 
 ## 11. 未確定事項
 
-- `Rejected`（503）時の再接続ポリシー（自動リトライの有無・間隔）
+- ~~`Rejected` のときにどのパネルを出すか~~ → **決定（2026-08-06）**：`WaitingPanel` に接続失敗の文言。503 専用UIは作らない（§8.2）
+- ~~`Rejected`（503）時の再接続ポリシー~~ → **決定（2026-08-06）**：自動リトライを持たない（§8.2）
 - 試合中に接続が切れた場合の扱い（[SV-08](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-08)）。**サーバー側の再同期手段が無いため未解決**
+- **`PaticipantsList` の実装可否（§9.1）。** [REQ-03](../../../../docs/server-sync/04-上流への依頼.md#req-03) の回答待ち
 - 待機画面の見た目（人数の出し方・カウントダウンの演出）
