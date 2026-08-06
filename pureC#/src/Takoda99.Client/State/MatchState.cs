@@ -7,7 +7,7 @@ using Takoda99.Proto;
 namespace Takoda99.Client.State
 {
     /// <summary>
-    /// 試合全体の進行状況（フェーズ・生存数・火力・制限時間）。
+    /// 試合全体の進行状況（フェーズ・生存数・火力・表示用閾値）。
     /// 配信された結果を保持するだけで、フェーズ移行や火力上昇の判定は行わない。
     /// </summary>
     /// <remarks>
@@ -19,7 +19,9 @@ namespace Takoda99.Client.State
         Phase Phase,
         int AliveCount,
         int MaxStores,
-        int MatchTimeLimitMs,
+        double StormThresholdPct,
+        int FinalStageAliveThreshold,
+        int FinalRushAliveThreshold,
         int HeatLevel,
         long StartedAtLocalMs, // MatchStart を受信したクライアントローカル時刻
         long ElapsedMs         // クライアントのローカル計測値。サーバー由来ではない
@@ -40,7 +42,9 @@ namespace Takoda99.Client.State
                 Phase: message.Phase,
                 AliveCount: CountAlive(message.Stores),
                 MaxStores: message.Params.MaxStores,
-                MatchTimeLimitMs: message.Params.MatchTimeLimitMs,
+                StormThresholdPct: message.Params.StormThresholdPct,
+                FinalStageAliveThreshold: message.Params.FinalStageAliveThreshold,
+                FinalRushAliveThreshold: message.Params.FinalRushAliveThreshold,
                 HeatLevel: 0,
                 StartedAtLocalMs: receivedAtLocalMs,
                 ElapsedMs: 0);
@@ -60,11 +64,9 @@ namespace Takoda99.Client.State
         /// <summary>
         /// ローカル tick。<c>ElapsedMs</c> は <c>MatchStart</c> 受信時刻を起点としたクライアントの推定値であり、
         /// サーバー確定値で補正する経路は契約に存在しない（SV-07）。
+        /// Proto v0.3.0 で制限時間が廃止されたため、残り時間ではなく経過時間としてのみ使う。
         /// </summary>
         public MatchState Tick(long nowLocalMs) => this with { ElapsedMs = nowLocalMs - StartedAtLocalMs };
-
-        /// <summary>タイマー表示用の残り時間。0 未満にはならない。</summary>
-        public long RemainingMs => MatchTimeLimitMs - ElapsedMs > 0 ? MatchTimeLimitMs - ElapsedMs : 0;
 
         private static int CountAlive(List<StoreSummary> stores)
         {

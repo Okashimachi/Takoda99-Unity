@@ -57,15 +57,36 @@ jobs:
           echo "OK: UnityEngine の参照なし"
 
       # --- 5. 契約の保護 ---
-      # Proto は上流が正典で、このリポジトリでは変更しない（docs/rules/01-責務と絶対原則.md）。
-      # 手ミラーを書き換えると、サーバーとの契約が黙ってズレるため検知する。
-      - name: Proto の手ミラーが変更されていないか
-        if: github.event_name == 'pull_request'
+      # Proto は上流が正典で、このリポジトリでは内容を変更しない（docs/rules/01-責務と絶対原則.md）。
+      #
+      # 「develop から変更されていないこと」ではなく「上流とバイト一致していること」を検証する。
+      # 前者だと (a) 正規のバージョン追従まで弾いてしまい、(b) 一度 develop に入った改変を
+      # 以後ずっと見逃す。後者なら手による改変を恒久的に検知でき、追従は素通しできる。
+      #
+      # 参照する版は VERSION.md の「固定バージョン」行から読む。Takoda99-Proto は public なので
+      # 認証不要（private 化したら PAT をシークレットに追加すること）。
+      - name: Proto の手ミラーが上流と一致しているか
         run: |
-          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-          if ! git diff --quiet "origin/${{ github.base_ref }}" -- "pureC#/vendor/Takoda99.Proto"; then
-            echo "::error::pureC#/vendor/Takoda99.Proto は Takoda99-Proto の手ミラーです。変更は Proto 側で行ってください（docs/rules/01-責務と絶対原則.md）"
-            git diff --stat "origin/${{ github.base_ref }}" -- "pureC#/vendor/Takoda99.Proto"
+          set -euo pipefail
+          MIRROR="pureC#/vendor/Takoda99.Proto/Messages.cs"
+          VERSION_MD="pureC#/vendor/Takoda99.Proto/VERSION.md"
+
+          TAG="$(grep '固定バージョン' "$VERSION_MD" | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+          if [ -z "$TAG" ]; then
+            echo "::error file=$VERSION_MD::固定バージョン（vX.Y.Z）を読み取れませんでした。「- 固定バージョン: タグ \`vX.Y.Z\`」の形式で記載してください"
             exit 1
           fi
-          echo "OK: 手ミラーは未変更"
+          echo "固定バージョン: $TAG"
+
+          URL="https://raw.githubusercontent.com/Okashimachi/Takoda99-Proto/${TAG}/csharp/Takoda99.Proto/Messages.cs"
+          if ! curl -fsSL "$URL" -o /tmp/upstream_messages.cs; then
+            echo "::error::上流の取得に失敗しました: $URL （タグ $TAG は Takoda99-Proto に存在しますか）"
+            exit 1
+          fi
+
+          # 改行コードの差は無視する（Unity 側の作業ツリーが CRLF になり得るため）。
+          if ! diff -u <(tr -d '\r' < /tmp/upstream_messages.cs) <(tr -d '\r' < "$MIRROR"); then
+            echo "::error file=$MIRROR::手ミラーが上流（$TAG）と一致しません。このリポジトリで内容を変更しないでください。バージョンを上げる場合は上流のファイルで丸ごと置き換え、VERSION.md の固定バージョンも更新してください（docs/rules/01-責務と絶対原則.md）"
+            exit 1
+          fi
+          echo "OK: 手ミラーは上流 $TAG と一致"

@@ -19,7 +19,7 @@ public class ReducerTests
         {
             MatchId = "m1",
             SelfStoreId = "s1",
-            Params = new GameParametersPublicSubset { InitialLife = 3, MatchTimeLimitMs = 1000, MaxStores = 99 },
+            Params = new GameParametersPublicSubset { InitialLife = 3, MaxStores = 99 },
             MatchPhase = Phase.Early,
             Stores = new List<StoreSummary>(),
         };

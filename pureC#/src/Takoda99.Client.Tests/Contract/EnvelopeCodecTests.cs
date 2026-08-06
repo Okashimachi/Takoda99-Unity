@@ -105,7 +105,7 @@ public class EnvelopeCodecTests
         {
             MatchId = "m1",
             SelfStoreId = "s1",
-            Params = new GameParametersPublicSubset { MatchTimeLimitMs = 60000, InitialLife = 3, MaxStores = 99 },
+            Params = new GameParametersPublicSubset { InitialLife = 3, MaxStores = 99 },
             Phase = Phase.Mid,
             Stores = new List<StoreSummary>
             {

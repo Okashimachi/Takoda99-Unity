@@ -35,7 +35,9 @@ else:
 ```
 
 - **この3段階は「相対順位の表示」である**（設計決定）。`EvalNormalized` は用語集5章の定義通り「生存店内でのパーセンタイル(0..1)」であり、そこに固定閾値を引くため、**全店の絶対的な巧拙に関わらず、常に生存店の約 (1-highThreshold) / (highThreshold-midThreshold) / midThreshold の割合が緑/黄/赤に振り分けられる**。これは意図した挙動で、「赤＝絶対的に下手」ではなく「赤＝今この試合で下位グループにいる」を意味する。下位淘汰（`ForcedElimination`）が正規化評価の下位を刈る仕様（用語集9章）と表示の意味が一致するため、この方式を採る
-- `highThreshold` / `midThreshold` は本仕様書内の定数ではなく、演出確定時に決める設定値（未確定事項参照）。下位淘汰閾値 `stormThresholdPct` と赤帯の下限を揃えると「赤＝淘汰圏」という直感的な意味を持たせられるため、閾値決定時の候補とする
+- `highThreshold` / `midThreshold` は本仕様書内の定数ではなく、演出確定時に決める設定値（未確定事項参照）。**赤帯の下限は `MatchState.StormThresholdPct` を使う**（Proto v0.3.0 で `GameParametersPublicSubset` に追加された。[SV-20](../../../../docs/server-sync/02-パラメータと閾値.md#sv-20)）。これにより「赤＝淘汰圏」という意味がサーバーの実閾値と常に一致し、リモートコンフィグでの調整にも追従する
+
+> **`StormThresholdPct` は帯の描画にのみ使い、危険かどうかの判定に使ってはいけない。** 自店が淘汰圏内かの判定はサーバーが `ForcedEliminationWarning.selfAtRisk` で配信する（Proto v0.3.0）。`EvalNormalized < StormThresholdPct` のような比較で警告を出すと、サーバーの判定基準とズレて誤警告になる（[SV-05](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-05) / [D-08](../../../../docs/server-sync/03-決定ログ.md#d-08--proto-v030-への追従)）。
 - `Eliminated` は `StoreState.Alive` / `StoreSummaryState.Alive` の否定をそのまま使う。**脱落直後の「潰れた見た目を一定時間出す」という時限演出はここに含めない**（Viewローカルの一時状態。`Eliminated = true` になった**瞬間**をトリガーとして使うところまでがこの値オブジェクトの責務）
 
 ## 4. Unity構成
@@ -56,5 +58,6 @@ else:
 
 ## 7. 未確定事項
 
-- `highThreshold` / `midThreshold` の具体的な数値、および `GameParameters`（外部パラメータ）で調整可能にするかUnity側固定値にするか
+- `highThreshold`（緑/黄の境界）の具体的な数値。サーバー配信の対象外のため Unity 側の設定値にする
+- ~~`midThreshold`（黄/赤の境界）~~ → **Proto v0.3.0 で解決**。`MatchState.StormThresholdPct` を使う（[SV-20](../../../../docs/server-sync/02-パラメータと閾値.md#sv-20)）
 - 脱落直後の演出継続時間と、その間の `EvalLevel` の扱い（表示し続けるか隠すか）

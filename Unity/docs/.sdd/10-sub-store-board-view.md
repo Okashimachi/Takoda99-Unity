@@ -141,10 +141,11 @@ SubStorePanel                ← SubStoreTileView
 - `alive = false` にした瞬間に `life0` になり、**3秒後**に屋台が消えて順位テキストが出るか
 - 脱落済みタイルに `SetSummary(3, true)` を送っても復活しないか
 - `SubStoreRankPanel` が既定で非表示のまま、`Eliminated` のときだけ表示されるか
+- `SetRank` に `null` を渡したとき、順位テキストが空になり **0 と表示されない**か
 
 ## 7. 未確定事項
 
-- **他店の脱落順位の入手手段**（[SV-15](../../../docs/server-sync/01-プロトコル契約の差分.md#sv-15)）。`StoreSummary` に順位に相当するフィールドが無いため、確定するまで `SetRank` はサンプルデータからのみ呼ぶ
+- ~~**他店の脱落順位の入手手段**~~ → **Proto v0.3.0 で解決**（[SV-15](../../../docs/server-sync/01-プロトコル契約の差分.md#sv-15)）。`StoreSummary.finalRank`（`int?`・脱落店のみ）が届くため、`SetRank` は実データから呼んでよい。**サンプルデータ限定の制約は解除。** ただし `null`（未脱落・欠落）を 0 に潰さないこと
 - `StoreId` の実体（数値の文字列か、UUID等か）。昇順整列の規則は `StoreId` の文字列順とする。数値idであることが確定したら数値順へ変更する（[SV-11](../../../docs/server-sync/01-プロトコル契約の差分.md#sv-11) と併せて確認）
 - `SubStoreRankPanel/Text` を TMP へ差し替えるか、レガシー `Text` のまま使うか（本仕様書では TMP へ差し替える前提）
 - 99人未満で試合が始まった場合の余りタイルの見た目
