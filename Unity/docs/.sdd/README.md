@@ -27,7 +27,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | ディレクトリ | 何が入るか | いつ読むか |
 |---|---|---|
 | [`foundation/`](./foundation/README.md) | Unity と `pureC#` の接続、シーン全体の組み立て | **最初に読む** |
-| `platform/`（未作成） | `pureC#` 側インターフェースのUnity実体（通信・入力・デバッグ） | 実装前 |
+| [`platform/`](./platform/README.md) | `pureC#` 側インターフェースのUnity実体（通信・入力・デバッグ） | 実装前 |
 | [`matchmaking/`](./matchmaking/README.md) | 試合が始まる**前**の画面と通信 | 試合前の実装時 |
 | [`match-view/`](./match-view/README.md) | 試合**中**の描画（`Renderer` と下位View） | 試合中の実装時 |
 | [`value-objects/`](./value-objects/README.md) | `Store` から導出する表示用の派生状態と変換 | 描画モジュールを書く前 |
@@ -50,15 +50,15 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | # | ファイル | モジュール | 状態 |
 |---|---|---|---|
 | 01 | [01-purecs-dll-reference.md](./foundation/01-purecs-dll-reference.md) | `pureC#` の参照方法（DLL連携・ビルド自動コピー） | ✅ |
-| 02 | `02-scene-composition.md` | シーン構成と結線・`GameBootstrapper` | 未作成 |
+| 02 | [02-scene-composition.md](./foundation/02-scene-composition.md) | シーン構成と結線・`GameBootstrapper` | ✅（方針のみ） |
 
-### `platform/` — プラットフォーム実体（未作成）
+### [`platform/`](./platform/README.md) — プラットフォーム実体
 
 | # | ファイル | モジュール | 状態 |
 |---|---|---|---|
-| 01 | `01-network-client.md` | `WebGLNetworkClient`（`INetworkClient` の実体） | 未作成 |
-| 02 | `02-input-source.md` | `UnityInputSource`（Input System → `OnCharKey`） | 未作成 |
-| 03 | `03-debug-panel.md` | `DebugPanel`（送受信 `Envelope` の生JSON表示） | 未作成 |
+| 01 | [01-network-client.md](./platform/01-network-client.md) | `WebGLNetworkClient`（`INetworkClient` の実体） | ✅ |
+| 02 | [02-input-source.md](./platform/02-input-source.md) | `UnityInputSource`（Input System → `OnCharKey`） | ✅ |
+| 03 | [03-debug-panel.md](./platform/03-debug-panel.md) | `DebugPanel`（送受信 `Envelope` の生JSON表示） | ✅ |
 
 ### [`matchmaking/`](./matchmaking/README.md) — 試合前
 
@@ -71,11 +71,11 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 
 | # | ファイル | モジュール | 状態 |
 |---|---|---|---|
-| 01 | `01-renderer.md` | `Renderer`（受信 state → 下位Viewへ振り分け） | 未作成 |
+| 01 | [01-renderer.md](./match-view/01-renderer.md) | `Renderer`（受信 state → 下位Viewへ振り分け） | ✅ |
 | 02 | [02-main-store-view.md](./match-view/02-main-store-view.md) | `MainStoreView`（暖簾・屋台土台・お題単語・提灯・鉄板） | ✅ |
 | 03 | [03-takoyaki-stand-view.md](./match-view/03-takoyaki-stand-view.md) | `TakoyakiStandView` / `TakoyakiSlotView`（24穴） | ✅ |
 | 04 | [04-sub-store-board-view.md](./match-view/04-sub-store-board-view.md) | `SubStoreBoardView` / `SubStoreTileView`（他店98店） | ✅ |
-| 05 | `05-patience-timer.md` | `PatienceTimer`（我慢ゲージの表示専用カウントダウン） | 未作成 |
+| 05 | [05-patience-timer.md](./match-view/05-patience-timer.md) | `PatienceTimer`（我慢ゲージの表示専用カウントダウン） | ✅ |
 | 06 | [06-view-sample-data.md](./match-view/06-view-sample-data.md) | `MainGameViewSampleDriver`（開発用サンプルデータ駆動） | ✅ |
 
 ### [`value-objects/`](./value-objects/README.md) — 派生状態
@@ -108,7 +108,8 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 
 | 仕様書 | 実装 |
 |---|---|
-| `foundation/` | `Assets/Plugins/Takoda99/` |
+| `foundation/` | `Assets/Scripts/Bootstrap/`、`Assets/Plugins/Takoda99/` |
+| `platform/` | `Assets/Scripts/Net/`、`Assets/Scripts/Input/`、`Assets/Scripts/Debug/` |
 | `match-view/` | `Assets/Scripts/View/`、`Assets/Scripts/Timer/` |
 | `value-objects/` | `Assets/Scripts/View/ValueObjects/`（テストは `Unity/tests/Takoda99.View.Tests/`） |
 

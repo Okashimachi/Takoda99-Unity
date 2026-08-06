@@ -22,11 +22,11 @@ value-objects/ … 「どの区分になるか」の判定はここ（Viewは判
 
 | # | ファイル | モジュール | 実装 | 状態 |
 |---|---|---|---|---|
-| 01 | `01-renderer.md` | `Renderer`（`IRenderer` の実体・振り分け） | — | **未作成** |
+| 01 | [01-renderer.md](./01-renderer.md) | `Renderer`（`IRenderer` の実体・振り分け） | `View/Renderer.cs` | ✅ |
 | 02 | [02-main-store-view.md](./02-main-store-view.md) | `MainStoreView`（暖簾・屋台土台・お題単語・提灯・鉄板） | `View/MainStoreView.cs` | ✅ |
 | 03 | [03-takoyaki-stand-view.md](./03-takoyaki-stand-view.md) | `TakoyakiStandView` / `TakoyakiSlotView`（24穴） | `View/TakoyakiStandView.cs` ほか | ✅ |
 | 04 | [04-sub-store-board-view.md](./04-sub-store-board-view.md) | `SubStoreBoardView` / `SubStoreTileView`（他店98店） | `View/SubStoreBoardView.cs` ほか | ✅ |
-| 05 | `05-patience-timer.md` | `PatienceTimer`（我慢ゲージの表示専用カウントダウン） | — | **未作成** |
+| 05 | [05-patience-timer.md](./05-patience-timer.md) | `PatienceTimer`（我慢ゲージの表示専用カウントダウン） | `Timer/PatienceTimer.cs` | ✅ |
 | 06 | [06-view-sample-data.md](./06-view-sample-data.md) | `MainGameViewSampleDriver`（開発用サンプルデータ駆動） | `View/Sample/` | ✅ |
 
 **01 から読む。** 02〜05 は 01 が呼ぶ下位Viewであり、単体では駆動しない。
