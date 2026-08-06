@@ -84,6 +84,25 @@ namespace Takoda99.Client.Tests.State
         }
 
         [Fact]
+        public void EvaluationUpdateのStarRatingとStarDeltaは受信値のまま保持され再計算されない()
+        {
+            var self = StoreState.FromMatchStart(TestMessages.MatchStart(selfStoreId: "store-01"));
+
+            self = self.Apply(new EvaluationUpdate
+            {
+                EvalRaw = 12.5,
+                Normalized = 0.9,
+                Rank = 7,
+                AliveCount = 80,
+                StarRating = 3.4,
+                StarDelta = 0.2,
+            });
+
+            Assert.Equal(3.4, self.StarRating);
+            Assert.Equal(0.2, self.StarDelta);
+        }
+
+        [Fact]
         public void StoreEliminatedは自店と他店の正しい対象に適用される()
         {
             var message = TestMessages.MatchStart(selfStoreId: "store-01", stores: ThreeStores());
@@ -100,7 +119,9 @@ namespace Takoda99.Client.Tests.State
             self = self.Apply(otherEliminated);
 
             Assert.False(summaries[2].Alive);
+            Assert.Equal(90, summaries[2].FinalRank);
             Assert.True(summaries[0].Alive);
+            Assert.Null(summaries[0].FinalRank);
             Assert.True(self.Alive);
 
             var selfEliminated = new StoreEliminated
