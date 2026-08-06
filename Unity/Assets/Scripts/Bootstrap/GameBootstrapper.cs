@@ -117,10 +117,21 @@ namespace Takoda99.Bootstrap
         /// これは設定ファイルの取得であり WebSocket 接続ではないため、§4「Boot では接続しない」に
         /// 抵触しない（02-scene-composition.md §4.1）。読み込みに失敗した場合は Inspector の
         /// webSocketUrl（既定値）にフォールバックする。
+        ///
+        /// ただし WebGL では config.json を読みに行かない。config.json は .gitignore 済みの
+        /// ローカル設定であり、unityroom などの配信先には存在しないため、必ず 404 になって
+        /// ブラウザのコンソールをエラーで汚すだけだからである。WebGL の接続先は Inspector の
+        /// webSocketUrl を正とする。
         /// </summary>
         private IEnumerator LoadConfigAndStart()
         {
             var resolvedUrl = webSocketUrl;
+
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+            {
+                StartController(resolvedUrl);
+                yield break;
+            }
 
             // Windows/Mac/Linux/Editor では streamingAssetsPath がスキーム無しのファイルパスのため
             // UnityWebRequest には file:// を付けて渡す。Android/WebGL では既にURLとして扱えるためそのまま。
@@ -154,10 +165,22 @@ namespace Takoda99.Bootstrap
                 }
             }
 
-            // Boot が行うのは「生成」だけ。**ここで接続してはいけない。**
-            // サーバーは接続後の最初の1メッセージを最大3秒しか待たず、それを過ぎると表示名が失われる。
-            // したがって接続は「名前確定後」（DecideDisplayName）まで遅らせる
-            // （matchmaking/02-display-name.md §5 ★「名前入力 → 接続 → 即送信」の順）。
+            StartController(resolvedUrl);
+        }
+
+        /// <summary>
+        /// Boot が行うのは「生成」だけ。**ここで接続してはいけない。**
+        /// サーバーは接続後の最初の1メッセージを最大3秒しか待たず、それを過ぎると表示名が失われる。
+        /// したがって接続は「名前確定後」（DecideDisplayName）まで遅らせる
+        /// （matchmaking/02-display-name.md §5 ★「名前入力 → 接続 → 即送信」の順）。
+        /// </summary>
+        private void StartController(string resolvedUrl)
+        {
+            if (string.IsNullOrEmpty(resolvedUrl))
+            {
+                Debug.LogError($"{nameof(GameBootstrapper)}: 接続先URLが空です。Boot シーンの {nameof(GameBootstrapper)} の webSocketUrl を設定してください。", this);
+            }
+
             controller.Start(new BootstrapConfig
             {
                 WebSocketUrl = resolvedUrl,
