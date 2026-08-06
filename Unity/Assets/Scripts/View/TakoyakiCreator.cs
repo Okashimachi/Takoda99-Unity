@@ -14,6 +14,7 @@ namespace Takoda99.View
     public sealed class TakoyakiCreator : MonoBehaviour
     {
         [SerializeField] private GameObject takoyakiPrefab;
+        [SerializeField] private GameObject takoyakiParent;
         [SerializeField] private float spawnIntervalSeconds = 0.05f;
 
         [Header("左右の揺れ")]
@@ -86,7 +87,9 @@ namespace Takoda99.View
                     return;
                 }
 
-                spawned.Add(Instantiate(takoyakiPrefab, transform));
+                var parent = takoyakiParent != null ? takoyakiParent.transform : transform;
+                var takoyaki = Instantiate(takoyakiPrefab, transform.position, transform.rotation, parent);
+                spawned.Add(takoyaki);
 
                 if (i < count - 1)
                 {
