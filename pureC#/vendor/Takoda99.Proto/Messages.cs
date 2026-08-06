@@ -66,6 +66,12 @@ public sealed class StoreSummary
     [JsonPropertyName("rank")] public int Rank { get; set; }
     [JsonPropertyName("creditLife")] public int CreditLife { get; set; }
     [JsonPropertyName("alive")] public bool Alive { get; set; }
+
+    // 脱落済みの店のみ入る（生存店では省略）。小画面(98店)に脱落順位を出すため。
+    // **欠落を 0 として扱わないこと**（順位0は存在しない）。だから int? ＋ 省略。
+    [JsonPropertyName("finalRank")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? FinalRank { get; set; }
 }
 
 // CustomerView は来店した客の情報。CustomerArrived のペイロードそのもの。
@@ -76,6 +82,11 @@ public sealed class CustomerView
     [JsonPropertyName("orderCount")] public int OrderCount { get; set; } // = 打つ単語数
     [JsonPropertyName("words")] public List<string> Words { get; set; } = new(); // お題単語（サーバー発行）
     [JsonPropertyName("patienceMaxMs")] public int PatienceMaxMs { get; set; }
+
+    // 我慢ゲージの起点（サーバー基準の単調時刻・ms）。
+    // ゲージが「注文N個を打ち切るまでの制限時間」という主要UIに昇格したため、
+    // クライアントの受信時刻起点だと受信遅延ぶんのズレがそのまま体験に出る。
+    [JsonPropertyName("patienceStartedAtServerMs")] public long PatienceStartedAtServerMs { get; set; }
 }
 
 // MatchStats はリザルトの統計。
@@ -87,11 +98,19 @@ public sealed class MatchStats
 }
 
 // GameParameters の唯一の on-wire 契約（公開サブセット）。フルスキーマはサーバー内部（AGENTS §4）。
+// v0.3.0 で matchTimeLimitMs を削除（破壊的変更）。試合の終了条件は「生存店=1」のみになり、
+// 制限時間という概念自体が無くなったため（Takoda99-Docs 01_全体仕様 §8.3）。
 public sealed class GameParametersPublicSubset
 {
-    [JsonPropertyName("matchTimeLimitMs")] public int MatchTimeLimitMs { get; set; }
     [JsonPropertyName("initialLife")] public int InitialLife { get; set; }
     [JsonPropertyName("maxStores")] public int MaxStores { get; set; }
+
+    // 順位バーに「淘汰圏」の帯を常時描くため。
+    [JsonPropertyName("stormThresholdPct")] public double StormThresholdPct { get; set; }
+    // 終盤演出へ切り替える生存店数。
+    [JsonPropertyName("finalStageAliveThreshold")] public int FinalStageAliveThreshold { get; set; }
+    // 最終盤演出へ切り替える生存店数。
+    [JsonPropertyName("finalRushAliveThreshold")] public int FinalRushAliveThreshold { get; set; }
 }
 
 // ── メッセージ封筒 ────────────────────────────────────────
@@ -175,6 +194,13 @@ public sealed class EvaluationUpdate
     [JsonPropertyName("normalized")] public double Normalized { get; set; } // 0..1
     [JsonPropertyName("rank")] public int Rank { get; set; }
     [JsonPropertyName("aliveCount")] public int AliveCount { get; set; }
+
+    // 表示専用の星（0..5）。starRating = 5*(maxStores-rank)/(maxStores-1)。
+    // 母集団は生存店ではなく99店全体（脱落店は下位に積む）。
+    // Normalized とは別物で、分配重み・下位淘汰はサーバーが Normalized を使う。
+    [JsonPropertyName("starRating")] public double StarRating { get; set; }
+    // 前ティックからの増減（提供直後の「★+0.2」演出用）。
+    [JsonPropertyName("starDelta")] public double StarDelta { get; set; }
 }
 
 public sealed class DifficultyUpdate
@@ -198,6 +224,10 @@ public sealed class ForcedEliminationWarning
 {
     [JsonPropertyName("untilTick")] public int UntilTick { get; set; }
     [JsonPropertyName("thresholdPct")] public double ThresholdPct { get; set; }
+
+    // 自店が淘汰の対象圏内か。対象者に画面全体アラートを出すため。
+    // rank と thresholdPct の比較をクライアントにさせない。
+    [JsonPropertyName("selfAtRisk")] public bool SelfAtRisk { get; set; }
 }
 
 // 自店なら → リザルト遷移、他店なら → 盤面更新。
