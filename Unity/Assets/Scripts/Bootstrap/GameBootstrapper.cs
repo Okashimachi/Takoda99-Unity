@@ -205,6 +205,15 @@ namespace Takoda99.Bootstrap
         /// <summary>キュー離脱（MatchmakingLeave 送信 → Title へ）。</summary>
         public void LeaveMatchmaking() => controller.LeaveMatchmaking();
 
+        /// <summary>Result の Title ボタンから呼ぶ（Result → Title）。</summary>
+        public void BackToTitle() => controller.BackToTitle();
+
+        /// <summary>MainGame の ResultCanvas（脱落モーダル）の NextButton から呼ぶ（MainGame → Result）。</summary>
+        public void GoToResult()
+        {
+            SceneManager.LoadScene(resultSceneName, LoadSceneMode.Single);
+        }
+
         // ── Renderer の自己登録 ───────────────────────────────────────
 
         /// <summary>試合画面の <see cref="View.Renderer"/> が自分自身を登録する（01-renderer.md）。</summary>

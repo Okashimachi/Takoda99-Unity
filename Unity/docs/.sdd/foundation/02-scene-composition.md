@@ -122,7 +122,11 @@ Boot（生成のみ）
 
 ### `MainGame` の `Renderer`（未アタッチ）
 
-`mainStore` / `subStoreBoard` / `patienceTimer` を同一シーン内から割り当てる（[01-renderer.md](../match-view/01-renderer.md) §3）。
+`mainStore` / `subStoreBoard` / `patienceTimer` / `resultView`（`ResultCanvas` の `EliminationResultView`）を同一シーン内から割り当てる（[01-renderer.md](../match-view/01-renderer.md) §3）。
+
+### `MainGame/ResultCanvas` の `EliminationResultView`（既にアタッチ済み・§8参照）
+
+自店が脱落した瞬間（`Renderer.OnStoreEliminated` が自店IDと一致）に表示するモーダル。`rankText` / `rankListRoot` / `nextButton` は未設定でも `Result/Rank/Rank` ・ `Result/RankList` ・ `Result/NextButton` から自動解決する。`rankListRoot`（`RankList`）は**親を割り当てるだけでよい**——子（`1st`〜`10th`想定）を先頭から10件ぶん、並び順（子の名前ではない）で `TMP_Text` を取得する。`nextButton` は `GameBootstrapper.GoToResult()`（`MainGame` → `Result`）を呼ぶ。
 
 ## 7. `TitleScreenView`（Title シーン）
 
