@@ -122,3 +122,5 @@ Unity/tests/**/obj/
 # 接続先URL等のローカル設定（本番URL等の秘密情報を含み得る）。
 # サンプルの config.example.json のみコミットする（foundation/02-scene-composition.md §4.1）。
 /Unity/Assets/StreamingAssets/config.json
+
+/Unity/Assets/Fonts/*

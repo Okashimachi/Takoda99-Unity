@@ -10,6 +10,7 @@ namespace Takoda99.View
     public sealed class ResultScreenView : MonoBehaviour
     {
         [SerializeField] private Button titleButton;
+        [SerializeField] private TakoyakiCreator takoyakiCreator;
 
         private void OnEnable()
         {
@@ -26,6 +27,13 @@ namespace Takoda99.View
             if (titleButton != null)
             {
                 titleButton.onClick.AddListener(OnTitleClicked);
+            }
+
+            if (takoyakiCreator != null)
+            {
+                // スコア（提供数）が 0 の店もいるため、null 合体でスキップせず必ず SetTakoyakiCount を呼ぶ。
+                var servedCount = Bootstrap.GameBootstrapper.Instance.Store.State.Result?.Stats.ServedCount ?? 0;
+                takoyakiCreator.SetTakoyakiCount(servedCount);
             }
         }
 
