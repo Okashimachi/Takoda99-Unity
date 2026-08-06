@@ -1,0 +1,231 @@
+// 仕様書: Unity/docs/.sdd/foundation/02-scene-composition.md
+// pureC# の各モジュール（Contract/Store/Dispatcher/TypingJudge）と Unity 側の実体
+// （WebGLNetworkClient/UnityInputSource）を結線し、MatchClientController を起動する。
+// 画面はシーン単位で分かれているため、このオブジェクト自身は DontDestroyOnLoad で
+// シーン遷移をまたいで生存し、シーンの切り替えを一手に引き受ける（02-scene-composition.md §3）。
+// 接続先URLはコード直書きせず Inspector から与える（docs/rules/02-Unity実装ルール.md §6）。
+
+using Takoda99.Client.Contract;
+using Takoda99.Client.Lifecycle;
+using Takoda99.Client.Net;
+using Takoda99.Client.State;
+using Takoda99.Client.Typing;
+using Takoda99.DebugUI;
+using Takoda99.InputSource;
+using Takoda99.Net;
+using Takoda99.Proto;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace Takoda99.Bootstrap
+{
+    /// <summary>結線とシーン遷移の最上位（02-scene-composition.md）。シーンをまたいで唯一生存する。</summary>
+    public sealed class GameBootstrapper : MonoBehaviour
+    {
+        [SerializeField] private string webSocketUrl = "";
+        [SerializeField] private bool devMode = true;
+
+        [Header("シーン名（Build Settings に登録した名前と一致させる）")]
+        [SerializeField] private string titleSceneName = "Title";
+        [SerializeField] private string matchmakingSceneName = "MatchiMaking";
+        [SerializeField] private string matchSceneName = "MainGame";
+        [SerializeField] private string resultSceneName = "Result";
+
+        [Header("Boot シーン内の実体（BootStrap の子）")]
+        [SerializeField] private WebGLNetworkClient networkClient;
+        [SerializeField] private UnityInputSource inputSource;
+        [SerializeField] private DebugPanel debugPanel;
+
+        private readonly RendererProxy rendererProxy = new();
+        private IMatchClientController controller;
+        private System.IDisposable storeSubscription;
+        private ClientPhase lastRoutedPhase = ClientPhase.Boot;
+
+        public static GameBootstrapper Instance { get; private set; }
+
+        public IStore Store { get; private set; }
+        public IDispatcher Dispatcher { get; private set; }
+        public ITypingJudge TypingJudge { get; private set; }
+        public IEnvelopeLog Log { get; private set; }
+
+        /// <summary>
+        /// WriteNameModal で確定した表示名。**現時点ではサーバーへ送れない**（Proto の C# ミラーに
+        /// `MatchmakingJoin.displayName` が無い。matchmaking/02-display-name.md §2 / REQ-01）。
+        /// ミラーが直るまでは保持のみ行い、送信は行わない。
+        /// </summary>
+        public string DisplayName { get; private set; } = "";
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+
+            var codec = new EnvelopeCodec();
+            var log = new EnvelopeLog();
+            var store = new Store();
+            var clock = new UnityClock();
+            var dispatcher = new Dispatcher(codec, store, log, clock);
+            var sendQueue = new SendQueue(networkClient, codec, log);
+            var romajiTable = new DefaultRomajiTable();
+            var typingJudge = new TypingJudge(romajiTable, clock);
+
+            Store = store;
+            Dispatcher = dispatcher;
+            TypingJudge = typingJudge;
+            Log = log;
+
+            if (debugPanel != null)
+            {
+                debugPanel.Bind(log);
+            }
+
+            controller = new MatchClientController(
+                networkClient,
+                dispatcher,
+                store,
+                typingJudge,
+                sendQueue,
+                rendererProxy,
+                inputSource);
+
+            networkClient.OnConnectionChanged += (state, _) =>
+            {
+                if (state == ConnectionState.Disconnected || state == ConnectionState.Failed)
+                {
+                    sendQueue.OnDisconnected();
+                }
+            };
+
+            storeSubscription = store.Subscribe(HandlePhaseRouting);
+        }
+
+        private void Start()
+        {
+            // Boot が行うのは「生成」だけ。**ここで接続してはいけない。**
+            // サーバーは接続後の最初の1メッセージを最大3秒しか待たず、それを過ぎると表示名が失われる。
+            // したがって接続は「名前確定後」（DecideDisplayName）まで遅らせる
+            // （matchmaking/02-display-name.md §5 ★「名前入力 → 接続 → 即送信」の順）。
+            controller.Start(new BootstrapConfig
+            {
+                WebSocketUrl = webSocketUrl,
+                ProtoVersion = "v0.3.0",
+                DevMode = devMode,
+            });
+        }
+
+        private void OnDestroy()
+        {
+            storeSubscription?.Dispose();
+            controller?.Dispose();
+
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        // ── 画面からの操作 ────────────────────────────────────────────
+
+        /// <summary>Title の Start ボタンから呼ぶ。**まだ接続しない**（名前入力が先）。</summary>
+        public void GoToMatchmaking()
+        {
+            SceneManager.LoadScene(matchmakingSceneName, LoadSceneMode.Single);
+        }
+
+        /// <summary>
+        /// WriteNameModal の Decide ボタンから呼ぶ。表示名を確定し、**その直後に接続する**。
+        /// 接続確立と同時に <c>MatchmakingJoin</c> が送られる（MatchClientController.HandleConnectionChanged）。
+        /// </summary>
+        public void DecideDisplayName(string displayName)
+        {
+            DisplayName = displayName ?? "";
+            controller.BeginPlay();
+        }
+
+        /// <summary>キュー離脱（MatchmakingLeave 送信 → Title へ）。</summary>
+        public void LeaveMatchmaking() => controller.LeaveMatchmaking();
+
+        // ── Renderer の自己登録 ───────────────────────────────────────
+
+        /// <summary>試合画面の <see cref="View.Renderer"/> が自分自身を登録する（01-renderer.md）。</summary>
+        public void AttachRenderer(View.Renderer renderer) => rendererProxy.Active = renderer;
+
+        public void DetachRenderer(View.Renderer renderer)
+        {
+            if (rendererProxy.Active == renderer)
+            {
+                rendererProxy.Active = null;
+            }
+        }
+
+        // ── シーン遷移 ────────────────────────────────────────────────
+
+        /// <summary>
+        /// ClientPhase の変化でシーンを切り替える。
+        /// **Connecting / Matchmaking ではシーンをロードしない。** これらのフェーズに入る時点で
+        /// 既にマッチングシーンにいる（Title の Start ボタンでロード済み）ため、ここでロードすると
+        /// 入力済みの名前ごと画面が作り直されてしまう（02-scene-composition.md §3）。
+        /// </summary>
+        private void HandlePhaseRouting(ClientState state)
+        {
+            if (state.Phase == lastRoutedPhase)
+            {
+                return;
+            }
+
+            var previous = lastRoutedPhase;
+            lastRoutedPhase = state.Phase;
+
+            switch (state.Phase)
+            {
+                case ClientPhase.Title:
+                    SceneManager.LoadScene(titleSceneName, LoadSceneMode.Single);
+                    break;
+
+                case ClientPhase.InMatch:
+                    SceneManager.LoadScene(matchSceneName, LoadSceneMode.Single);
+                    break;
+
+                case ClientPhase.Result:
+                    SceneManager.LoadScene(resultSceneName, LoadSceneMode.Single);
+                    break;
+
+                case ClientPhase.Spectating:
+                    // 自店が脱落しても接続は保持し、観戦として試合画面に留まる
+                    // （matchmaking/01-matchmaking-flow.md §8.3）。シーンは切り替えない。
+                    break;
+
+                default:
+                    // Connecting / Matchmaking / Boot：シーン遷移なし（上のコメント参照）。
+                    _ = previous;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// IRenderer をシーン非依存に保つための転送先切替プロキシ。試合シーンが未ロードの間は
+        /// Active が null のため、すべての通知が無害に捨てられる（02-scene-composition.md §4）。
+        /// </summary>
+        private sealed class RendererProxy : IRenderer
+        {
+            public View.Renderer Active;
+
+            public void OnCustomerArrived(CustomerView customer) => Active?.OnCustomerArrived(customer);
+            public void OnCustomerLeft(string customerId, LeaveReason reason) => Active?.OnCustomerLeft(customerId, reason);
+            public void OnKeyFeedback(KeyResult result) => Active?.OnKeyFeedback(result);
+            public void OnOrderServed(string customerId) => Active?.OnOrderServed(customerId);
+            public void OnPhaseChanged(Phase phase) => Active?.OnPhaseChanged(phase);
+            public void OnForcedEliminationWarning(int untilTick, double thresholdPct) => Active?.OnForcedEliminationWarning(untilTick, thresholdPct);
+            public void OnStoreEliminated(string storeId, EliminationReason reason, int finalRank) => Active?.OnStoreEliminated(storeId, reason, finalRank);
+            public void OnMatchEnd(int finalRank, MatchStats stats) => Active?.OnMatchEnd(finalRank, stats);
+            public void OnLifecycleChanged(ClientPhase from, ClientPhase to) => Active?.OnLifecycleChanged(from, to);
+            public void OnConnectionTrouble(string kind) => Active?.OnConnectionTrouble(kind);
+        }
+    }
+}
