@@ -159,6 +159,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1391453728218047240}
+  - component: {fileID: 8347102958463201773}
   m_Layer: 5
   m_Name: SubStorePanel
   m_TagString: Untagged
@@ -188,6 +189,26 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 35.7, y: 57.1}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &8347102958463201773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6205133790277595047}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96a1a0895c5d432fa7e51727f8006a57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  booth: {fileID: 5891441112560645129}
+  rankPanel: {fileID: 6657621099729022537}
+  rankText: {fileID: 2012350089492582256}
+  boothLife0: {fileID: -7177325566389097320, guid: 9f7b17efb89f23e45a353f99d1dc2ce4, type: 3}
+  boothLife1: {fileID: -3097281795076315199, guid: c1595019b8dfc8e42a1273665642984a, type: 3}
+  boothLife2: {fileID: 8352339309937156746, guid: 191fe789ef8ed6e429052ec91f62ab54, type: 3}
+  boothLife3: {fileID: 9190574195945713558, guid: bb59408e05d060f4f8f733e717bbc188, type: 3}
+  eliminationRevealDelaySec: 3
 --- !u!1001 &2152153576769714574
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -289,8 +310,24 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8acc7dd39d5d11f4fbd3437e12302394, type: 3}
+--- !u!114 &2012350089492582256 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 446052042132141822, guid: 8acc7dd39d5d11f4fbd3437e12302394, type: 3}
+  m_PrefabInstance: {fileID: 2152153576769714574}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!224 &2380350692478605801 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4383489051768594535, guid: 8acc7dd39d5d11f4fbd3437e12302394, type: 3}
+  m_PrefabInstance: {fileID: 2152153576769714574}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6657621099729022537 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4735925727244818375, guid: 8acc7dd39d5d11f4fbd3437e12302394, type: 3}
   m_PrefabInstance: {fileID: 2152153576769714574}
   m_PrefabAsset: {fileID: 0}

@@ -27,16 +27,19 @@ namespace Takoda99.View.ValueObjects
         public const int StandRows = 4;    // 縦
         public const int StandCapacity = StandColumns * StandRows; // 24
 
+        // 生地を流しておく穴の数（評価3段階に対応）。いずれも StandColumns の倍数。
+        public const int BatterCountLow = 12;
+        public const int BatterCountMid = 18;
+        public const int BatterCountHigh = StandCapacity; // 24
+
         /// <summary>
-        /// <c>OrderProgressState</c> の <c>OrderCount</c> / <c>TypedWordCount</c> から変換する。
-        /// pureC# 側の型を Unity から参照する方法が未確定のため、入力は素の値で受ける。
+        /// 評価3段階（<c>StoreEvalLevel</c>）と、いま対応中の客のノルマのうち入力を終えた語数
+        /// （<c>OrderProgressState.TypedWordCount</c>）から変換する。
+        /// 生地を流す穴数（<c>occupiedCount</c>）は注文個数ではなく評価から決まる（決定ログ D-05）。
         /// </summary>
-        public static TakoyakiStandState From(int orderCount, int typedWordCount)
+        public static TakoyakiStandState From(StoreEvalLevel evalLevel, int typedWordCount)
         {
-            // 注文個数と台の穴数の小さい方が「生地を流してある穴」。
-            // 用語集4章の注文個数(4/6/8/12)は 24 未満のため現行パラメータでは min は発動しないが、
-            // OrderCount が 24 を超え得るようになった場合に備えた防御的なクランプとして残す（SV-14）。
-            var occupiedCount = Clamp(orderCount, 0, StandCapacity);
+            var occupiedCount = OccupiedCount(evalLevel);
             var cookedCount = Clamp(typedWordCount, 0, occupiedCount);
 
             var slots = new TakoyakiSlotState[StandCapacity];
@@ -52,15 +55,28 @@ namespace Takoda99.View.ValueObjects
                 }
                 else
                 {
-                    slots[i] = TakoyakiSlotState.Empty; // 対応する注文がない穴
+                    slots[i] = TakoyakiSlotState.Empty; // 生地を流していない穴
                 }
             }
 
             return new TakoyakiStandState(slots);
         }
 
-        /// <summary>対応中の客がいないときの台（全穴 <c>Empty</c>）。</summary>
-        public static TakoyakiStandState Idle => From(0, 0);
+        /// <summary>対応中の客がいないときの台（評価に応じた生地マスのみ・すべて未クリア）。</summary>
+        public static TakoyakiStandState Idle(StoreEvalLevel evalLevel) => From(evalLevel, 0);
+
+        private static int OccupiedCount(StoreEvalLevel evalLevel)
+        {
+            switch (evalLevel)
+            {
+                case StoreEvalLevel.High:
+                    return BatterCountHigh;
+                case StoreEvalLevel.Mid:
+                    return BatterCountMid;
+                default:
+                    return BatterCountLow;
+            }
+        }
 
         private static int Clamp(int value, int min, int max)
         {
