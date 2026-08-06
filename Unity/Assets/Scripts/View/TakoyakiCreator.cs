@@ -21,6 +21,12 @@ namespace Takoda99.View
         [SerializeField] private float swayDistance = 1f;
         [SerializeField] private float swayDurationSeconds = 1f;
 
+        [Header("生成完了後の表示演出（ResultCanvas/Result配下）")]
+        [SerializeField] private GameObject rank;
+        [SerializeField] private GameObject others;
+        [SerializeField] private GameObject buttons;
+        [SerializeField] private float revealIntervalSeconds = 2f;
+
         [Header("テストモード")]
         [SerializeField] private bool testMode;
         [SerializeField] private int testTakoyakiCount;
@@ -37,6 +43,10 @@ namespace Takoda99.View
                 .DOLocalMoveX(transform.localPosition.x + swayDistance, swayDurationSeconds)
                 .SetLoops(-1, LoopType.Yoyo)
                 .SetEase(Ease.InOutSine);
+
+            SetActiveIfAssigned(rank, false);
+            SetActiveIfAssigned(others, false);
+            SetActiveIfAssigned(buttons, false);
 
             if (testMode)
             {
@@ -87,7 +97,7 @@ namespace Takoda99.View
                     return;
                 }
 
-                var parent = takoyakiParent != null ? takoyakiParent.transform : transform;
+                var parent = takoyakiParent.transform;
                 var takoyaki = Instantiate(takoyakiPrefab, transform.position, transform.rotation, parent);
                 spawned.Add(takoyaki);
 
@@ -96,6 +106,29 @@ namespace Takoda99.View
                     await UniTask.Delay(System.TimeSpan.FromSeconds(spawnIntervalSeconds), cancellationToken: token);
                 }
             }
+
+            await RevealResultPanels(token);
+        }
+
+        /// <summary>全個数の生成が終わってから、Rank → Others → Buttons の順に2秒間隔で表示する。</summary>
+        private async UniTask RevealResultPanels(CancellationToken token)
+        {
+            await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
+            SetActiveIfAssigned(rank, true);
+
+            await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
+            SetActiveIfAssigned(others, true);
+
+            await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
+            SetActiveIfAssigned(buttons, true);
+        }
+
+        private static void SetActiveIfAssigned(GameObject target, bool active)
+        {
+            if (target != null)
+            {
+                target.SetActive(active);
+            }
         }
 
         private void Clear()
@@ -103,6 +136,10 @@ namespace Takoda99.View
             spawnCts?.Cancel();
             spawnCts?.Dispose();
             spawnCts = null;
+
+            SetActiveIfAssigned(rank, false);
+            SetActiveIfAssigned(others, false);
+            SetActiveIfAssigned(buttons, false);
 
             foreach (var obj in spawned)
             {
