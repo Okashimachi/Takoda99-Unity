@@ -19,6 +19,7 @@ namespace Takoda99.View
         [SerializeField] private MainStoreView mainStore;
         [SerializeField] private SubStoreBoardView subStoreBoard;
         [SerializeField] private PatienceTimer patienceTimer;
+        [SerializeField] private EliminationResultView resultView;
 
         private IStore store;
         private ITypingJudge typingJudge;
@@ -151,6 +152,12 @@ namespace Takoda99.View
 
         public void OnStoreEliminated(string storeId, EliminationReason reason, int finalRank)
         {
+            resultView?.RecordElimination(storeId, finalRank);
+
+            if (resultView != null && store != null && storeId == store.State.SelfStoreId)
+            {
+                resultView.Show(finalRank);
+            }
         }
 
         public void OnMatchEnd(int finalRank, MatchStats stats)
