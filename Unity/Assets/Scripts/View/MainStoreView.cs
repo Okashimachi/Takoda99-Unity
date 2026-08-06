@@ -1,4 +1,4 @@
-// 仕様書: Unity/docs/.sdd/08-main-store-view.md
+// 仕様書: Unity/docs/.sdd/match-view/02-main-store-view.md
 // 主画面の自店舗（root/MainStoreCanvas/Main/MainStore）の表示を一括管理する。
 // 信用ライフ・評価・お題単語の決定はしない（サーバー権威。受け取って描くだけ）。
 

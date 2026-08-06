@@ -1,4 +1,4 @@
-// 仕様書: Unity/docs/.sdd/11-view-sample-data.md
+// 仕様書: Unity/docs/.sdd/match-view/06-view-sample-data.md
 // 開発用。サンプル値で主画面・小画面のViewを駆動する。本番シーンには置かない。
 // サーバーの挙動を模したシミュレーション（評価計算・客分配・脱落判定）は書かない。
 

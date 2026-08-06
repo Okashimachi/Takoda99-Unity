@@ -5,7 +5,7 @@
 ## 1. 責務
 
 - 現在対応中（行列先頭）の客に対する注文の**進捗**（何単語タイプ済みか・ミス数・経過時間）を保持する
-- `TypingJudge`（[04-typing-judge.md](../04-typing-judge.md)）の判定結果を蓄積する入れ物であり、判定ロジック自体は持たない
+- `TypingJudge`（[03-typing-judge.md](../03-typing-judge.md)）の判定結果を蓄積する入れ物であり、判定ロジック自体は持たない
 - **しない**こと：たこ焼き台の「なにもない/生地/焼けた」という**見た目状態**は持たない（Unity側 `value-objects/03-takoyaki-stand-state.md` が `OrderProgressState` を入力に導出する）
 
 ## 2. データ定義

@@ -1,6 +1,6 @@
 # 10-SubStoreBoardView / SubStoreTileView
 
-> 参照する上流：[Takoda99-Client-Docs 第3章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/03_モジュール分割とレイヤー責務.md)（`Renderer`）／[用語集](https://github.com/Okashimachi/Takoda99-Docs/blob/main/01_企画/00_用語集.md)（`Store` / `StoreId` / `CreditLife` / `StoreEliminated` / `rank`）／`StoreListUpdate`（Proto）。値の形は [value-objects/06-sub-store-tile-state.md](./value-objects/06-sub-store-tile-state.md) が正典。
+> 参照する上流：[Takoda99-Client-Docs 第3章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/03_モジュール分割とレイヤー責務.md)（`Renderer`）／[用語集](https://github.com/Okashimachi/Takoda99-Docs/blob/main/01_企画/00_用語集.md)（`Store` / `StoreId` / `CreditLife` / `StoreEliminated` / `rank`）／`StoreListUpdate`（Proto）。値の形は [06-sub-store-tile-state.md](../value-objects/06-sub-store-tile-state.md) が正典。
 
 小画面（`root/SubStoreCanvas`）の他店98店ぶんのミニ盤面。既存の `SubStoreCreator` を置き換える。
 
@@ -119,7 +119,7 @@ SubStorePanel                ← SubStoreTileView
 | `JustEliminated` | `minitile_booth_life0` | 非表示 |
 | `Eliminated` | **非表示** | 表示（順位テキスト） |
 
-- 区分の導出規則は [value-objects/06](./value-objects/06-sub-store-tile-state.md) §3
+- 区分の導出規則は [value-objects/06](../value-objects/06-sub-store-tile-state.md) §3
 - `Eliminated` へ遷移した時点で `SetRank` 済みなら順位を、未取得なら空文字を表示する。後から `SetRank` が来たら追記表示する
 - 一度 `Eliminated` になったタイルは、以後の `SetSummary` で `Life*` へ戻らない（脱落は不可逆）
 
@@ -132,7 +132,7 @@ SubStorePanel                ← SubStoreTileView
 
 - 依存する `pureC#` モジュール：なし（`StoreSummaryState` の値を素の型で受け取る）
 - 依存するUnity側モジュール：`Takoda99.View.ValueObjects.SubStoreTileState`
-- 依存されるモジュール：`Renderer`（未作成）、`MainGameViewSampleDriver`（[11](./11-view-sample-data.md)）
+- 依存されるモジュール：`Renderer`（未作成）、`MainGameViewSampleDriver`（[11](./06-view-sample-data.md)）
 
 ## 6. テスト・確認観点
 
@@ -145,7 +145,7 @@ SubStorePanel                ← SubStoreTileView
 
 ## 7. 未確定事項
 
-- ~~**他店の脱落順位の入手手段**~~ → **Proto v0.3.0 で解決**（[SV-15](../../../docs/server-sync/01-プロトコル契約の差分.md#sv-15)）。`StoreSummary.finalRank`（`int?`・脱落店のみ）が届くため、`SetRank` は実データから呼んでよい。**サンプルデータ限定の制約は解除。** ただし `null`（未脱落・欠落）を 0 に潰さないこと
-- `StoreId` の実体（数値の文字列か、UUID等か）。昇順整列の規則は `StoreId` の文字列順とする。数値idであることが確定したら数値順へ変更する（[SV-11](../../../docs/server-sync/01-プロトコル契約の差分.md#sv-11) と併せて確認）
+- ~~**他店の脱落順位の入手手段**~~ → **Proto v0.3.0 で解決**（[SV-15](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-15)）。`StoreSummary.finalRank`（`int?`・脱落店のみ）が届くため、`SetRank` は実データから呼んでよい。**サンプルデータ限定の制約は解除。** ただし `null`（未脱落・欠落）を 0 に潰さないこと
+- `StoreId` の実体（数値の文字列か、UUID等か）。昇順整列の規則は `StoreId` の文字列順とする。数値idであることが確定したら数値順へ変更する（[SV-11](../../../../docs/server-sync/01-プロトコル契約の差分.md#sv-11) と併せて確認）
 - `SubStoreRankPanel/Text` を TMP へ差し替えるか、レガシー `Text` のまま使うか（本仕様書では TMP へ差し替える前提）
 - 99人未満で試合が始まった場合の余りタイルの見た目

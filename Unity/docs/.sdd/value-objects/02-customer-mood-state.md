@@ -1,6 +1,6 @@
 # 02-CustomerMoodState
 
-> 参照する上流：[pureC#/docs/.sdd/value-objects/03-customer-state.md](../../../../pureC%23/docs/.sdd/value-objects/03-customer-state.md)（`CustomerState`）、[Unity/docs/.sdd/03-patience-timer.md](../03-patience-timer.md)（我慢ゲージの表示専用カウントダウン）。矛盾したら上流優先。
+> 参照する上流：[03-customer-state.md](../../../../pureC%23/docs/.sdd/value-objects/03-customer-state.md)（`CustomerState`）、[05-patience-timer.md](../match-view/05-patience-timer.md)（我慢ゲージの表示専用カウントダウン）。矛盾したら上流優先。
 
 ## 1. 責務
 
@@ -20,7 +20,7 @@ public readonly record struct CustomerMoodState(
 
 ## 3. 変換処理
 
-入力：`CustomerState.PatienceMaxMs` と、`PatienceTimer` が算出する表示用の残量推定 `patienceLeftMsDisplay`（[03-patience-timer.md](../03-patience-timer.md) 参照）
+入力：`CustomerState.PatienceMaxMs` と、`PatienceTimer` が算出する表示用の残量推定 `patienceLeftMsDisplay`（[05-patience-timer.md](../match-view/05-patience-timer.md) 参照）
 
 ```
 patienceLeftMsDisplay = PatienceMaxMs - (nowServerMsEstimated - CustomerState.PatienceStartedAtServerMs)

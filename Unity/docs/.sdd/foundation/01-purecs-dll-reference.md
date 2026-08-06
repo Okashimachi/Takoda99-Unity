@@ -1,6 +1,6 @@
 # 07-pureC# の参照方法（DLL連携）
 
-> 参照する上流：[Takoda99-Docs 03_Unity仕様書](https://github.com/Okashimachi/Takoda99-Docs/blob/main/04_クライアント仕様/03_Unity仕様書.md)（WebGL/IL2CPP制約）/ [docs/rules/02-Unity実装ルール.md](../../../docs/rules/02-Unity実装ルール.md)（`Unity/` と `pureC#/` の役割分担）。矛盾したら上流優先。
+> 参照する上流：[Takoda99-Docs 03_Unity仕様書](https://github.com/Okashimachi/Takoda99-Docs/blob/main/04_クライアント仕様/03_Unity仕様書.md)（WebGL/IL2CPP制約）/ [02-Unity実装ルール.md](../../../../docs/rules/02-Unity実装ルール.md)（`Unity/` と `pureC#/` の役割分担）。矛盾したら上流優先。
 
 `pureC#/` で実装した Unity非依存ロジックを、Unity 側から使えるようにするための連携方法。
 
@@ -193,7 +193,7 @@ ls -la Unity/Assets/Plugins/Takoda99/Takoda99.Client.dll pureC#/src/Takoda99.Cli
 ## 9. 依存関係
 
 - 依存する `pureC#` モジュール：`Takoda99.Client` 全体（`01-contract` 〜 `06-match-client-controller`）
-- 依存されるUnity側モジュール：`01-network-client` / `02-input-source` / `04-renderer` など、`pureC#` の型を使うすべて
+- 依存されるUnity側モジュール：`platform/01-network-client` / `platform/02-input-source` / `match-view/01-renderer` など、`pureC#` の型を使うすべて
 - この仕様書は**ビルド連携のみ**を定める。各モジュールが `pureC#` の何をどう使うかは、それぞれの仕様書に書く
 
 ## 10. 未確定事項

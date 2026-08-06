@@ -2,13 +2,13 @@
 
 > 参照する上流：[Takoda99-Client-Docs 第3章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/03_モジュール分割とレイヤー責務.md)（`Renderer`）／[用語集](https://github.com/Okashimachi/Takoda99-Docs/blob/main/01_企画/00_用語集.md)（`Store` / `Credit` / `CreditLife` / `Evaluation` / `Word`）／[Takoda99-Proto]()（`CreditUpdate` / `EvaluationUpdate` / `WordAssigned`）。矛盾したら上流優先。
 
-`04-renderer.md`（未作成）の `Renderer` を構成する下位Viewのうち、**主画面の自店舗（`root/MainStoreCanvas/Main/MainStore`）**を担当する。
+`01-renderer.md`（未作成）の `Renderer` を構成する下位Viewのうち、**主画面の自店舗（`root/MainStoreCanvas/Main/MainStore`）**を担当する。
 
 ## 1. 責務
 
 - 主画面の自店舗まわりの見た目（暖簾・屋台土台・お題単語パネル・提灯・鉄板）を**1つのクラスで一括管理**する
 - 上位（`Renderer`／サンプルデータ供給）から受け取った表示用状態を、`Image` のスプライト差し替え・`TextMeshProUGUI` のテキスト差し替えに変換する
-- `Takoyakis`（[09-takoyaki-stand-view.md](./09-takoyaki-stand-view.md)）が購読できるよう、**評価3段階（`StoreEvalLevel`）の変化を通知**する
+- `Takoyakis`（[03-takoyaki-stand-view.md](./03-takoyaki-stand-view.md)）が購読できるよう、**評価3段階（`StoreEvalLevel`）の変化を通知**する
 - **しない**こと：
   - 信用ライフ・評価・お題単語の**決定**（すべてサーバー権威。受け取って描くだけ）
   - 打鍵判定（`TypingJudge` の責務。入力済み文字数を受け取るだけ）
@@ -89,7 +89,7 @@ root/MainStoreCanvas/Main/MainStore   ← MainStoreView をアタッチ
 │   ├── Lantern1 (Image)              ← Lantan1 から改名
 │   ├── Lantern2 (Image)
 │   └── Lantern3 (Image)
-└── Takoyakis                         ← 09-takoyaki-stand-view.md
+└── Takoyakis                         ← 03-takoyaki-stand-view.md
 ```
 
 ### 3.2 リネーム作業（本仕様書に含む）
@@ -133,12 +133,12 @@ Prefabのリネームは `.meta` の GUID を保持したままファイル名�
 | 0 | **`noren.enabled = false`（非表示）** | `standLife0` | 3つとも消灯 |
 
 - 暖簾に `life0` の画像は存在しないため、ライフ0では `Image` を無効化して非表示にする。1以上に戻ったら再度有効化する（下位淘汰の予告演出等で戻る可能性を残す）
-- 提灯は**番号の大きい方から消灯**する。`Lantern{i+1}` は `i < creditLife` のとき `lanternOn`、そうでなければ `lanternOff`。**GameObject の破棄・非アクティブ化は行わない**（[04-credit-life-lantern-state.md](./value-objects/04-credit-life-lantern-state.md) の `CreditLifeLanternState.From` をそのまま使う）
+- 提灯は**番号の大きい方から消灯**する。`Lantern{i+1}` は `i < creditLife` のとき `lanternOn`、そうでなければ `lanternOff`。**GameObject の破棄・非アクティブ化は行わない**（[04-credit-life-lantern-state.md](../value-objects/04-credit-life-lantern-state.md) の `CreditLifeLanternState.From` をそのまま使う）
 - `lanterns` の要素数が `creditLife` の上限より少ない場合も配列長でループし、配列外参照しない
 
 ### 4.2 評価（`SetEvaluation`）
 
-- `StoreVisualState.From(storeId, evalNormalized, alive, StoreEvalThresholds.Default, 直前の値)` で3段階へ分類する（[01-store-visual-state.md](./value-objects/01-store-visual-state.md)）
+- `StoreVisualState.From(storeId, evalNormalized, alive, StoreEvalThresholds.Default, 直前の値)` で3段階へ分類する（[01-store-visual-state.md](../value-objects/01-store-visual-state.md)）
 - 鉄板：`EvalLevel == High` → `griddleHot`、`Mid` / `Low` → `griddleNormal`
 - 分類結果が**前回と変わったときだけ** `EvalLevelChanged` を発火する（毎フレーム発火させない）
 - `alive == false` のときは `StoreVisualState` の仕様通り `EvalLevel` を凍結する。鉄板の見た目も凍結される
@@ -162,14 +162,14 @@ Prefabのリネームは `.meta` の GUID を保持したままファイル名�
 
 ## 5. 依存関係
 
-- 依存する `pureC#` モジュール：なし（値は素の `int` / `double` / `string` で受け取る。[07-purecs-dll-reference.md](./07-purecs-dll-reference.md) の解決を待たない）
+- 依存する `pureC#` モジュール：なし（値は素の `int` / `double` / `string` で受け取る。[01-purecs-dll-reference.md](../foundation/01-purecs-dll-reference.md) の解決を待たない）
 - 依存するUnity側モジュール：`Takoda99.View.ValueObjects`（`StoreVisualState` / `CreditLifeLanternState`）
-- 依存されるモジュール：`TakoyakiStandView`（`EvalLevelChanged` を購読）、`Renderer`（未作成）、`MainGameViewSampleDriver`（[11-view-sample-data.md](./11-view-sample-data.md)）
+- 依存されるモジュール：`TakoyakiStandView`（`EvalLevelChanged` を購読）、`Renderer`（未作成）、`MainGameViewSampleDriver`（[06-view-sample-data.md](./06-view-sample-data.md)）
 - `Renderer` に依存してよいモジュールは無い（Client-Docs 第3章）ため、`MainStoreView` から `Store` や `Dispatcher` を直接参照しない
 
 ## 6. テスト・確認観点
 
-[11-view-sample-data.md](./11-view-sample-data.md) のサンプル駆動でエディタ実行して確認する。
+[06-view-sample-data.md](./06-view-sample-data.md) のサンプル駆動でエディタ実行して確認する。
 
 - 信用ライフ 3→2→1→0 で、暖簾・屋台土台・提灯が同時に切り替わり、ライフ0で暖簾だけが消えるか
 - 提灯が**番号の大きい方から**消え、GameObject が破棄されていないか（Hierarchy に残っているか）
@@ -179,7 +179,7 @@ Prefabのリネームは `.meta` の GUID を保持したままファイル名�
 
 ## 7. 未確定事項
 
-- 信用ライフの上限（`initialLife`）が3以外のときの提灯・暖簾（[SV-22](../../../docs/server-sync/02-パラメータと閾値.md#sv-22)）
-- 評価3段階の閾値（[SV-20](../../../docs/server-sync/02-パラメータと閾値.md#sv-20)）。現状は `StoreEvalThresholds.Default`（High: 2/3, Mid: 1/3）
+- 信用ライフの上限（`initialLife`）が3以外のときの提灯・暖簾（[SV-22](../../../../docs/server-sync/02-パラメータと閾値.md#sv-22)）
+- 評価3段階の閾値（[SV-20](../../../../docs/server-sync/02-パラメータと閾値.md#sv-20)）。現状は `StoreEvalThresholds.Default`（High: 2/3, Mid: 1/3）
 - `TypingJudge` から「ひらがなの確定文字数」を取得する API の有無（無ければ受理済みローマ字列から逆算する必要がある）
-- 評価が `Low` の間の画面端アラート演出（[01-store-visual-state.md](./value-objects/01-store-visual-state.md) §5 の未確定演出）。本仕様書には含めない
+- 評価が `Low` の間の画面端アラート演出（[01-store-visual-state.md](../value-objects/01-store-visual-state.md) §5 の未確定演出）。本仕様書には含めない

@@ -67,7 +67,7 @@ public readonly record struct CustomerState(
 ## 7. 依存関係
 
 - 依存するモジュール：`Contract`（Proto の DTO 型）、`01-match-state.md`（`ElapsedMs` 基準時刻）
-- 依存されるモジュール：`02-store-state.md`（`StoreQueue`）、`04-order-progress-state.md`、Unity側 `value-objects/02-customer-mood-state.md`、`Unity/docs/.sdd/03-patience-timer.md`
+- 依存されるモジュール：`02-store-state.md`（`StoreQueue`）、`04-order-progress-state.md`、Unity側 `value-objects/02-customer-mood-state.md`、`Unity/docs/.sdd/match-view/05-patience-timer.md`
 
 ## 8. テスト観点
 

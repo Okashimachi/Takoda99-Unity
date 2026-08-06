@@ -1,4 +1,4 @@
-// 仕様書: Unity/docs/.sdd/09-takoyaki-stand-view.md
+// 仕様書: Unity/docs/.sdd/match-view/03-takoyaki-stand-view.md
 // たこ焼き1個ぶんの穴の見た目。Assets/Prefabs/MainStoreCanvas/Takoyaki.prefab にアタッチする。
 
 using Takoda99.View.ValueObjects;
