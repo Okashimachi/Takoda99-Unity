@@ -23,6 +23,9 @@ namespace Takoda99.View
         [SerializeField] private EliminationResultView resultView;
         [SerializeField] private RankBarView rankBar;
         [SerializeField] private Customers.CustomerQueueView customerQueue;
+        [SerializeField] private Customers.CustomerOrderBubbleView orderBubble;
+        [SerializeField] private StarRatingView starRating;
+        [SerializeField] private GameBeforeView gameBefore;
 
         private IStore store;
         private ITypingJudge typingJudge;
@@ -42,8 +45,48 @@ namespace Takoda99.View
             typingJudge = boundTypingJudge;
             subStoreBoardBound = false;
             selfEliminated = false;
+
+            if (gameBefore != null)
+            {
+                // 数え終わりは state 変化と一致しないため、明けた瞬間に描き直す。
+                gameBefore.Finished -= HandleGameBeforeFinished;
+                gameBefore.Finished += HandleGameBeforeFinished;
+                gameBefore.Begin();
+            }
+
             subscription = store.Subscribe(HandleStateChanged);
             HandleStateChanged(store.State);
+        }
+
+        /// <summary>待機が明けた。この瞬間に現在の state をそのまま描き直し、お題と行列を出す。</summary>
+        private void HandleGameBeforeFinished()
+        {
+            if (store != null)
+            {
+                HandleStateChanged(store.State);
+            }
+        }
+
+        private void Awake()
+        {
+            // 未割り当ての参照は「その機能だけが黙って動かない」形で表面化する。
+            // 画面が出ない原因を探すより、起動時に名指しで知らせるほうが早い。
+            WarnIfMissing(mainStore, nameof(mainStore));
+            WarnIfMissing(subStoreBoard, nameof(subStoreBoard));
+            WarnIfMissing(patienceTimer, nameof(patienceTimer));
+            WarnIfMissing(rankBar, nameof(rankBar));
+            WarnIfMissing(customerQueue, nameof(customerQueue));
+            WarnIfMissing(orderBubble, nameof(orderBubble));
+            WarnIfMissing(starRating, nameof(starRating));
+            WarnIfMissing(gameBefore, nameof(gameBefore));
+        }
+
+        private void WarnIfMissing(UnityEngine.Object reference, string fieldName)
+        {
+            if (reference == null)
+            {
+                Debug.LogWarning($"{nameof(Renderer)}.{fieldName} が未割り当てです。この要素は描画されません。", this);
+            }
         }
 
         private void OnEnable()
@@ -62,16 +105,50 @@ namespace Takoda99.View
         private void OnDisable()
         {
             Bootstrap.GameBootstrapper.Instance?.DetachRenderer(this);
+
+            if (gameBefore != null)
+            {
+                gameBefore.Finished -= HandleGameBeforeFinished;
+            }
+
             subscription?.Dispose();
         }
 
         private void HandleStateChanged(ClientState state)
         {
+            // 試合開始の合図はサーバー（MatchStart ＝ InMatch 到達）。カウントダウンが
+            // 0 になっていても、これが届くまで待機画面は畳まない。
+            if (gameBefore != null)
+            {
+                gameBefore.SetMatchStarted(state.Phase == ClientPhase.InMatch || state.Phase == ClientPhase.Spectating);
+            }
+
+            // 待機中はお題も行列も出さない。サーバーは待たずに配信してくる可能性があるため、
+            // state はそのまま溜め、明けた瞬間に HandleGameBeforeFinished から描き直す。
+            var holding = gameBefore != null && gameBefore.IsHolding;
+
             if (mainStore != null)
             {
                 mainStore.SetCreditLife(state.CreditLife);
                 mainStore.SetEvaluation(state.Normalized, state.Alive);
-                ApplyWord(state);
+                mainStore.SetPlayerName(FindSelfDisplayName(state));
+
+                if (holding)
+                {
+                    mainStore.SetWord(string.Empty, string.Empty);
+                    mainStore.SetOrderProgress(0, 0);
+                }
+                else
+                {
+                    ApplyWord(state);
+                    ApplyOrderCounter(state);
+                }
+            }
+
+            if (starRating != null)
+            {
+                // 星は受信値そのまま（EvaluationUpdate.starRating）。ここで再計算しない。
+                starRating.SetRating(state.StarRating);
             }
 
             if (subStoreBoard != null)
@@ -89,6 +166,7 @@ namespace Takoda99.View
                 foreach (var summary in others)
                 {
                     subStoreBoard.SetSummary(summary.StoreId, summary.CreditLife, summary.Alive);
+                    subStoreBoard.SetDisplayName(summary.StoreId, summary.DisplayName);
                     if (summary.FinalRank.HasValue)
                     {
                         subStoreBoard.SetRank(summary.StoreId, summary.FinalRank.Value);
@@ -104,12 +182,15 @@ namespace Takoda99.View
             // 行列の描画。ここを呼ばないと、サーバー由来の客が state.Queue に溜まるだけで
             // 画面に一切出ない（この結線漏れが「客がテストドライバ由来になっていた」原因）。
             // 自店が脱落した後は観戦なので、state.Queue に何が残っていても行列は描かない。
-            if (customerQueue != null && !selfEliminated)
+            if (customerQueue != null && !selfEliminated && !holding)
             {
                 customerQueue.Apply(state);
             }
 
-            ApplyServingCustomer(state);
+            if (!holding)
+            {
+                ApplyServingCustomer(state);
+            }
         }
 
         private void ApplyWord(ClientState state)
@@ -125,13 +206,37 @@ namespace Takoda99.View
             mainStore.SetTypedProgress(view.TypedKanaLength, 0);
         }
 
-        private void ApplyServingCustomer(ClientState state)
+        /// <summary>
+        /// 注文カウンタ。分子は準備できたたこ焼きの数（＝打ち終えた単語数 <c>WordIndex</c>）、
+        /// 分母は注文個数。対応中の注文が無いときは 0/0 に戻す。
+        /// </summary>
+        private void ApplyOrderCounter(ClientState state)
         {
-            if (patienceTimer == null)
+            if (state.CurrentOrder is null)
             {
+                mainStore.SetOrderProgress(0, 0);
                 return;
             }
 
+            mainStore.SetOrderProgress(state.CurrentOrder.WordIndex, state.CurrentOrder.OrderCount);
+        }
+
+        /// <summary>自店の表示名。StoreListUpdate が届くまでは空になる（受信値をそのまま使う）。</summary>
+        private static string FindSelfDisplayName(ClientState state)
+        {
+            foreach (var summary in state.Stores)
+            {
+                if (summary.StoreId == state.SelfStoreId)
+                {
+                    return summary.DisplayName;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private void ApplyServingCustomer(ClientState state)
+        {
             var front = state.Queue.Count > 0 ? state.Queue[0] : null;
             var frontId = front?.View.CustomerId;
 
@@ -144,11 +249,16 @@ namespace Takoda99.View
 
             if (front is null)
             {
-                patienceTimer.Stop();
+                patienceTimer?.Stop();
+                orderBubble?.Hide();
                 return;
             }
 
-            patienceTimer.Begin(front.ArrivedAtLocalMs, front.View.PatienceMaxMs);
+            patienceTimer?.Begin(front.ArrivedAtLocalMs, front.View.PatienceMaxMs);
+
+            // 先頭に来た瞬間に注文文句を出す。文面は契約に無いため個数から組み立てる
+            // （サーバーが文面を配信するようになったら第3引数に渡すだけでよい）。
+            orderBubble?.Show(front.View.CustomerId, front.View.OrderCount);
         }
 
         // ── IRenderer ────────────────────────────────────────────────
@@ -198,6 +308,7 @@ namespace Takoda99.View
                 selfEliminated = true;
                 customerQueue?.ClearAll();
                 patienceTimer?.Stop();
+                orderBubble?.Hide();
                 resultView?.Show(finalRank);
             }
         }
@@ -205,6 +316,7 @@ namespace Takoda99.View
         public void OnMatchEnd(int finalRank, MatchStats stats)
         {
             customerQueue?.ClearAll();
+            orderBubble?.Hide();
         }
 
         public void OnLifecycleChanged(ClientPhase from, ClientPhase to)
