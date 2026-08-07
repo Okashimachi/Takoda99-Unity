@@ -71,6 +71,12 @@ namespace Takoda99.View
             if (nameInputField != null)
             {
                 nameInputField.characterLimit = DisplayNameInputLimit;
+
+                var imeBridge = nameInputField.GetComponent<WebGLNameInputImeBridge>();
+                if (imeBridge != null)
+                {
+                    imeBridge.CharacterLimit = DisplayNameInputLimit;
+                }
             }
 
             if (decideButton != null)
