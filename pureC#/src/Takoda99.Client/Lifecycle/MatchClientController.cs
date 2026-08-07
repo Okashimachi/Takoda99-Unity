@@ -164,6 +164,16 @@ public sealed class MatchClientController : IMatchClientController
                 MissCount = r.MissCount,
                 ClientTimestamp = r.ClientTimestamp,
             });
+
+            // 接続確立時にしか Flush が呼ばれないため、ここで明示的に flush しないと
+            // OrderServed がキューに溜まったまま送信されない（05-dispatcher.md §3.3）。
+            // Flush() は呼ぶと _connected を true にしてしまうため、実際に接続中でない
+            // （Reconnecting 中に打ち切った等）場合まで誤って「接続済み」扱いにしないよう、
+            // 現在の接続状態を確認してから呼ぶ。
+            if (_store.State.Connection == ConnectionState.Connected)
+            {
+                _sendQueue.Flush();
+            }
         }
 
         _renderer.OnOrderServed(customerId);

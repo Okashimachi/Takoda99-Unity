@@ -279,7 +279,14 @@ namespace Takoda99.Bootstrap
                     break;
 
                 case ClientPhase.Result:
-                    SceneManager.LoadScene(resultSceneName, LoadSceneMode.Single);
+                    // GoToResult() で脱落モーダルから先に Result シーンへ来ていた場合、
+                    // その後に届く MatchEnd で phase が Spectating → Result に変わるだけで
+                    // シーン自体はすでに Result のため、ここで再ロードすると ResultScreenView
+                    // ごと作り直され、たこ焼き生成・表示演出が最初からやり直しになる（§7）。
+                    if (SceneManager.GetActiveScene().name != resultSceneName)
+                    {
+                        SceneManager.LoadScene(resultSceneName, LoadSceneMode.Single);
+                    }
                     break;
 
                 case ClientPhase.Spectating:
