@@ -39,6 +39,19 @@ public sealed class MatchResult
 {
     public int FinalRank { get; init; }
     public MatchStats Stats { get; init; } = new();
+
+    /// <summary>自店の終わり方。優勝（最後まで残った）なら空文字。</summary>
+    public string Reason { get; init; } = "";
+
+    /// <summary>試合の総経過時間（ms）。自店が途中脱落でも試合終了までの時間が入る。</summary>
+    public long MatchElapsedMs { get; init; }
+
+    /// <summary>終了時点の残り信用。自滅なら 0。</summary>
+    public int CreditLeft { get; init; }
+
+    /// <summary>最終評価（表示用。順位計算には使われない）。</summary>
+    public double EvalRaw { get; init; }
+    public double EvalNormalized { get; init; }
 }
 
 /// <summary>イベントログの1行（デバッグパネル・演出トリガー用）。</summary>
