@@ -68,6 +68,18 @@ namespace Takoda99.View.Customers
 
         private void Start()
         {
+            // 本番の試合中は絶対に動かさない。GameBootstrapper が生きている＝サーバーに繋がった実試合であり、
+            // ここで客を出すとサーバー由来の行列とテスト用の客が混ざる（実際に「脱落後も客が流れ続ける」
+            // 不具合の原因になっていた）。MainGameViewSampleDriver と同じガード。
+            if (Bootstrap.GameBootstrapper.Instance != null)
+            {
+                Debug.LogWarning(
+                    $"{nameof(CustomerQueueTestDriver)}: 実試合中のため自身を無効化します。" +
+                    "このコンポーネントは開発用で、本番シーンでは非アクティブにしておくこと。", this);
+                gameObject.SetActive(false);
+                return;
+            }
+
             if (_queueView == null)
             {
                 _queueView = FindAnyObjectByType<CustomerQueueView>(FindObjectsInactive.Include);
@@ -83,6 +95,14 @@ namespace Takoda99.View.Customers
             Debug.LogWarning(
                 $"{nameof(CustomerQueueTestDriver)}: 客テストモードで起動しました（対象: {_queueView.name}）。サーバーには接続しません。",
                 this);
+
+            // デバッグパネルにも「今はテストドライバが客を出している」と残す。
+            // Console を見ない実機/WebGL では、これが唯一の手掛かりになる。
+            _queueView.DriverName = nameof(CustomerQueueTestDriver);
+            DebugUI.ClientEventLog.Add(
+                DebugUI.ClientEventSource.View,
+                "TEST_DRIVER",
+                $"{nameof(CustomerQueueTestDriver)} が {_queueView.name} を駆動中（サーバー非接続）");
 
             if (Keyboard.current == null)
             {

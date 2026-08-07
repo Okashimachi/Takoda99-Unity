@@ -143,6 +143,12 @@ namespace Takoda99.View.Customers
             return actor;
         }
 
+        /// <summary>
+        /// 調査用。この行列を今どこが駆動しているか（Renderer か TestDriver か）。
+        /// ClientEventLog に載せて「画面の客の出所」を判別するためだけに持つ。
+        /// </summary>
+        public string DriverName { get; set; } = "unknown";
+
         // ── 状態の反映 ────────────────────────────────────────────────
 
         /// <summary>
@@ -151,6 +157,7 @@ namespace Takoda99.View.Customers
         /// </summary>
         public void Apply(ClientState state)
         {
+            DriverName = "Renderer(server)";
             _scratch.Clear();
             foreach (var entry in state.Queue)
             {
@@ -201,6 +208,11 @@ namespace Takoda99.View.Customers
                     continue;
                 }
 
+                DebugUI.ClientEventLog.Add(
+                    DebugUI.ClientEventSource.View,
+                    "LEAVE",
+                    $"customerId={actor.CustomerId} driver={DriverName}");
+
                 // 行列から消えた ＝ 提供完了か離脱。どちらかは Renderer からの通知で決まるので、
                 // この時点では退店待ちに積むだけにして LateUpdate まで判断を遅らせる。
                 _exiting.Add(actor);
@@ -219,6 +231,13 @@ namespace Takoda99.View.Customers
                 {
                     continue;
                 }
+
+                // 調査用: 実際に画面へ増えた客をログに残す。サーバー由来（NET ARRIVE）が
+                // 無いのにここだけ出るなら、客を出しているのは表示側の駆動元である。
+                DebugUI.ClientEventLog.Add(
+                    DebugUI.ClientEventSource.View,
+                    "ARRIVE",
+                    $"customerId={item.CustomerId} attr={item.Attribute} driver={DriverName}");
 
                 // 属性を渡した時点で、Actor が自分で SO から見た目を引く。
                 var actor = Rent();
