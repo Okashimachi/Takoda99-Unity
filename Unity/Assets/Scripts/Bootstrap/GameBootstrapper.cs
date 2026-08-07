@@ -279,14 +279,9 @@ namespace Takoda99.Bootstrap
                     break;
 
                 case ClientPhase.Result:
-                    // GoToResult() で脱落モーダルから先に Result シーンへ来ていた場合、
-                    // その後に届く MatchEnd で phase が Spectating → Result に変わるだけで
-                    // シーン自体はすでに Result のため、ここで再ロードすると ResultScreenView
-                    // ごと作り直され、たこ焼き生成・表示演出が最初からやり直しになる（§7）。
-                    if (SceneManager.GetActiveScene().name != resultSceneName)
-                    {
-                        SceneManager.LoadScene(resultSceneName, LoadSceneMode.Single);
-                    }
+                    // **Result フェーズでは自動遷移しない。** Result シーンへ進むのは
+                    // MainGame のリザルトモーダルの NextButton（GoToResult()）だけ。
+                    // 演出の途中でプレイヤーの意志と無関係に画面が切り替わるのを避ける。
                     break;
 
                 case ClientPhase.Spectating:

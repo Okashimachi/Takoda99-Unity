@@ -9,6 +9,7 @@
 
 using System;
 using Takoda99.Client.State;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +21,9 @@ namespace Takoda99.View
         [SerializeField] private Button titleButton;
         [SerializeField] private TakoyakiCreator takoyakiCreator;
         [SerializeField] private ResultStatsBoardView statsBoard;
+
+        [Tooltip("ResultCanvas/Result/Rank 配下、自店の最終順位を表示する数値テキスト（99 のプレースホルダーが入っている方）。")]
+        [SerializeField] private TMP_Text rankText;
 
         [Header("テストモード")]
         [Tooltip("ON にすると、サーバーの受信値ではなく ResultSampleData のサンプルを全要素へ注入する（たこ焼き生成を含む）。")]
@@ -86,6 +90,11 @@ namespace Takoda99.View
                 statsBoard.Show(result, ResultSampleData.CreateStores(), ResultSampleData.SelfStoreId);
             }
 
+            if (rankText != null)
+            {
+                rankText.text = result.FinalRank.ToString();
+            }
+
             if (takoyakiCreator != null)
             {
                 takoyakiCreator.SetTakoyakiCount(result.Stats.ServedCount);
@@ -115,6 +124,11 @@ namespace Takoda99.View
             if (statsBoard != null)
             {
                 statsBoard.Show(result, state.Stores, state.SelfStoreId);
+            }
+
+            if (rankText != null && result != null)
+            {
+                rankText.text = result.FinalRank.ToString();
             }
 
             if (takoyakiCreator != null)

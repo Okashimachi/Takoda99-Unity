@@ -334,6 +334,21 @@ namespace Takoda99.View
         {
             customerQueue?.ClearAll();
             orderBubble?.Hide();
+            patienceTimer?.Stop();
+
+            // 最後まで生き残った店（1位）には OnStoreEliminated が来ないため、
+            // モーダルはここでしか出せない。脱落済みなら既に出ているので二重に出さない。
+            if (!selfEliminated)
+            {
+                selfEliminated = true;
+                var selfStoreId = store?.State.SelfStoreId;
+                if (!string.IsNullOrEmpty(selfStoreId))
+                {
+                    resultView?.RecordElimination(selfStoreId, finalRank);
+                }
+
+                resultView?.Show(finalRank);
+            }
         }
 
         public void OnLifecycleChanged(ClientPhase from, ClientPhase to)
