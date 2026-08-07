@@ -136,6 +136,18 @@ namespace Takoda99.View
             }
         }
 
+        /// <summary>
+        /// 他店の表示名を反映する。未知の StoreId は黙って捨てる
+        /// （同じループで <see cref="SetSummary"/> が既に警告を出しているため、二重に出さない）。
+        /// </summary>
+        public void SetDisplayName(string storeId, string displayName)
+        {
+            if (tilesByStoreId.TryGetValue(storeId, out var tile))
+            {
+                tile.SetDisplayName(displayName);
+            }
+        }
+
         /// <summary>SubStoreCanvas/SurviverNum の残り生存者数表示を更新する（自店を含む全体）。</summary>
         public void SetAliveCount(int aliveCount)
         {
