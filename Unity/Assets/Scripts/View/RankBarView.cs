@@ -1,37 +1,45 @@
 // 仕様書: Unity/docs/.sdd/value-objects/05-rank-bar-and-eval-delta-view-state.md
-// root/SubStoreCanvas/RankinGage 配下の順位バー。RankBarViewState を受けて安全領域の帯と自店ポインタを描画する。
-// DangerZone は Gage いっぱいに固定表示済みで、SafeZone がその上に重なることで境界だけがオレンジ色に見える。
+// root/SubStoreCanvas/RankinGage 配下の順位バー。RankBarViewState を受けて
+// DangerZone（生存最下位の位置）・SafeZone（下位淘汰対象の上端）・自店ポインタをリアルタイムに描画する。
+// SafeZone が DangerZone の上に重なることで、境界の帯だけが正確にオレンジ色に見える。
 
 using UnityEngine;
 using Takoda99.View.ValueObjects;
 
 namespace Takoda99.View
 {
-    /// <summary>順位バー（安全領域/下位淘汰領域の帯・自店ポインタ）の Unity 実体。</summary>
+    /// <summary>順位バー（生存数/下位淘汰の帯・自店ポインタ）の Unity 実体。</summary>
     public sealed class RankBarView : MonoBehaviour
     {
         [SerializeField] private RectTransform gage;
+        [SerializeField] private RectTransform dangerZone;
         [SerializeField] private RectTransform safeZone;
         [SerializeField] private RectTransform playerRankPointer;
 
         private void Awake()
         {
-            if (gage == null || safeZone == null || playerRankPointer == null)
+            if (gage == null || dangerZone == null || safeZone == null || playerRankPointer == null)
             {
                 Debug.LogError($"{nameof(RankBarView)} の参照が未設定です。", this);
             }
         }
 
-        /// <summary>安全領域の帯と自店ポインタの位置を更新する。</summary>
+        /// <summary>生存数の帯・安全領域の帯・自店ポインタの位置を更新する。</summary>
         public void SetState(RankBarViewState state)
         {
-            var thresholdRatio = Mathf.Clamp01(state.StormThresholdPct);
+            if (dangerZone != null)
+            {
+                // 右端（1位側）は固定したまま、左端を「生存している最下位の順位」の位置に合わせる。
+                var anchorMin = dangerZone.anchorMin;
+                anchorMin.x = Mathf.Clamp01(state.AliveBoundaryRatio);
+                dangerZone.anchorMin = anchorMin;
+            }
 
             if (safeZone != null)
             {
-                // 右端（1位側）は固定したまま、左端だけを淘汰閾値の位置に合わせる。
+                // 右端（1位側）は固定したまま、左端を下位淘汰対象の上端（最も安全側）の位置に合わせる。
                 var anchorMin = safeZone.anchorMin;
-                anchorMin.x = thresholdRatio;
+                anchorMin.x = Mathf.Clamp01(state.DangerBoundaryRatio);
                 safeZone.anchorMin = anchorMin;
             }
 

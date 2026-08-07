@@ -98,7 +98,7 @@ namespace Takoda99.View
 
             if (rankBar != null)
             {
-                rankBar.SetState(RankBarViewState.From(state.Normalized, state.AliveCount, state.Params.MaxStores, state.Params.StormThresholdPct));
+                rankBar.SetState(RankBarViewState.From(state.Rank, state.AliveCount, state.Params.MaxStores, state.Params.StormThresholdPct));
             }
 
             // 行列の描画。ここを呼ばないと、サーバー由来の客が state.Queue に溜まるだけで

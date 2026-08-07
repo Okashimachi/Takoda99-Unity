@@ -1074,6 +1074,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.RankBarView
   gage: {fileID: 1379138423}
+  dangerZone: {fileID: 1779617266}
   safeZone: {fileID: 223677400}
   playerRankPointer: {fileID: 1058840863}
 --- !u!1 &193663028
