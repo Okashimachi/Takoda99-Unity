@@ -40,7 +40,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 ├── platform/            01 通信 / 02 入力 / 03 デバッグパネル
 ├── matchmaking/         01 マッチング進行 / 02 表示名
 ├── match-view/          01 Renderer / 02 主画面 / 03 たこ焼き台 / 04 小画面 / 05 我慢ゲージ / 06 サンプル駆動
-└── value-objects/       01〜06 派生状態
+└── value-objects/       01〜07 派生状態
 ```
 
 ## 3. 全仕様書の一覧
@@ -80,7 +80,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 
 ### [`value-objects/`](./value-objects/README.md) — 派生状態
 
-`StoreVisualState` / `CustomerMoodState` / `TakoyakiStandState` / `CreditLifeLanternState` / `RankBarViewState` / `SubStoreTileState` / `MatchmakingViewState`。一覧は [README.md](./value-objects/README.md)。
+`StoreVisualState` / `CustomerMoodState` / `TakoyakiStandState` / `CreditLifeLanternState` / `RankBarViewState` / `SubStoreTileState` / `PatienceGaugeState` / `MatchmakingViewState`。一覧は [README.md](./value-objects/README.md)。
 
 ## 4. 仕様書の書式
 
