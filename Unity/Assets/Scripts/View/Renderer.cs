@@ -208,17 +208,29 @@ namespace Takoda99.View
 
         /// <summary>
         /// 注文カウンタ。分子は準備できたたこ焼きの数（＝打ち終えた単語数 <c>WordIndex</c>）、
-        /// 分母は注文個数。対応中の注文が無いときは 0/0 に戻す。
+        /// 分母は注文個数。
         /// </summary>
+        /// <remarks>
+        /// 分母は「行列の先頭の客」から引く。<c>CurrentOrder</c> だけを見ると、前の客が帰ってから
+        /// 次の客の打鍵が始まるまでの間だけ 0/0 に落ち、注文数の表示が客の入れ替わりから遅れて見える。
+        /// 先頭が入れ替わった瞬間に新しい注文数へ切り替わるようにする。
+        /// </remarks>
         private void ApplyOrderCounter(ClientState state)
         {
-            if (state.CurrentOrder is null)
+            var front = state.Queue.Count > 0 ? state.Queue[0] : null;
+
+            if (front is null)
             {
                 mainStore.SetOrderProgress(0, 0);
                 return;
             }
 
-            mainStore.SetOrderProgress(state.CurrentOrder.WordIndex, state.CurrentOrder.OrderCount);
+            // 対応中の注文が先頭客のものならその進捗を、まだ始まっていなければ 0 個目として出す。
+            var prepared = state.CurrentOrder is not null && state.CurrentOrder.CustomerId == front.View.CustomerId
+                ? state.CurrentOrder.WordIndex
+                : 0;
+
+            mainStore.SetOrderProgress(prepared, front.View.OrderCount);
         }
 
         /// <summary>自店の表示名。StoreListUpdate が届くまでは空になる（受信値をそのまま使う）。</summary>
@@ -254,7 +266,12 @@ namespace Takoda99.View
                 return;
             }
 
-            patienceTimer?.Begin(front.ArrivedAtLocalMs, front.View.PatienceMaxMs);
+            // 我慢は「先頭に来て注文した瞬間」から減り始める。行列に並び始めた時刻（ArrivedAtLocalMs）を
+            // 起点にすると、待たされていた客ほど先頭に来た時点で既にゲージが減っており、
+            // 前の客に提供し終えた直後からゲージが尽きたままライフだけが減る。
+            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
+            patienceTimer?.Stop();
+            patienceTimer?.Begin(nowMs, front.View.PatienceMaxMs);
 
             // 先頭に来た瞬間に注文文句を出す。文面は契約に無いため個数から組み立てる
             // （サーバーが文面を配信するようになったら第3引数に渡すだけでよい）。

@@ -84,8 +84,11 @@ namespace Takoda99.View
 
 `HandleStateChanged` の中で、直前フレームの `state.Queue` 先頭 `CustomerId` と今回を比較する：
 
-- 先頭が変わった（新しい客になった）→ `patienceTimer.Begin(newFront.ArrivedAtLocalMs, newFront.View.PatienceMaxMs)`
+- 先頭が変わった（新しい客になった）→ `patienceTimer.Stop()` → `patienceTimer.Begin(now, newFront.View.PatienceMaxMs)`
+  - 起点は **先頭に来た「今」**（`Time.realtimeSinceStartupAsDouble`）であって `ArrivedAtLocalMs`（並び始めた時刻）ではない。理由は [05-patience-timer.md](./05-patience-timer.md) §4.1
 - 先頭が居なくなった（行列が空になった）→ `patienceTimer.Stop()`
+
+注文カウンタ（`MainStoreView.SetOrderProgress`）の**分母も先頭客から引く**。`CurrentOrder` だけを見ると、前の客が帰ってから次の客の打鍵が始まるまでの間だけ 0/0 に落ち、注文数の表示が客の入れ替わりから遅れて見えるため。分子は `CurrentOrder` が先頭客のものであればその `WordIndex`、まだ始まっていなければ 0。
 
 ## 5. 依存関係
 
