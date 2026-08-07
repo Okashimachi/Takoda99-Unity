@@ -25,6 +25,7 @@ namespace Takoda99.View
         private ITypingJudge typingJudge;
         private IDisposable subscription;
         private string servingCustomerId;
+        private bool subStoreBoardBound;
 
         /// <summary>IStore / ITypingJudge を注入する（01-renderer.md §3）。通常は OnEnable が自動で呼ぶ。</summary>
         public void Bind(IStore boundStore, ITypingJudge boundTypingJudge)
@@ -33,6 +34,7 @@ namespace Takoda99.View
 
             store = boundStore;
             typingJudge = boundTypingJudge;
+            subStoreBoardBound = false;
             subscription = store.Subscribe(HandleStateChanged);
             HandleStateChanged(store.State);
         }
@@ -67,7 +69,17 @@ namespace Takoda99.View
 
             if (subStoreBoard != null)
             {
-                foreach (var summary in state.Stores.Where(s => s.StoreId != state.SelfStoreId))
+                subStoreBoard.SetAliveCount(state.AliveCount);
+
+                var others = state.Stores.Where(s => s.StoreId != state.SelfStoreId).ToList();
+
+                if (!subStoreBoardBound && others.Count > 0)
+                {
+                    subStoreBoard.Bind(others.Select(s => s.StoreId).ToList());
+                    subStoreBoardBound = true;
+                }
+
+                foreach (var summary in others)
                 {
                     subStoreBoard.SetSummary(summary.StoreId, summary.CreditLife, summary.Alive);
                     if (summary.FinalRank.HasValue)

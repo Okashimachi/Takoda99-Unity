@@ -33,6 +33,19 @@ namespace Takoda99.View.Sample
 
         private void Start()
         {
+            // 本番の試合中は絶対に動かさない。GameBootstrapper が生きている＝サーバーに繋がった実試合であり、
+            // ここで Bind するとサンプル用の StoreId で対応表を上書きしてしまう（Start は Renderer.OnEnable より後に走る）。
+            // その結果サーバー由来の SetSummary / SetRank が全店ぶん「未知の StoreId」として捨てられ、
+            // 他店のダメージ・脱落が一切描画されなくなる。
+            if (Bootstrap.GameBootstrapper.Instance != null)
+            {
+                Debug.LogWarning(
+                    $"{nameof(MainGameViewSampleDriver)}: 実試合中のため自身を無効化します。" +
+                    "このコンポーネントは開発用で、本番シーンでは非アクティブにしておくこと。", this);
+                gameObject.SetActive(false);
+                return;
+            }
+
             BuildOtherStoreIds();
 
             if (subStoreBoard != null)
