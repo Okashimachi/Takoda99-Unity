@@ -1764,7 +1764,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 99
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
   m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
@@ -2182,6 +2182,7 @@ MonoBehaviour:
   titleButton: {fileID: 1096276699}
   takoyakiCreator: {fileID: 653436038}
   statsBoard: {fileID: 162829425}
+  rankText: {fileID: 1802812297}
   testMode: 0
   testTakoyakiCount: 43
 --- !u!114 &7100000000000000000
