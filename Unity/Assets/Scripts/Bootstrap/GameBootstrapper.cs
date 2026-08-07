@@ -81,6 +81,7 @@ namespace Takoda99.Bootstrap
             Dispatcher = dispatcher;
             TypingJudge = typingJudge;
             Log = log;
+            rendererProxy.Store = store;
 
             if (debugPanel != null)
             {
@@ -301,15 +302,72 @@ namespace Takoda99.Bootstrap
         {
             public View.Renderer Active;
 
-            public void OnCustomerArrived(CustomerView customer) => Active?.OnCustomerArrived(customer);
-            public void OnCustomerLeft(string customerId, LeaveReason reason) => Active?.OnCustomerLeft(customerId, reason);
+            /// <summary>ClientEventLog に自店の生存状況を添えるためだけに保持する（調査用）。</summary>
+            public IStore Store;
+
+            /// <summary>「脱落しているのに客が来ている」を一目で分かるようにする接尾辞。</summary>
+            private string StateSuffix()
+            {
+                var state = Store?.State;
+                if (state is null)
+                {
+                    return " | store=null";
+                }
+
+                return $" | alive={state.Alive} phase={state.Phase} queue={state.Queue.Count}";
+            }
+
+            public void OnCustomerArrived(CustomerView customer)
+            {
+                ClientEventLog.Add(ClientEventSource.Net, "ARRIVE", $"customerId={customer.CustomerId}{StateSuffix()}");
+                Active?.OnCustomerArrived(customer);
+            }
+
+            public void OnCustomerLeft(string customerId, LeaveReason reason)
+            {
+                ClientEventLog.Add(ClientEventSource.Net, "LEAVE", $"customerId={customerId} reason={reason}{StateSuffix()}");
+                Active?.OnCustomerLeft(customerId, reason);
+            }
+
             public void OnKeyFeedback(KeyResult result) => Active?.OnKeyFeedback(result);
-            public void OnOrderServed(string customerId) => Active?.OnOrderServed(customerId);
-            public void OnPhaseChanged(Phase phase) => Active?.OnPhaseChanged(phase);
+
+            public void OnOrderServed(string customerId)
+            {
+                ClientEventLog.Add(ClientEventSource.Net, "SERVED", $"customerId={customerId}{StateSuffix()}");
+                Active?.OnOrderServed(customerId);
+            }
+
+            public void OnPhaseChanged(Phase phase)
+            {
+                ClientEventLog.Add(ClientEventSource.Net, "PHASE", $"{phase}{StateSuffix()}");
+                Active?.OnPhaseChanged(phase);
+            }
+
             public void OnForcedEliminationWarning(int untilTick, double thresholdPct) => Active?.OnForcedEliminationWarning(untilTick, thresholdPct);
-            public void OnStoreEliminated(string storeId, EliminationReason reason, int finalRank) => Active?.OnStoreEliminated(storeId, reason, finalRank);
-            public void OnMatchEnd(int finalRank, MatchStats stats) => Active?.OnMatchEnd(finalRank, stats);
-            public void OnLifecycleChanged(ClientPhase from, ClientPhase to) => Active?.OnLifecycleChanged(from, to);
+
+            public void OnStoreEliminated(string storeId, EliminationReason reason, int finalRank)
+            {
+                // 自店と他店はタグを分ける。同じタグだと自店の脱落が他店の連鎖にまとめられて見えなくなる。
+                var isSelf = storeId == Store?.State.SelfStoreId;
+                ClientEventLog.Add(
+                    ClientEventSource.Net,
+                    isSelf ? "ELIM_SELF" : "ELIM_OTHER",
+                    $"storeId={storeId} reason={reason} rank={finalRank}{StateSuffix()}");
+                Active?.OnStoreEliminated(storeId, reason, finalRank);
+            }
+
+            public void OnMatchEnd(int finalRank, MatchStats stats)
+            {
+                ClientEventLog.Add(ClientEventSource.Net, "MATCH_END", $"rank={finalRank}{StateSuffix()}");
+                Active?.OnMatchEnd(finalRank, stats);
+            }
+
+            public void OnLifecycleChanged(ClientPhase from, ClientPhase to)
+            {
+                ClientEventLog.Add(ClientEventSource.Net, "LIFECYCLE", $"{from} -> {to}");
+                Active?.OnLifecycleChanged(from, to);
+            }
+
             public void OnConnectionTrouble(string kind) => Active?.OnConnectionTrouble(kind);
         }
     }

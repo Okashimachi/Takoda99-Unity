@@ -7272,6 +7272,7 @@ MonoBehaviour:
   subStoreBoard: {fileID: 1781543613}
   patienceTimer: {fileID: 957739886}
   resultView: {fileID: 193663050}
+  customerQueue: {fileID: 1747988713}
 --- !u!4 &1753422876
 Transform:
   m_ObjectHideFlags: 0
