@@ -135,6 +135,8 @@ public sealed class Dispatcher : IDispatcher
                         Normalized = evaluationUpdate.Normalized,
                         Rank = evaluationUpdate.Rank,
                         AliveCount = evaluationUpdate.AliveCount,
+                        StarRating = evaluationUpdate.StarRating,
+                        StarDelta = evaluationUpdate.StarDelta,
                     };
 
             case MessageType.DifficultyUpdate:

@@ -57,8 +57,16 @@ namespace Takoda99.View.ValueObjects
         /// </summary>
         public float AliveRatio => MaxStores > 0 ? (float)AliveCount / MaxStores : 0f;
 
-        /// <summary>自店の位置比率。0(MaxStores位側)..1(1位側)。▲マーカーの位置に使う。</summary>
-        public float SelfPositionRatio => PositionRatioOf(Rank);
+        /// <summary>
+        /// 自店の位置比率。0(MaxStores位側)..1(1位側)。▲マーカーの位置に使う。
+        /// </summary>
+        /// <remarks>
+        /// <c>Rank</c> が 0（＝<c>EvaluationUpdate</c> をまだ1通も受け取っていない試合開始直後）のときは
+        /// <b>最下位側</b>として扱う。順位軸のクランプに任せると 0 が 1位 に丸められ、
+        /// 試合開始と同時にマーカーが1位の位置（右端）に立ってしまう。
+        /// 全店が同点から始まる以上、未受信を最上位として見せるのは実態と逆になる。
+        /// </remarks>
+        public float SelfPositionRatio => PositionRatioOf(Rank <= 0 ? MaxStores : Rank);
 
         /// <summary>
         /// 「生存している最下位の順位」の位置比率。下位淘汰バー（DangerZone）の左端に使う。

@@ -28,6 +28,7 @@ namespace Takoda99.View
         [SerializeField] private Image booth;              // SubStore
         [SerializeField] private GameObject rankPanel;     // SubStoreRankPanel（既定で非アクティブ）
         [SerializeField] private TextMeshProUGUI rankText; // SubStoreRankPanel/Text
+        [SerializeField] private TextMeshProUGUI nameText; // SubStorePanel/Text (TMP)（他店の表示名）
         [SerializeField] private Sprite boothLife0;        // minitile_booth_life0
         [SerializeField] private Sprite boothLife1;
         [SerializeField] private Sprite boothLife2;
@@ -44,6 +45,9 @@ namespace Takoda99.View
 
         /// <summary>完全脱落時に表示する順位。未確定なら null を渡す（順位テキストを空にする）。</summary>
         public void SetRank(int? rank);
+
+        /// <summary>他店の表示名（StoreSummary.DisplayName）。受信値をそのまま出す。</summary>
+        public void SetDisplayName(string displayName);
     }
 
     public sealed class SubStoreBoardView : MonoBehaviour
@@ -62,6 +66,7 @@ namespace Takoda99.View
 
         public void SetSummary(string storeId, int creditLife, bool alive);
         public void SetRank(string storeId, int rank);
+        public void SetDisplayName(string storeId, string displayName);
     }
 }
 ```
@@ -82,9 +87,12 @@ root/SubStoreCanvas          ← SubStoreBoardView
 SubStorePanel                ← SubStoreTileView
 ├── BG          (Image, 半透明の下地)
 ├── SubStore    (Image, minitile_booth_life* を差し替える)
+├── Text (TMP)  (TextMeshProUGUI, 他店の表示名)
 └── SubStoreRankPanel        ← 入れ子Prefab。m_IsActive = 0（既定で非表示）
     └── Text                 ← 現在は Text (Legacy)。TextMeshProUGUI へ差し替える
 ```
+
+`nameText` が未設定の場合は、`Awake` が `SubStorePanel` **直下**の `TextMeshProUGUI` を1つ拾って代用する。順位テキストは入れ子Prefabの中（孫）にあるため、直下だけを見れば取り違えない。
 
 ### 3.2 MonoBehaviour のライフサイクル
 
