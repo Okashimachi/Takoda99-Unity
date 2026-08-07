@@ -24,8 +24,11 @@ namespace Takoda99.View
         [SerializeField] private TakoyakiCreator takoyakiCreator;
         [SerializeField] private ResultStatsBoardView statsBoard;
 
-        [Tooltip("ResultCanvas/Result/Rank 配下、自店の最終順位を表示する数値テキスト（99 のプレースホルダーが入っている方）。")]
+        [Tooltip("ResultCanvas/Result/Rank 配下、自店の最終順位を表示する数値テキスト（「位」ラベルと兄弟にある数値の方）。")]
         [SerializeField] private TMP_Text rankText;
+
+        /// <summary>MatchEnd 待ちのあいだ順位の代わりに出す文字（ResultStatsBoardView と揃える）。</summary>
+        private const string RankPending = "…";
 
         [Header("X 投稿")]
         [SerializeField] private Button xButton;
@@ -110,15 +113,31 @@ namespace Takoda99.View
                 statsBoard.Show(result, stores, ResultSampleData.SelfStoreId);
             }
 
-            if (rankText != null)
-            {
-                rankText.text = result.FinalRank.ToString();
-            }
+            ApplyRankText(result);
 
             if (takoyakiCreator != null)
             {
                 takoyakiCreator.SetTakoyakiCount(result.Stats.ServedCount);
             }
+        }
+
+        /// <summary>
+        /// 順位テキストを反映する。**MatchEnd 未着（<paramref name="result"/> が null）でも必ず書く。**
+        ///
+        /// 書かずに素通りすると、シーンに残っているプレースホルダー（過去に "99" が直書きされていた）が
+        /// そのまま画面に出てしまい、「何位でも99位になる」ように見える。シーンの初期値に依存しないよう、
+        /// 待ち状態も含めて常にこちらから上書きする。
+        /// </summary>
+        private void ApplyRankText(MatchResult result)
+        {
+            if (rankText == null)
+            {
+                // 黙って表示だけ変わらないと原因の特定が難しい。名指しで知らせる。
+                Debug.LogError($"{nameof(ResultScreenView)}: {nameof(rankText)} が未割り当てです。順位が表示されません（ResultCanvas/Result/Rank 配下の数値テキストを割り当ててください）。", this);
+                return;
+            }
+
+            rankText.text = result != null ? result.FinalRank.ToString() : RankPending;
         }
 
         /// <summary>
@@ -148,10 +167,7 @@ namespace Takoda99.View
                 statsBoard.Show(result, state.Stores, state.SelfStoreId);
             }
 
-            if (rankText != null && result != null)
-            {
-                rankText.text = result.FinalRank.ToString();
-            }
+            ApplyRankText(result);
 
             if (takoyakiCreator != null)
             {
