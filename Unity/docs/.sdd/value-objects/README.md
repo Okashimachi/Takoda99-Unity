@@ -27,6 +27,7 @@ Unity側 View用派生状態（本ディレクトリの対象）
 | 04 | `04-credit-life-lantern-state.md` | `CreditLifeLanternState`（提灯の点灯/消灯） | 左上の提灯3つ |
 | 05 | `05-rank-bar-and-eval-delta-view-state.md` | `RankBarViewState` / `EvalDeltaDisplayState` | 上部順位バー・淘汰圏の帯・星評価と増減表示 |
 | 06 | `06-sub-store-tile-state.md` | `SubStoreTileState`（信用ライフ3段階＋脱落直後／完全脱落） | 99店ミニ盤面の1マスの屋台画像・順位表示 |
+| 07 | `07-patience-gauge-state.md` | `PatienceGaugeState`（残量比＋色段階3段階） | 我慢ゲージのバーの長さと色 |
 
 新しい派生値オブジェクトが増えたら、この表に行を追加してから仕様書ファイルを作る。
 
