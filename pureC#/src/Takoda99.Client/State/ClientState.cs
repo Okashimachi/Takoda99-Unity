@@ -75,6 +75,13 @@ public sealed class ClientState
     public double Normalized { get; init; }
     public int Rank { get; init; }
     public int AliveCount { get; init; }
+
+    /// <summary>表示専用の星（0..5）。EvaluationUpdate の受信値そのまま。Normalized とは別物で、再計算しない。</summary>
+    public double StarRating { get; init; }
+
+    /// <summary>前ティックからの星の増減。受信値そのまま。</summary>
+    public double StarDelta { get; init; }
+
     public int HeatLevel { get; init; }
     public bool Alive { get; init; }
 
@@ -110,6 +117,8 @@ public sealed class ClientState
         double? normalized = null,
         int? rank = null,
         int? aliveCount = null,
+        double? starRating = null,
+        double? starDelta = null,
         int? heatLevel = null,
         bool? alive = null,
         IReadOnlyList<CustomerEntry>? queue = null,
@@ -139,6 +148,8 @@ public sealed class ClientState
             Normalized = normalized ?? Normalized,
             Rank = rank ?? Rank,
             AliveCount = aliveCount ?? AliveCount,
+            StarRating = starRating ?? StarRating,
+            StarDelta = starDelta ?? StarDelta,
             HeatLevel = heatLevel ?? HeatLevel,
             Alive = alive ?? Alive,
             Queue = queue ?? Queue,

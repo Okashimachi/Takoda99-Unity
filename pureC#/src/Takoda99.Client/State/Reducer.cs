@@ -15,7 +15,7 @@ public static class Reducer
             CustomerArrivedAction a => ApplyCustomerArrived(state, a),
             CustomerLeftAction a => ApplyCustomerLeft(state, a),
             CreditUpdateAction a => state.With(creditLife: a.Life),
-            EvaluationUpdateAction a => state.With(evalRaw: a.EvalRaw, normalized: a.Normalized, rank: a.Rank, aliveCount: a.AliveCount),
+            EvaluationUpdateAction a => state.With(evalRaw: a.EvalRaw, normalized: a.Normalized, rank: a.Rank, aliveCount: a.AliveCount, starRating: a.StarRating, starDelta: a.StarDelta),
             DifficultyUpdateAction a => state.With(heatLevel: a.HeatLevel),
             PhaseChangeAction a => state.With(matchPhase: a.Phase),
             StoreListUpdateAction a => state.With(stores: a.Stores, aliveCount: a.AliveCount),

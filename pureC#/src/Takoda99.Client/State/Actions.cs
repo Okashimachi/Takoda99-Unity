@@ -44,6 +44,12 @@ public sealed class EvaluationUpdateAction : IAction
     public double Normalized { get; init; }
     public int Rank { get; init; }
     public int AliveCount { get; init; }
+
+    /// <summary>表示専用の星（0..5）。サーバー値をそのまま運ぶ（クライアントで算出しない）。</summary>
+    public double StarRating { get; init; }
+
+    /// <summary>前ティックからの星の増減。0 なら増減演出を出さない。</summary>
+    public double StarDelta { get; init; }
 }
 
 public sealed class DifficultyUpdateAction : IAction
