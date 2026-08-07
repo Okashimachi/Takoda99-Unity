@@ -24,7 +24,10 @@ namespace Takoda99.View.Customers
         /// <summary>我慢の最大値（ms）。怒り表示の推定にだけ使う。</summary>
         public int PatienceMaxMs { get; }
 
-        /// <summary>来店を受信したローカル時刻（<c>Time.realtimeSinceStartupAsDouble</c> 基準の ms）。</summary>
+        /// <summary>
+        /// 来店を受信したローカル時刻（<c>Time.realtimeSinceStartupAsDouble</c> 基準の ms）。
+        /// 我慢の起点ではない（我慢は先頭に来てから減る。<see cref="CustomerQueueView.TrackFront"/>）。
+        /// </summary>
         public long ArrivedAtLocalMs { get; }
 
         public CustomerQueueItem(string customerId, CustomerAttribute attribute, int patienceMaxMs, long arrivedAtLocalMs)
@@ -72,6 +75,12 @@ namespace Takoda99.View.Customers
         private readonly Dictionary<string, bool> _pendingExits = new Dictionary<string, bool>();
 
         private readonly List<CustomerActor> _exiting = new List<CustomerActor>();
+
+        /// <summary>いま行列の先頭に居る客。表情の推定は先頭（＝注文中）の客だけが対象。</summary>
+        private string _frontCustomerId;
+
+        /// <summary>先頭に来た（＝注文した）ローカル時刻。我慢の推定はここを起点にする。</summary>
+        private long _frontSinceLocalMs;
 
         /// <summary>
         /// 客を生成する親。インスペクタ指定が最優先で、未設定なら Layout のアンカーの親、
@@ -262,8 +271,31 @@ namespace Takoda99.View.Customers
                 actor.MoveTo(Localize(_layout.QueuePose(i)), _layout.AdvanceDuration, _advanceEase);
             }
 
+            TrackFront();
             ApplyStates(servingCustomerId);
             ApplySiblingOrder();
+        }
+
+        /// <summary>
+        /// 先頭の客の入れ替わりを見張り、入れ替わった瞬間を我慢の起点として記録する。
+        /// 行列に並んだ時刻を起点にすると、後ろで待っていた客が先頭に来た時点で既に怒った顔になる。
+        /// </summary>
+        private void TrackFront()
+        {
+            if (_visible.Count == 0)
+            {
+                _frontCustomerId = null;
+                return;
+            }
+
+            var frontId = _visible[0].CustomerId;
+            if (frontId == _frontCustomerId)
+            {
+                return;
+            }
+
+            _frontCustomerId = frontId;
+            _frontSinceLocalMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
         }
 
         /// <summary>
@@ -311,34 +343,29 @@ namespace Takoda99.View.Customers
 
         private void Update()
         {
-            // 表示中は最大でも数人なので、毎フレーム回しても問題にならない。
-            if (_layout == null || _visible.Count == 0)
+            if (_layout == null || _visible.Count == 0 || _visibleEntries.Count == 0)
+            {
+                return;
+            }
+
+            // 我慢が減るのは注文中の先頭客だけ。後ろに並んでいる客の顔は変えない。
+            var front = _visible[0];
+            if (front.State == CustomerVisualState.Delighted || front.State == CustomerVisualState.Leaving)
             {
                 return;
             }
 
             var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
+            var mood = CustomerMoodState.From(
+                front.CustomerId,
+                _visibleEntries[0].PatienceMaxMs,
+                _frontSinceLocalMs,
+                nowMs,
+                CustomerMoodThresholds.Default);
 
-            for (var i = 0; i < _visible.Count; i++)
+            if (mood.Mood == CustomerMood.Angry || mood.Mood == CustomerMood.TurnedAway)
             {
-                var actor = _visible[i];
-                if (actor.State == CustomerVisualState.Delighted || actor.State == CustomerVisualState.Leaving)
-                {
-                    continue;
-                }
-
-                var item = _visibleEntries[i];
-                var mood = CustomerMoodState.From(
-                    actor.CustomerId,
-                    item.PatienceMaxMs,
-                    item.ArrivedAtLocalMs,
-                    nowMs,
-                    CustomerMoodThresholds.Default);
-
-                if (mood.Mood == CustomerMood.Angry || mood.Mood == CustomerMood.TurnedAway)
-                {
-                    actor.SetState(CustomerVisualState.Angry);
-                }
+                front.SetState(CustomerVisualState.Angry);
             }
         }
 
@@ -427,6 +454,7 @@ namespace Takoda99.View.Customers
             _exiting.Clear();
             _byId.Clear();
             _pendingExits.Clear();
+            _frontCustomerId = null;
         }
 
         // ── 小物 ─────────────────────────────────────────────────────

@@ -60,11 +60,15 @@ namespace Takoda99.Timer
             Apply(totalMs);
         }
 
-        /// <summary>対応終了・客の離脱時に呼ぶ。ゲージを空にする。</summary>
+        /// <summary>
+        /// 対応終了・客の離脱時に呼ぶ。カウントダウンを止め、ゲージを満タン（待機状態）へ戻す。
+        /// 客が居ない間に「残り0・赤」を出しっぱなしにすると、次の客の我慢が尽きたように見えるため。
+        /// </summary>
         public void Stop()
         {
             running = false;
-            Apply(0);
+            totalMs = Math.Max(totalMs, 1); // Begin 前に呼ばれても 0 除算相当（空・赤）にしない。
+            Apply(totalMs);
         }
 
         private void Update()
