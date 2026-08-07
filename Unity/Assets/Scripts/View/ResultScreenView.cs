@@ -8,7 +8,9 @@
 // そのため一度読むだけにせず、Store を購読して結果の到着を待つ。
 
 using System;
+using System.Collections.Generic;
 using Takoda99.Client.State;
+using Takoda99.Proto;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,6 +27,9 @@ namespace Takoda99.View
         [Tooltip("ResultCanvas/Result/Rank 配下、自店の最終順位を表示する数値テキスト（99 のプレースホルダーが入っている方）。")]
         [SerializeField] private TMP_Text rankText;
 
+        [Header("X 投稿")]
+        [SerializeField] private Button xButton;
+
         [Header("テストモード")]
         [Tooltip("ON にすると、サーバーの受信値ではなく ResultSampleData のサンプルを全要素へ注入する（たこ焼き生成を含む）。")]
         [SerializeField] private bool testMode;
@@ -35,6 +40,8 @@ namespace Takoda99.View
         private IDisposable subscription;
         private bool hasRenderedResult;
         private bool hasRenderedPending;
+        private MatchResult latestResult;
+        private string latestStoreName = "-";
 
         private void OnEnable()
         {
@@ -71,6 +78,11 @@ namespace Takoda99.View
             {
                 titleButton.onClick.RemoveListener(OnTitleClicked);
             }
+
+            if (xButton != null)
+            {
+                xButton.onClick.RemoveListener(OnXClicked);
+            }
         }
 
         private void BindTitleButton()
@@ -79,15 +91,23 @@ namespace Takoda99.View
             {
                 titleButton.onClick.AddListener(OnTitleClicked);
             }
+
+            if (xButton != null)
+            {
+                xButton.onClick.AddListener(OnXClicked);
+            }
         }
 
         private void ApplySample()
         {
             var result = ResultSampleData.CreateResult(testTakoyakiCount);
+            var stores = ResultSampleData.CreateStores();
+            latestResult = result;
+            latestStoreName = FindSelfName(stores, ResultSampleData.SelfStoreId);
 
             if (statsBoard != null)
             {
-                statsBoard.Show(result, ResultSampleData.CreateStores(), ResultSampleData.SelfStoreId);
+                statsBoard.Show(result, stores, ResultSampleData.SelfStoreId);
             }
 
             if (rankText != null)
@@ -113,6 +133,8 @@ namespace Takoda99.View
             }
 
             var result = state.Result;
+            latestResult = result;
+            latestStoreName = FindSelfName(state.Stores, state.SelfStoreId);
 
             // 待ち表示は最初の1回だけ。観戦中は他店の更新が流れ続けるので、そのたびに組み直すと
             // TakoyakiCreator の表示演出が毎回リセットされ、いつまでも何も出てこなくなる。
@@ -152,6 +174,66 @@ namespace Takoda99.View
         private void OnTitleClicked()
         {
             Bootstrap.GameBootstrapper.Instance.BackToTitle();
+        }
+
+        /// <summary>成績とハッシュタグを添えて、X の投稿画面をブラウザで開く。上位3位は専用の煽り文にする。</summary>
+        private void OnXClicked()
+        {
+            var stats = latestResult?.Stats ?? new MatchStats();
+            var missRate = stats.TotalKeystrokes > 0
+                ? (stats.TotalMisses * 100.0 / stats.TotalKeystrokes).ToString("F1", System.Globalization.CultureInfo.InvariantCulture)
+                : "0.0";
+
+            var finalRank = latestResult?.FinalRank ?? 0;
+
+            // 順位は本文の先頭に置く。X のタイムラインは先頭数行しか見えないことが多く、
+            // 一番の話題性がある数字を打鍵数より下へ埋めない。
+            // MatchEnd 未着（finalRank が 0）のときだけ順位行を落とす。
+            var rankLine = finalRank > 0 ? $"順位：{finalRank}位 / 99店\n" : string.Empty;
+
+            var body =
+                rankLine +
+                $"打鍵数：{stats.TotalKeystrokes}\n" +
+                $"ミス数：{stats.TotalMisses}\n" +
+                $"ミス率：{missRate}%";
+
+            var headline = BuildHeadline(finalRank, latestStoreName, stats.ServedCount);
+            var text = $"{headline}\n{body}\n#たこ打99 #THEHACK2026";
+
+            var url = "https://x.com/intent/post?text=" + UnityEngine.Networking.UnityWebRequest.EscapeURL(text);
+            Application.OpenURL(url);
+        }
+
+        /// <summary>上位3位専用の煽り文。それ以外は通常の見出し。</summary>
+        private static string BuildHeadline(int finalRank, string storeName, int servedCount)
+        {
+            switch (finalRank)
+            {
+                case 1:
+                    return $"🏆優勝🏆 {storeName}は堂々の1位！{servedCount}個のたこ焼きを作りました！";
+                case 2:
+                    return $"🥈準優勝🥈 {storeName}は2位に輝きました！{servedCount}個のたこ焼きを作りました！";
+                case 3:
+                    return $"🥉3位入賞🥉 {storeName}は見事3位！{servedCount}個のたこ焼きを作りました！";
+                default:
+                    return $"{storeName}は{servedCount}個のたこ焼きを作りました！";
+            }
+        }
+
+        private static string FindSelfName(IReadOnlyList<StoreSummary> stores, string selfStoreId)
+        {
+            if (stores != null && !string.IsNullOrEmpty(selfStoreId))
+            {
+                foreach (var store in stores)
+                {
+                    if (store.StoreId == selfStoreId)
+                    {
+                        return store.DisplayName;
+                    }
+                }
+            }
+
+            return "-";
         }
     }
 }

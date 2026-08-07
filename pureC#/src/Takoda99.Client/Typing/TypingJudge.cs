@@ -152,13 +152,72 @@ public sealed class TypingJudge : ITypingJudge
                 typedKanaLength += _units[i].Kana.Length;
             }
 
+            var (currentRoma, typedRomaLength) = BuildRomaView();
+
             return new TypingView(
                 _words[_wordIndex],
                 typedKanaLength,
                 _buffer,
                 _wordIndex,
                 _words.Count,
-                _missCount);
+                _missCount,
+                currentRoma,
+                typedRomaLength);
         }
+    }
+
+    /// <summary>
+    /// 表示用のローマ字全文と、その打鍵済み文字数を組み立てる。
+    /// </summary>
+    /// <remarks>
+    /// 打鍵単位ごとに候補を1つ選んで連結する。選び方は位置によって変える。
+    /// <list type="bullet">
+    /// <item>確定済み（<c>i &lt; _unitIndex</c>）：実際にどの候補で打ち切ったかは保持していないため、
+    /// 代表候補（先頭）を使う。打ち終えた部分なのでハイライト側に隠れる。</item>
+    /// <item>入力中（<c>i == _unitIndex</c>）：<see cref="_buffer"/> と前方一致する候補を選ぶ。
+    /// これを外すと「s と打ったのに表示は shi のまま」のように、残り表示と実際の受理がずれる。</item>
+    /// <item>未入力（<c>i &gt; _unitIndex</c>）：代表候補（先頭）を使う。</item>
+    /// </list>
+    /// </remarks>
+    private (string Roma, int TypedLength) BuildRomaView()
+    {
+        var builder = new System.Text.StringBuilder();
+        var typedLength = 0;
+
+        for (var i = 0; i < _units.Count; i++)
+        {
+            var patterns = _units[i].Patterns;
+            if (patterns is null || patterns.Count == 0)
+            {
+                // 未登録のかなは Segment がその1文字をそのまま単位にして返す。候補が無い場合は
+                // かな自体を出しておく（表示が欠けるより、打てない字がそこにあると分かるほうがよい）。
+                builder.Append(_units[i].Kana);
+                continue;
+            }
+
+            string chosen;
+            if (i == _unitIndex && _buffer.Length > 0)
+            {
+                chosen = patterns.FirstOrDefault(p => p.StartsWith(_buffer, StringComparison.Ordinal))
+                         ?? patterns[0];
+            }
+            else
+            {
+                chosen = patterns[0];
+            }
+
+            if (i < _unitIndex)
+            {
+                typedLength += chosen.Length;
+            }
+            else if (i == _unitIndex)
+            {
+                typedLength += _buffer.Length;
+            }
+
+            builder.Append(chosen);
+        }
+
+        return (builder.ToString(), typedLength);
     }
 }
