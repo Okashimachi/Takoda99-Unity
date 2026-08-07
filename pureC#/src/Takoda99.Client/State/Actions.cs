@@ -85,6 +85,11 @@ public sealed class MatchEndAction : IAction
 {
     public int FinalRank { get; init; }
     public MatchStats Stats { get; init; } = new();
+    public string Reason { get; init; } = "";
+    public long MatchElapsedMs { get; init; }
+    public int CreditLeft { get; init; }
+    public double EvalRaw { get; init; }
+    public double EvalNormalized { get; init; }
 }
 
 public sealed class MatchmakingStatusAction : IAction

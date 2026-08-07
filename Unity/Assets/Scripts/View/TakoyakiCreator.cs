@@ -15,7 +15,15 @@ namespace Takoda99.View
     {
         [SerializeField] private GameObject takoyakiPrefab;
         [SerializeField] private GameObject takoyakiParent;
-        [SerializeField] private float spawnIntervalSeconds = 0.05f;
+
+        [Header("生成テンポ（ゆっくり始まり、徐々に速く、最速で頭打ち）")]
+        [Tooltip("1個目と2個目の間隔（秒）。ここが一番ゆっくり。")]
+        [SerializeField] private float firstIntervalSeconds = 0.35f;
+        [Tooltip("どれだけ加速してもこれより短くならない間隔（秒）＝最高速度。")]
+        [SerializeField] private float minIntervalSeconds = 0.04f;
+        [Tooltip("1個生成するごとに間隔へ掛ける倍率。1未満で加速する（小さいほど速く頭打ちに達する）。")]
+        [Range(0.5f, 1f)]
+        [SerializeField] private float intervalDecayRate = 0.9f;
 
         [Header("左右の揺れ")]
         [SerializeField] private float swayDistance = 1f;
@@ -27,13 +35,10 @@ namespace Takoda99.View
         [SerializeField] private GameObject buttons;
         [SerializeField] private float revealIntervalSeconds = 2f;
 
-        [Header("テストモード")]
-        [SerializeField] private bool testMode;
-        [SerializeField] private int testTakoyakiCount;
-
         private readonly List<GameObject> spawned = new List<GameObject>();
         private int injectedTakoyakiCount;
         private bool hasInjectedCount;
+        private bool hasStarted;
         private CancellationTokenSource spawnCts;
         private Tween swayTween;
 
@@ -48,11 +53,10 @@ namespace Takoda99.View
             SetActiveIfAssigned(others, false);
             SetActiveIfAssigned(buttons, false);
 
-            if (testMode)
-            {
-                Spawn(testTakoyakiCount).Forget();
-            }
-            else if (hasInjectedCount)
+            hasStarted = true;
+
+            // OnEnable で先に注入されていた場合は、ここで初めて生成を始める。
+            if (hasInjectedCount)
             {
                 Spawn(injectedTakoyakiCount).Forget();
             }
@@ -65,13 +69,14 @@ namespace Takoda99.View
             swayTween?.Kill();
         }
 
-        /// <summary>外部（サーバーから受け取ったリザルト情報）から、造ったたこ焼きの数を注入する。</summary>
+        /// <summary>外部（サーバー受信値、またはテストモードのサンプル）から、造ったたこ焼きの数を注入する。</summary>
         public void SetTakoyakiCount(int count)
         {
             injectedTakoyakiCount = count < 0 ? 0 : count;
             hasInjectedCount = true;
 
-            if (!testMode)
+            // Start より前に呼ばれた場合は、揺れ演出の初期化を待ってから Start 側で生成する。
+            if (hasStarted)
             {
                 Spawn(injectedTakoyakiCount).Forget();
             }
@@ -90,6 +95,10 @@ namespace Takoda99.View
             spawnCts = new CancellationTokenSource();
             var token = spawnCts.Token;
 
+            // 間隔を1個ごとに intervalDecayRate 倍していく（等比）。減り幅が自分の大きさに比例するので
+            // 最初はぐっと速くなり、minIntervalSeconds に近づくほど変化が緩やかになって頭打ちになる。
+            var interval = Mathf.Max(firstIntervalSeconds, minIntervalSeconds);
+
             for (var i = 0; i < count; i++)
             {
                 if (token.IsCancellationRequested)
@@ -103,7 +112,8 @@ namespace Takoda99.View
 
                 if (i < count - 1)
                 {
-                    await UniTask.Delay(System.TimeSpan.FromSeconds(spawnIntervalSeconds), cancellationToken: token);
+                    await UniTask.Delay(System.TimeSpan.FromSeconds(interval), cancellationToken: token);
+                    interval = Mathf.Max(interval * intervalDecayRate, minIntervalSeconds);
                 }
             }
 
