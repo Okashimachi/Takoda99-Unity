@@ -27,10 +27,10 @@ namespace Takoda99.Timer
         [SerializeField] private PatienceGaugePalette palette;        // 3段階の色と閾値
         [SerializeField] private TextMeshProUGUI remainingSecondsText; // 任意。null なら数値表示なし
 
-        /// <summary>対応開始。arrivedAtLocalMs は IClock.MonotonicMs 基準（CustomerEntry.ArrivedAtLocalMs と同じ時刻系）。</summary>
-        public void Begin(long arrivedAtLocalMs, int patienceMaxMs);
+        /// <summary>対応開始。startedAtLocalMs は Time.realtimeSinceStartupAsDouble 基準（= IClock.MonotonicMs と同じ時刻系）。</summary>
+        public void Begin(long startedAtLocalMs, int patienceMaxMs);
 
-        /// <summary>対応終了・客の離脱時に呼ぶ。ゲージを空にする。</summary>
+        /// <summary>対応終了・客の離脱時に呼ぶ。カウントダウンを止め、ゲージを満タン（待機状態）へ戻す。</summary>
         public void Stop();
     }
 }
@@ -78,8 +78,9 @@ namespace Takoda99.Timer
 
 ### 4.1 時刻の基準
 
-- `arrivedAtLocalMs` は pureC# 側 `CustomerEntry.ArrivedAtLocalMs`（`Dispatcher` が `CustomerArrived` 受信時に `IClock.MonotonicMs` で記録した値）をそのまま渡す
-- 締切 = `arrivedAtLocalMs + patienceMaxMs`。以後 `Update` のたびに `締切 - now` を残り時間とする。`now` は Unity 側 `IClock` 実装（[Bootstrap](../foundation/02-scene-composition.md)）と同じ `Time.realtimeSinceStartupAsDouble` 基準を使い、時刻系を揃える
+- 我慢が減り始めるのは**その客が行列の先頭に来て注文した瞬間**であって、行列に並んだ瞬間ではない。したがって `startedAtLocalMs` には `CustomerEntry.ArrivedAtLocalMs` ではなく、`Renderer` が**先頭客の入れ替わりを検知した時刻**（`Time.realtimeSinceStartupAsDouble`）を渡す
+  - 並んだ時刻を起点にすると、待たされていた客ほど先頭に来た時点で既にゲージが減っており、前の客に提供し終えた直後から「ゲージが尽きたままライフだけ減る」状態になる
+- 締切 = `startedAtLocalMs + patienceMaxMs`。以後 `Update` のたびに `締切 - now` を残り時間とする。`now` は Unity 側 `IClock` 実装（[Bootstrap](../foundation/02-scene-composition.md)）と同じ `Time.realtimeSinceStartupAsDouble` 基準を使い、時刻系を揃える
 - **サーバー基準時刻 `PatienceStartedAtServerMs` はそのままでは使わない。** クライアント/サーバー間の時刻同期（NTP的な補正）を持たないため、クライアント受信時刻を起点にする。ズレの許容は未確定事項に記す
 
 ### 4.2 表示
@@ -95,7 +96,8 @@ namespace Takoda99.Timer
 
 ### 4.3 `Stop`
 
-- `Begin` を呼んでいない状態で呼んでも安全（ゲージを空にするだけ）
+- カウントダウンを止め、ゲージを**満タン**へ戻す（客が居ない待機状態）。残0・Danger色を出しっぱなしにすると、次の客の我慢が既に尽きているように見えるため
+- `Begin` を呼んでいない状態で呼んでも安全
 - 対応中の客が入れ替わる場合は、呼び出し側が `Stop()` → `Begin(new)` の順に呼ぶ（本モジュールは客の同一性を追跡しない）
 
 ## 5. 依存関係
@@ -112,7 +114,8 @@ namespace Takoda99.Timer
 - **右端が動かないか**（`anchorMax.x` が 1 のまま。バーが左右両方から縮んでいないか）
 - 残量 50% / 25% を跨いだ瞬間に 緑 → オレンジ → 赤 と切り替わるか
 - `patienceMaxMs` 経過後は幅0に張り付き、左端が右端を追い越さないか
-- `Stop` を呼ぶと即座にゲージが空になるか
+- `Stop` を呼ぶと即座にゲージが満タンへ戻り、以後減らないか
+- 注文個数ぶん提供して客が帰った直後、ゲージが次の客ぶんとして満タンから減り直すか（減りっぱなしにならないか）
 - `palette` を別アセットに差し替えると色だけが変わるか（段階の数は変わらない）
 
 ## 7. 未確定事項
