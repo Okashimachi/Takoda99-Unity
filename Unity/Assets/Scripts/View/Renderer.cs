@@ -20,12 +20,16 @@ namespace Takoda99.View
         [SerializeField] private SubStoreBoardView subStoreBoard;
         [SerializeField] private PatienceTimer patienceTimer;
         [SerializeField] private EliminationResultView resultView;
+        [SerializeField] private Customers.CustomerQueueView customerQueue;
 
         private IStore store;
         private ITypingJudge typingJudge;
         private IDisposable subscription;
         private string servingCustomerId;
         private bool subStoreBoardBound;
+
+        /// <summary>自店が脱落済みか。以降は観戦なので行列を描かない。</summary>
+        private bool selfEliminated;
 
         /// <summary>IStore / ITypingJudge を注入する（01-renderer.md §3）。通常は OnEnable が自動で呼ぶ。</summary>
         public void Bind(IStore boundStore, ITypingJudge boundTypingJudge)
@@ -35,6 +39,7 @@ namespace Takoda99.View
             store = boundStore;
             typingJudge = boundTypingJudge;
             subStoreBoardBound = false;
+            selfEliminated = false;
             subscription = store.Subscribe(HandleStateChanged);
             HandleStateChanged(store.State);
         }
@@ -89,6 +94,14 @@ namespace Takoda99.View
                 }
             }
 
+            // 行列の描画。ここを呼ばないと、サーバー由来の客が state.Queue に溜まるだけで
+            // 画面に一切出ない（この結線漏れが「客がテストドライバ由来になっていた」原因）。
+            // 自店が脱落した後は観戦なので、state.Queue に何が残っていても行列は描かない。
+            if (customerQueue != null && !selfEliminated)
+            {
+                customerQueue.Apply(state);
+            }
+
             ApplyServingCustomer(state);
         }
 
@@ -140,6 +153,10 @@ namespace Takoda99.View
 
         public void OnCustomerLeft(string customerId, LeaveReason reason)
         {
+            // 「怒り → 退店」で帰す。行列から消えた事実は state 側で分かるが、
+            // 提供済みか我慢切れかはこの通知でしか判別できない。
+            customerQueue?.MarkLeft(customerId);
+
             if (patienceTimer != null && customerId == servingCustomerId)
             {
                 patienceTimer.Stop();
@@ -152,6 +169,8 @@ namespace Takoda99.View
 
         public void OnOrderServed(string customerId)
         {
+            // 「喜び → 退店」で帰す。
+            customerQueue?.MarkServed(customerId);
         }
 
         public void OnPhaseChanged(Phase phase)
@@ -166,14 +185,19 @@ namespace Takoda99.View
         {
             resultView?.RecordElimination(storeId, finalRank);
 
-            if (resultView != null && store != null && storeId == store.State.SelfStoreId)
+            if (store != null && storeId == store.State.SelfStoreId)
             {
-                resultView.Show(finalRank);
+                // 自店が脱落したら行列を畳む。以降は観戦なので自店に客は来ない。
+                selfEliminated = true;
+                customerQueue?.ClearAll();
+                patienceTimer?.Stop();
+                resultView?.Show(finalRank);
             }
         }
 
         public void OnMatchEnd(int finalRank, MatchStats stats)
         {
+            customerQueue?.ClearAll();
         }
 
         public void OnLifecycleChanged(ClientPhase from, ClientPhase to)

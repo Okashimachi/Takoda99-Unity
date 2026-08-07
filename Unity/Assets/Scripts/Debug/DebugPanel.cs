@@ -97,11 +97,6 @@ namespace Takoda99.DebugUI
         /// </summary>
         public void CopyAll()
         {
-            if (log == null)
-            {
-                return;
-            }
-
             GUIUtility.systemCopyBuffer = BuildText(int.MaxValue);
         }
 
@@ -112,12 +107,27 @@ namespace Takoda99.DebugUI
                 return;
             }
 
-            logText.text = log == null ? "未接続" : BuildText(maxDisplayedEntries);
+            logText.text = BuildText(maxDisplayedEntries);
         }
 
         private string BuildText(int limit)
         {
             var builder = new StringBuilder();
+
+            // 先頭にクライアント側イベント（客の到着/離脱、脱落）を出す。
+            // Envelope の生JSONは量が多く、客の流れがその中に埋もれてしまうため。
+            builder.Append("=== client events (new -> old) ===\n");
+            builder.Append("NET = サーバー由来 / VIEW = 画面上の増減\n");
+            builder.Append(ClientEventLog.BuildText(limit));
+
+            builder.Append("\n=== envelopes (raw, new -> old) ===\n");
+
+            if (log == null)
+            {
+                builder.Append("未接続\n");
+                return builder.ToString();
+            }
+
             var count = 0;
 
             foreach (var entry in log.Entries)
