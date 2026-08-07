@@ -26,6 +26,7 @@ namespace Takoda99.View
         private ITypingJudge typingJudge;
         private IDisposable subscription;
         private string servingCustomerId;
+        private bool subStoreBoardBound;
 
         /// <summary>自店が脱落済みか。以降は観戦なので行列を描かない。</summary>
         private bool selfEliminated;
@@ -37,6 +38,7 @@ namespace Takoda99.View
 
             store = boundStore;
             typingJudge = boundTypingJudge;
+            subStoreBoardBound = false;
             selfEliminated = false;
             subscription = store.Subscribe(HandleStateChanged);
             HandleStateChanged(store.State);
@@ -72,7 +74,17 @@ namespace Takoda99.View
 
             if (subStoreBoard != null)
             {
-                foreach (var summary in state.Stores.Where(s => s.StoreId != state.SelfStoreId))
+                subStoreBoard.SetAliveCount(state.AliveCount);
+
+                var others = state.Stores.Where(s => s.StoreId != state.SelfStoreId).ToList();
+
+                if (!subStoreBoardBound && others.Count > 0)
+                {
+                    subStoreBoard.Bind(others.Select(s => s.StoreId).ToList());
+                    subStoreBoardBound = true;
+                }
+
+                foreach (var summary in others)
                 {
                     subStoreBoard.SetSummary(summary.StoreId, summary.CreditLife, summary.Alive);
                     if (summary.FinalRank.HasValue)

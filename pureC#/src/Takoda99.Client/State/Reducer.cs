@@ -84,7 +84,7 @@ public static class Reducer
     private static ClientState ApplyStoreEliminated(ClientState state, StoreEliminatedAction a)
     {
         var stores = state.Stores
-            .Select(s => s.StoreId == a.StoreId ? CloneWithAlive(s, false) : s)
+            .Select(s => s.StoreId == a.StoreId ? CloneWithAlive(s, false, a.FinalRank) : s)
             .ToList();
 
         if (a.StoreId == state.SelfStoreId)
@@ -143,7 +143,7 @@ public static class Reducer
         return -1;
     }
 
-    private static StoreSummary CloneWithAlive(StoreSummary source, bool alive)
+    private static StoreSummary CloneWithAlive(StoreSummary source, bool alive, int finalRank)
     {
         return new StoreSummary
         {
@@ -153,6 +153,7 @@ public static class Reducer
             Rank = source.Rank,
             CreditLife = source.CreditLife,
             Alive = alive,
+            FinalRank = finalRank,
         };
     }
 }
