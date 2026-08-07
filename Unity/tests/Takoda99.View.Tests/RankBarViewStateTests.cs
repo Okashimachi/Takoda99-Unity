@@ -20,6 +20,16 @@ namespace Takoda99.View.Tests
         }
 
         [Fact]
+        public void Rank未受信は最下位側に置く()
+        {
+            // 試合開始直後は EvaluationUpdate がまだ届かず Rank = 0。
+            // ここを 1位（右端）に丸めると、開始と同時にマーカーが1位の位置へ立つ。
+            var state = RankBarViewState.From(rank: 0, aliveCount: 99, maxStores: 99, stormThresholdPct: 0.2);
+
+            Assert.Equal(0f, state.SelfPositionRatio, 5);
+        }
+
+        [Fact]
         public void SelfPositionRatioはMaxStoresを固定軸として算出する()
         {
             var state = RankBarViewState.From(rank: 25, aliveCount: 99, maxStores: 99, stormThresholdPct: 0.2);
