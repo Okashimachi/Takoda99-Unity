@@ -21,23 +21,31 @@ namespace Takoda99.View.ValueObjects
 
         public int MaxStores { get; }
 
-        public RankBarViewState(float SelfPositionRatio, int AliveCount, int MaxStores)
+        /// <summary>淘汰圏の帯を描く位置（表示専用）。危険判定には使わない（仕様書 §3「使い分け」）。</summary>
+        public float StormThresholdPct { get; }
+
+        // SelfAtRisk（仕様書 §2）は pureC# 側の ForcedEliminationWarning.selfAtRisk がまだ
+        // Dispatcher/Reducer を通っていないため、配信されるようになるまで追加しない。
+
+        public RankBarViewState(float SelfPositionRatio, int AliveCount, int MaxStores, float StormThresholdPct)
         {
             this.SelfPositionRatio = SelfPositionRatio;
             this.AliveCount = AliveCount;
             this.MaxStores = MaxStores;
+            this.StormThresholdPct = StormThresholdPct;
         }
 
         /// <summary>
-        /// <c>StoreState.EvalNormalized</c> と <c>MatchState</c> の生存数・最大店舗数から変換する。
+        /// <c>StoreState.EvalNormalized</c> と <c>MatchState</c> の生存数・最大店舗数・淘汰閾値から変換する。
         /// <c>EvalNormalized</c> は生存店内パーセンタイル(0..1)のため、追加計算なくバー位置に対応する。
         /// </summary>
-        public static RankBarViewState From(double evalNormalized, int aliveCount, int maxStores)
+        public static RankBarViewState From(double evalNormalized, int aliveCount, int maxStores, double stormThresholdPct)
         {
             return new RankBarViewState(
                 SelfPositionRatio: (float)evalNormalized,
                 AliveCount: aliveCount,
-                MaxStores: maxStores);
+                MaxStores: maxStores,
+                StormThresholdPct: (float)stormThresholdPct);
         }
 
         /// <summary>

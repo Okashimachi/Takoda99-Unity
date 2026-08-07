@@ -9,6 +9,7 @@ using Takoda99.Client.State;
 using Takoda99.Client.Typing;
 using Takoda99.Proto;
 using Takoda99.Timer;
+using Takoda99.View.ValueObjects;
 using UnityEngine;
 
 namespace Takoda99.View
@@ -20,6 +21,7 @@ namespace Takoda99.View
         [SerializeField] private SubStoreBoardView subStoreBoard;
         [SerializeField] private PatienceTimer patienceTimer;
         [SerializeField] private EliminationResultView resultView;
+        [SerializeField] private RankBarView rankBar;
 
         private IStore store;
         private ITypingJudge typingJudge;
@@ -75,6 +77,11 @@ namespace Takoda99.View
                         subStoreBoard.SetRank(summary.StoreId, summary.FinalRank.Value);
                     }
                 }
+            }
+
+            if (rankBar != null)
+            {
+                rankBar.SetState(RankBarViewState.From(state.Normalized, state.AliveCount, state.Params.MaxStores, state.Params.StormThresholdPct));
             }
 
             ApplyServingCustomer(state);
