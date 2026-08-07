@@ -133,7 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0.12156863}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.6666667}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -218,8 +218,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u3042\u3042\u3042\u3042\u3042\u3042"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
+  m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -243,8 +243,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 10
-  m_fontSizeBase: 10
+  m_fontSize: 6
+  m_fontSizeBase: 6
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -288,6 +288,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &7100000000000001000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3252655944308795209}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f8b0e2d1a34c7f9b6e5d2c8a3f0b17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
+  _weight: 1
 --- !u!1 &6205133790277595047
 GameObject:
   m_ObjectHideFlags: 0
@@ -343,6 +357,7 @@ MonoBehaviour:
   booth: {fileID: 5891441112560645129}
   rankPanel: {fileID: 6657621099729022537}
   rankText: {fileID: 2012350089492582256}
+  nameText: {fileID: 0}
   boothLife0: {fileID: -7177325566389097320, guid: 9f7b17efb89f23e45a353f99d1dc2ce4, type: 3}
   boothLife1: {fileID: -3097281795076315199, guid: c1595019b8dfc8e42a1273665642984a, type: 3}
   boothLife2: {fileID: 8352339309937156746, guid: 191fe789ef8ed6e429052ec91f62ab54, type: 3}
@@ -470,17 +485,3 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 4735925727244818375, guid: 8acc7dd39d5d11f4fbd3437e12302394, type: 3}
   m_PrefabInstance: {fileID: 2152153576769714574}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7100000000000001000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3252655944308795209}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c4f8b0e2d1a34c7f9b6e5d2c8a3f0b17, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
-  _weight: 1
