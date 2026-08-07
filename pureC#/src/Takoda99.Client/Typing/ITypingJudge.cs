@@ -31,7 +31,15 @@ public readonly struct OrderReport
 /// <summary>表示用スナップショット（Renderer がハイライトに使う）。</summary>
 public readonly struct TypingView
 {
-    public TypingView(string currentWord, int typedKanaLength, string pendingInput, int wordIndex, int orderCount, int missCount)
+    public TypingView(
+        string currentWord,
+        int typedKanaLength,
+        string pendingInput,
+        int wordIndex,
+        int orderCount,
+        int missCount,
+        string currentRoma = "",
+        int typedRomaLength = 0)
     {
         CurrentWord = currentWord;
         TypedKanaLength = typedKanaLength;
@@ -39,6 +47,8 @@ public readonly struct TypingView
         WordIndex = wordIndex;
         OrderCount = orderCount;
         MissCount = missCount;
+        CurrentRoma = currentRoma;
+        TypedRomaLength = typedRomaLength;
     }
 
     public static TypingView Empty { get; } = new(string.Empty, 0, string.Empty, 0, 0, 0);
@@ -49,6 +59,20 @@ public readonly struct TypingView
     public int WordIndex { get; }        // x（0 起点）
     public int OrderCount { get; }       // N
     public int MissCount { get; }
+
+    /// <summary>
+    /// 現在のお題単語に対応するローマ字の全文（表示用）。
+    /// 各打鍵単位につき候補を1つ選んで連結したもので、既に打たれた分（<see cref="PendingInput"/>）とは
+    /// 必ず前方一致する。ゆらぎのあるかな（"し" → si/shi/ci 等）は、打鍵途中はその入力に沿った候補、
+    /// まだ打っていない位置は代表候補（テーブルの先頭）を出す。
+    /// </summary>
+    public string CurrentRoma { get; }
+
+    /// <summary>
+    /// <see cref="CurrentRoma"/> のうち打鍵済みの先頭文字数（ハイライト幅）。
+    /// 確定済み単位のローマ字長 + 未確定バッファ長。
+    /// </summary>
+    public int TypedRomaLength { get; }
 }
 
 public interface ITypingJudge
