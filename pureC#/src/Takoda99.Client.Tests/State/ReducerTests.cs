@@ -86,6 +86,7 @@ public class ReducerTests
         Assert.Equal(3, next.CreditLife);
         Assert.True(next.Stores.Single(s => s.StoreId == "s1").Alive);
         Assert.False(next.Stores.Single(s => s.StoreId == "s2").Alive);
+        Assert.Equal(10, next.Stores.Single(s => s.StoreId == "s2").FinalRank);
     }
 
     [Fact]

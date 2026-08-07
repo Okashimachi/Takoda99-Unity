@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 namespace Takoda99.View
@@ -21,9 +22,13 @@ namespace Takoda99.View
         [SerializeField] private RectTransform left;
         [SerializeField] private RectTransform right;
         [SerializeField] private GameObject subStorePanelPrefab;
+        [SerializeField] private TextMeshProUGUI survivorNumText;
 
         private readonly List<SubStoreTileView> tiles = new List<SubStoreTileView>(TileCount);
         private readonly Dictionary<string, SubStoreTileView> tilesByStoreId = new Dictionary<string, SubStoreTileView>();
+
+        // Bind() で受け取った StoreId 一覧。タイル生成（Awake）より先に Bind されても取りこぼさないよう保持する。
+        private IReadOnlyList<string> pendingStoreIds;
 
         private void Awake()
         {
@@ -35,6 +40,10 @@ namespace Takoda99.View
 
             Populate(left);
             Populate(right);
+
+            // Renderer.OnEnable はこの Awake より先に走ることがある（実機ログで確認済み）。
+            // その場合タイル0枚の状態で Bind されているため、ここで割り当て直す。
+            ApplyBinding();
         }
 
         private void Populate(RectTransform parent)
@@ -74,9 +83,25 @@ namespace Takoda99.View
         /// <summary>自店を除く他店の StoreId 一覧を割り当てる。昇順に整列してから左上詰めで配置する。</summary>
         public void Bind(IReadOnlyList<string> otherStoreIds)
         {
+            // タイル生成前に呼ばれることがあるため、要求を保持してから割り当てる（Awake 参照）。
+            pendingStoreIds = otherStoreIds;
+            ApplyBinding();
+        }
+
+        /// <summary>
+        /// 保持している StoreId 一覧をタイルへ割り当てる。タイル未生成なら何もせず、
+        /// <c>Awake</c> のタイル生成後に呼び直される。
+        /// </summary>
+        private void ApplyBinding()
+        {
+            if (pendingStoreIds == null || tiles.Count == 0)
+            {
+                return;
+            }
+
             tilesByStoreId.Clear();
 
-            var sorted = otherStoreIds.OrderBy(id => id, System.StringComparer.Ordinal).ToList();
+            var sorted = pendingStoreIds.OrderBy(id => id, System.StringComparer.Ordinal).ToList();
             if (sorted.Count > TileCount)
             {
                 Debug.LogWarning($"{nameof(SubStoreBoardView)}: otherStoreIds が {TileCount} を超えたため超過分を捨てます。", this);
@@ -108,6 +133,15 @@ namespace Takoda99.View
             else
             {
                 Debug.LogWarning($"{nameof(SubStoreBoardView)}: 未知の StoreId '{storeId}' への SetSummary を無視しました。", this);
+            }
+        }
+
+        /// <summary>SubStoreCanvas/SurviverNum の残り生存者数表示を更新する（自店を含む全体）。</summary>
+        public void SetAliveCount(int aliveCount)
+        {
+            if (survivorNumText != null)
+            {
+                survivorNumText.text = aliveCount.ToString();
             }
         }
 

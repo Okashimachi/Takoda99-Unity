@@ -93,9 +93,24 @@ SubStorePanel                ← SubStoreTileView
 - `Update`：`Alive == false` かつ `State == JustEliminated` の間だけ経過時間を加算し、`eliminationRevealDelaySec` を超えたら `Eliminated` へ遷移する（それ以外のフレームでは何もしない）
 
 `SubStoreBoardView`
-- `Awake`：`Left` / `Right` に 49 枚ずつ生成する（生成レイアウトは既存 `SubStoreCreator` の等間隔グリッド計算をそのまま引き継ぐ）
-- `Bind`：`otherStoreIds` を昇順に整列してタイルへ割り当てる。要素数が98未満なら余ったタイルを非アクティブにし、98を超えたら超過分を捨てて `Debug.LogWarning`
+- `Awake`：`Left` / `Right` に 49 枚ずつ生成し、生成後に `ApplyBinding` で保留中の割り当てを反映する
+- `Bind`：`otherStoreIds` を保持して `ApplyBinding` を呼ぶ
+- `ApplyBinding`：保持中の一覧を昇順に整列してタイルへ割り当てる。**タイル未生成なら何もしない**。要素数が98未満なら余ったタイルを非アクティブにし、98を超えたら超過分を捨てて `Debug.LogWarning`
 - `Update`：**使わない**
+
+> **`Bind` は `Awake` より先に呼ばれる。だから割り当てを `ApplyBinding` に分離している。**
+>
+> `Renderer.OnEnable` は `IStore` を購読した直後、その場で `HandleStateChanged` を呼び、そこから `SubStoreBoardView.Bind` を呼ぶ。Unity はシーンロード時に「全 `Awake` → 全 `OnEnable`」の順序を GameObject をまたいでは保証しておらず、**実機ログで `Renderer.OnEnable` が `SubStoreBoardView.Awake` より先に走ることを確認済み**。
+>
+> このときタイルは0枚なので、`Bind` の割り当てループが1周もせず対応表が**空のまま**になる。その後 `Awake` がタイル98枚を生成するため盤面は並ぶが、対応表は空のままなので以後の `SetSummary` / `SetRank` が全店ぶん「未知の StoreId」として捨てられ、**他店のダメージ・脱落が一切描画されない**。
+>
+> `Bind` は一覧を保持するだけにし、`Awake` のタイル生成後に `ApplyBinding` を呼び直すことでこれを防ぐ。**この分離を「不要な間接化」と判断して畳まないこと**（一度削って再発させた）。
+
+> **`Bind` を呼ぶのは `Renderer` だけ。二重に呼ぶと後勝ちで対応表が壊れる。**
+>
+> `Bind` は `tilesByStoreId` を `Clear()` してから作り直すため、別のコンポーネントが後から違う `StoreId` 一覧で `Bind` すると先の割り当てを完全に上書きする。こうなると以後の `SetSummary` / `SetRank` が全店ぶん「未知の StoreId」として捨てられ、**他店のダメージ・脱落が一切描画されなくなる**（タイルは生成済みなので、盤面は並んでいるのに何も反応しない、という分かりにくい症状になる）。
+>
+> 実際に開発用の `MainGameViewSampleDriver` が `MainGame` シーンに有効な状態で置かれており、その `Start`（＝`Renderer.OnEnable` より後）がサンプル用の連番 `StoreId` で `Bind` し直していたため、この不具合が起きていた。**開発用ドライバは本番シーンでは非アクティブにすること。** 同ドライバ側にも、`GameBootstrapper.Instance` が生きている（＝実試合）ときは自身を無効化するガードを入れてある。
 
 ### 3.3 既存 `SubStoreCreator` の扱い
 
