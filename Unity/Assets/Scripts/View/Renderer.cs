@@ -79,6 +79,14 @@ namespace Takoda99.View
             WarnIfMissing(orderBubble, nameof(orderBubble));
             WarnIfMissing(starRating, nameof(starRating));
             WarnIfMissing(gameBefore, nameof(gameBefore));
+
+            // 試合終了後の Result シーンへの遷移は、このモーダルの NextButton だけが担う
+            // （GameBootstrapper は MainGame にいる間は自動遷移しない）。未割り当てだと
+            // 試合が終わっても MainGame から出られなくなるため、他より強く知らせる。
+            if (resultView == null)
+            {
+                Debug.LogError($"{nameof(Renderer)}.{nameof(resultView)} が未割り当てです。試合終了後に Result シーンへ進めなくなります。", this);
+            }
         }
 
         private void WarnIfMissing(UnityEngine.Object reference, string fieldName)
@@ -116,6 +124,21 @@ namespace Takoda99.View
 
         private void HandleStateChanged(ClientState state)
         {
+            // ★このメソッドの先頭で行う。
+            // 試合終了の検知は state を正とし、OnMatchEnd（IRenderer コールバック）には依存しない。
+            // Dispatcher は `_store.Apply(action)` → `OnActionApplied?.Invoke(action)` の順で走るため、
+            // store のリスナー（Store.Notify はリスナー単位の例外処理を持たない）のどれか1つが
+            // 例外を投げると OnActionApplied ごと落ち、OnMatchEnd が永久に呼ばれない。
+            // それをモーダル表示の唯一の契機にしていたのが「優勝してもモーダルが出ない」の原因。
+            // しかも自動シーン遷移も止めたため、その場合 MainGame から出られなくなる。
+            //
+            // state.Result は MatchEnd でしか入らない（Reducer）ので、条件としてはこれで十分。
+            // 描画処理より前に置くことで、後続で何が起きてもモーダルだけは必ず出る。
+            if (state.Phase == ClientPhase.Result && state.Result != null)
+            {
+                resultView?.ShowIfHidden(state.Result.FinalRank);
+            }
+
             // 試合開始の合図はサーバー（MatchStart ＝ InMatch 到達）。カウントダウンが
             // 0 になっていても、これが届くまで待機画面は畳まない。
             if (gameBefore != null)
@@ -202,8 +225,8 @@ namespace Takoda99.View
             }
 
             var view = typingJudge.CurrentView;
-            mainStore.SetWord(view.CurrentWord, string.Empty);
-            mainStore.SetTypedProgress(view.TypedKanaLength, 0);
+            mainStore.SetWord(view.CurrentWord, view.CurrentRoma);
+            mainStore.SetTypedProgress(view.TypedKanaLength, view.TypedRomaLength);
         }
 
         /// <summary>
@@ -336,8 +359,8 @@ namespace Takoda99.View
             orderBubble?.Hide();
             patienceTimer?.Stop();
 
-            // 最後まで生き残った店（1位）には OnStoreEliminated が来ないため、
-            // モーダルはここでしか出せない。脱落済みなら既に出ているので二重に出さない。
+            // 最後まで生き残った店（1位）には OnStoreEliminated が来ない。そのため
+            // 自店を順位一覧（上位10店）へ載せられるのはここだけになる。
             if (!selfEliminated)
             {
                 selfEliminated = true;
@@ -346,9 +369,11 @@ namespace Takoda99.View
                 {
                     resultView?.RecordElimination(selfStoreId, finalRank);
                 }
-
-                resultView?.Show(finalRank);
             }
+
+            // モーダル自体は HandleStateChanged（state 駆動）が先に出していることもある。
+            // ShowIfHidden は冪等なので、どちらが先でも順位を上書きせず二重表示にもならない。
+            resultView?.ShowIfHidden(finalRank);
         }
 
         public void OnLifecycleChanged(ClientPhase from, ClientPhase to)

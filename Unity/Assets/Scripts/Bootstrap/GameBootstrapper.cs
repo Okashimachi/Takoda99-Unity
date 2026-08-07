@@ -282,6 +282,11 @@ namespace Takoda99.Bootstrap
                     // **Result フェーズでは自動遷移しない。** Result シーンへ進むのは
                     // MainGame のリザルトモーダルの NextButton（GoToResult()）だけ。
                     // 演出の途中でプレイヤーの意志と無関係に画面が切り替わるのを避ける。
+                    //
+                    // ここでロードすると MatchEnd 受信と同時に MainGame ごと差し替わり、
+                    // 「優勝してもモーダルが出ない」「モーダルが勝手に消える」の両方になる。
+                    // Dispatcher は store.Apply → OnActionApplied の順で走るため、この
+                    // ルーティングはモーダルを出す側（Renderer）より必ず先に来る。
                     break;
 
                 case ClientPhase.Spectating:
