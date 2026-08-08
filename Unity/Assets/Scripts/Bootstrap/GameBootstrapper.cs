@@ -97,6 +97,18 @@ namespace Takoda99.Bootstrap
                 rendererProxy,
                 inputSource);
 
+            // Dispatcher がメッセージを捨てる経路（未知type / フェーズ不許可 / デコード失敗）は
+            // イベントでしか外に出ない。実行時に誰も購読していないと**完全に無音で捨てられる**ため、
+            // 「MatchEnd が来ているのに何も起きない」を画面からもコンソールからも追えなくなる。
+            // 受信側の最終防衛線としてここで必ず拾う。
+            dispatcher.OnUnknownMessage += (type, reason) =>
+                Debug.LogWarning($"{nameof(Dispatcher)}: 未知のメッセージを破棄 type=\"{type}\" reason={reason}", this);
+
+            dispatcher.OnMessageDropped += (type, reason) =>
+                Debug.LogWarning(
+                    $"{nameof(Dispatcher)}: メッセージを破棄 type=\"{type}\" reason={reason} phase={store.State.Phase}",
+                    this);
+
             networkClient.OnConnectionChanged += (state, _) =>
             {
                 if (state == ConnectionState.Disconnected || state == ConnectionState.Failed)
