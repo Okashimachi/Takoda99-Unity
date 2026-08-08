@@ -124,3 +124,7 @@ Unity/tests/**/obj/
 /Unity/Assets/StreamingAssets/config.json
 
 /Unity/Assets/Fonts/*
+
+# Unity がクラッシュ復旧時に生成するシーンの退避先。生成物なのでコミットしない。
+/Unity/Assets/_Recovery/
+/Unity/Assets/_Recovery.meta
