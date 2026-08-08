@@ -196,7 +196,7 @@ namespace Takoda99.View
             var stats = result.Stats ?? new MatchStats();
 
             // 1段目（優先度 高）：2つで横6マスを折半する。
-            items.Add(new Item("提供数", $"{stats.ServedCount} 人", Priority.High, 0, 0, 3));
+            items.Add(new Item("提供数", $"{stats.ServedCount} 個", Priority.High, 0, 0, 3));
             items.Add(new Item("来客数", $"{stats.ServedCount + stats.LeftCount} 人", Priority.High, 0, 3, 3));
 
             // 2段目（優先度 中）：3つで横6マスを3等分する。
