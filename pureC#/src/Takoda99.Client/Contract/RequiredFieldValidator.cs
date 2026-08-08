@@ -12,6 +12,27 @@ namespace Takoda99.Client.Contract;
 /// </summary>
 internal static class RequiredFieldValidator
 {
+    /// <summary>
+    /// 「空文字のとき JSON から消える」フィールド（`型のFullName.jsonName`）。
+    /// </summary>
+    /// <remarks>
+    /// Go 正典の `omitempty` は**空文字なら出力しない**（docs/server-sync/05-表示名の実装指示.md §omitempty）。
+    /// そのため空文字が正当な値であるフィールドは、その値のときだけ payload から丸ごと消える。
+    /// これを「必須フィールドの欠落」と見なすとメッセージ全体が破棄される。
+    ///
+    /// `MatchEnd.reason` は「自店がどう終わったか。**優勝（最後まで残った）なら空文字**」と
+    /// Proto に明記されている。つまり優勝時に限り `reason` が消え、MatchEnd が丸ごと
+    /// `payload-decode-failed` で捨てられていた（＝1位だけリザルトへ進めない）。
+    /// 脱落時は `SelfCollapse`/`Cull` が入るので消えず、2位以下では再現しない。
+    ///
+    /// 一律に「string は任意」とはしない。`CustomerLeft.customerId` のような識別子は
+    /// 空で届いた時点で不正であり、破棄されるべきだから（05-dispatcher.md のテスト参照）。
+    /// </remarks>
+    private static readonly System.Collections.Generic.HashSet<string> OptionalWhenEmpty = new()
+    {
+        "Takoda99.Proto.MatchEnd.reason",
+    };
+
     public static bool HasAllRequiredFields(JsonElement element, Type type)
     {
         if (element.ValueKind != JsonValueKind.Object)
@@ -29,7 +50,7 @@ internal static class RequiredFieldValidator
                 // 数値・bool・enum は欠落時に既定値(0/false/先頭メンバー)へフォールバックしても実害がない
                 // ため、必須チェックの対象は「値が来ないと意味を成さない」参照型（string・入れ子DTO・配列）
                 // に限定する（Delta のような補助フィールドの省略まで null 扱いにしないため）。
-                if (RequiresPresence(prop.PropertyType))
+                if (RequiresPresence(prop.PropertyType) && !IsOptionalWhenEmpty(type, jsonName))
                 {
                     return false;
                 }
@@ -65,6 +86,11 @@ internal static class RequiredFieldValidator
         }
 
         return true;
+    }
+
+    private static bool IsOptionalWhenEmpty(Type type, string jsonName)
+    {
+        return OptionalWhenEmpty.Contains($"{type.FullName}.{jsonName}");
     }
 
     private static bool RequiresPresence(Type type)

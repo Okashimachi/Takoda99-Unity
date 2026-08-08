@@ -25,7 +25,7 @@
 ### 実装済みの内容
 
 - 入力UI（`WriteNameModal` / `NameInputField` / `Decide`）と、`characterLimit = 6`
-- 「名前確定 → 接続」の**順序**（[01-matchmaking-flow.md](./01-matchmaking-flow.md) §8.5）。名前を保持しておき、送信は接続確立直後に行う
+- 「名前確定 → 接続」の**順序**（[01-matchmaking-flow.md](./01-matchmaking-flow.md) §8.6）。名前を保持しておき、送信は接続確立直後に行う
 - `BeginPlay(displayName)` の配線（[06-match-client-controller.md](../../../../pureC%23/docs/.sdd/06-match-client-controller.md) §3.6）。接続時・再接続時の両方の `MatchmakingJoin` に同じ値が乗る
 - 受信した名前の表示（§3・§4）
 
@@ -73,7 +73,7 @@
 ## 5. Unity構成
 
 - **入力UI**：`MatchiMaking` シーンの `MatchMakingCanvas/WriteNameModal/NameInput` に `NameInputField`（`TMP_InputField`・`characterLimit = 6`）と `Decide`（Button）を置く（[01](./01-matchmaking-flow.md) §7.1）
-- **入力のタイミング**：`MatchmakingJoin` は接続後3秒以内に送る必要があるため、**接続してから名前を入力させる設計にしない。** 接続前の画面で名前を確定させ、接続確立と同時に送る。`Decide` 押下が接続の起点になる（[01](./01-matchmaking-flow.md) §8.5）
+- **入力のタイミング**：`MatchmakingJoin` は接続後3秒以内に送る必要があるため、**接続してから名前を入力させる設計にしない。** 接続前の画面で名前を確定させ、接続確立と同時に送る。`Decide` 押下が接続の起点になる（[01](./01-matchmaking-flow.md) §8.6）
 - **既定値**：前回入力した名前を `PlayerPrefs` に保持して初期値にしてよい（任意）
 
 > ★**「接続 → 名前入力 → 送信」の順にすると、入力に3秒以上かかった時点で名前が失われる。** 必ず「名前入力 → 接続 → 即送信」の順にする。

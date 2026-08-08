@@ -97,6 +97,18 @@ namespace Takoda99.Bootstrap
                 rendererProxy,
                 inputSource);
 
+            // Dispatcher がメッセージを捨てる経路（未知type / フェーズ不許可 / デコード失敗）は
+            // イベントでしか外に出ない。実行時に誰も購読していないと**完全に無音で捨てられる**ため、
+            // 「MatchEnd が来ているのに何も起きない」を画面からもコンソールからも追えなくなる。
+            // 受信側の最終防衛線としてここで必ず拾う。
+            dispatcher.OnUnknownMessage += (type, reason) =>
+                Debug.LogWarning($"{nameof(Dispatcher)}: 未知のメッセージを破棄 type=\"{type}\" reason={reason}", this);
+
+            dispatcher.OnMessageDropped += (type, reason) =>
+                Debug.LogWarning(
+                    $"{nameof(Dispatcher)}: メッセージを破棄 type=\"{type}\" reason={reason} phase={store.State.Phase}",
+                    this);
+
             networkClient.OnConnectionChanged += (state, _) =>
             {
                 if (state == ConnectionState.Disconnected || state == ConnectionState.Failed)
@@ -279,7 +291,14 @@ namespace Takoda99.Bootstrap
                     break;
 
                 case ClientPhase.Result:
-                    SceneManager.LoadScene(resultSceneName, LoadSceneMode.Single);
+                    // **Result フェーズでは自動遷移しない。** Result シーンへ進むのは
+                    // MainGame のリザルトモーダルの NextButton（GoToResult()）だけ。
+                    // 演出の途中でプレイヤーの意志と無関係に画面が切り替わるのを避ける。
+                    //
+                    // ここでロードすると MatchEnd 受信と同時に MainGame ごと差し替わり、
+                    // 「優勝してもモーダルが出ない」「モーダルが勝手に消える」の両方になる。
+                    // Dispatcher は store.Apply → OnActionApplied の順で走るため、この
+                    // ルーティングはモーダルを出す側（Renderer）より必ず先に来る。
                     break;
 
                 case ClientPhase.Spectating:

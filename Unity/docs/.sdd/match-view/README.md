@@ -28,6 +28,8 @@ value-objects/ … 「どの区分になるか」の判定はここ（Viewは判
 | 04 | [04-sub-store-board-view.md](./04-sub-store-board-view.md) | `SubStoreBoardView` / `SubStoreTileView`（他店98店） | `View/SubStoreBoardView.cs` ほか | ✅ |
 | 05 | [05-patience-timer.md](./05-patience-timer.md) | `PatienceTimer`（我慢ゲージの表示専用カウントダウン） | `Timer/PatienceTimer.cs` | ✅ |
 | 06 | [06-view-sample-data.md](./06-view-sample-data.md) | `MainGameViewSampleDriver`（開発用サンプルデータ駆動） | `View/Sample/` | ✅ |
+| 07 | [07-match-hud.md](./07-match-hud.md) | 注文カウンタ／注文吹き出し／星評価／屋号の4HUD | `View/StarRatingView.cs` ほか | ✅ |
+| 08 | [08-game-before.md](./08-game-before.md) | `GameBeforeView`（試合開始前の待機カウントダウン） | `View/GameBeforeView.cs` | ✅ |
 
 **01 から読む。** 02〜05 は 01 が呼ぶ下位Viewであり、単体では駆動しない。
 

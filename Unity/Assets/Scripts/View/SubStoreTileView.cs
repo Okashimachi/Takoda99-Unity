@@ -13,6 +13,7 @@ namespace Takoda99.View
         [SerializeField] private Image booth;              // SubStore
         [SerializeField] private GameObject rankPanel;      // SubStoreRankPanel（既定で非アクティブ）
         [SerializeField] private TextMeshProUGUI rankText;  // SubStoreRankPanel/Text
+        [SerializeField] private TextMeshProUGUI nameText;  // SubStorePanel/Text (TMP)（他店の表示名）
         [SerializeField] private Sprite boothLife0;         // minitile_booth_life0
         [SerializeField] private Sprite boothLife1;
         [SerializeField] private Sprite boothLife2;
@@ -40,6 +41,30 @@ namespace Takoda99.View
             {
                 rankPanel.SetActive(false);
             }
+
+            ResolveNameText();
+        }
+
+        /// <summary>
+        /// <see cref="nameText"/> 未設定時に SubStorePanel 直下の TMP から拾う。
+        /// 順位テキストは SubStoreRankPanel の中（孫）なので、直下だけを見れば取り違えない。
+        /// </summary>
+        private void ResolveNameText()
+        {
+            if (nameText != null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < transform.childCount; i++)
+            {
+                var candidate = transform.GetChild(i).GetComponent<TextMeshProUGUI>();
+                if (candidate != null)
+                {
+                    nameText = candidate;
+                    return;
+                }
+            }
         }
 
         private void Update()
@@ -60,6 +85,10 @@ namespace Takoda99.View
             elapsedSinceEliminatedSec = 0f;
             rank = null;
             bound = true;
+
+            // 表示名は StoreListUpdate で後から届く。届くまでは空にしておく
+            // （前にこのタイルへ割り当たっていた店の名前を残さない）。
+            SetDisplayName(null);
 
             if (rankPanel != null)
             {
@@ -91,6 +120,15 @@ namespace Takoda99.View
             creditLife = newCreditLife;
             alive = newAlive;
             Recompute();
+        }
+
+        /// <summary>他店の表示名（StoreSummary.DisplayName）を反映する。受信値をそのまま出す。</summary>
+        public void SetDisplayName(string displayName)
+        {
+            if (nameText != null)
+            {
+                nameText.text = displayName ?? string.Empty;
+            }
         }
 
         /// <summary>完全脱落時に表示する順位。未確定なら null を渡す（順位テキストを空にする）。</summary>

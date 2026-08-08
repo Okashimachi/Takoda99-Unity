@@ -39,9 +39,24 @@ namespace Takoda99.View
         [SerializeField] private TextMeshProUGUI wordRoma;       // WordPanel/Roma
         [SerializeField, Range(0f, 1f)] private float typedAlpha = 0.35f;
 
+        // ---- 注文カウンタ（OrderCounter） ----
+        [SerializeField] private TextMeshProUGUI orderNumeratorText;    // OrderCounter/NumeratorText（準備できた数）
+        [SerializeField] private TextMeshProUGUI orderDenominatorText;  // OrderCounter/DenominatorText（注文個数）
+
+        // ---- 屋号（PlayerName） ----
+        [SerializeField] private TextMeshProUGUI playerNameLeftText;    // PlayerName/LeftText
+        [SerializeField] private TextMeshProUGUI playerNameMiddleText;  // PlayerName/MiddleText
+        [SerializeField] private TextMeshProUGUI playerNameRightText;   // PlayerName/RightText
+
         private string currentHiragana = string.Empty;
         private string currentRoma = string.Empty;
         private StoreVisualState? currentVisualState;
+
+        // 直近に描いた値。同じ値での再描画（と文字列の割り当て）を避けるために持つ。
+        // -1 は「まだ一度も描いていない」ことを表し、初回の 0/0 を必ず反映させる。
+        private int currentPrepared = -1;
+        private int currentOrderCount = -1;
+        private string currentPlayerName;
 
         /// <summary>評価3段階が変化したときに発火する。Takoyakis が購読する。</summary>
         public event Action<StoreEvalLevel> EvalLevelChanged;
@@ -68,6 +83,67 @@ namespace Takoda99.View
             SetCreditLife(3);
             SetEvaluation(0d, true);
             SetWord(string.Empty, string.Empty);
+            SetOrderProgress(0, 0);
+            SetPlayerName(string.Empty);
+        }
+
+        /// <summary>
+        /// 注文カウンタを反映する。分子は準備できたたこ焼きの数（＝打ち終えた単語数）、分母は注文個数。
+        /// </summary>
+        /// <param name="preparedCount">準備できた数。0..<paramref name="orderCount"/> にクランプする。</param>
+        /// <param name="orderCount">注文個数（サーバー値）。</param>
+        public void SetOrderProgress(int preparedCount, int orderCount)
+        {
+            var total = Math.Max(orderCount, 0);
+            var prepared = Clamp(preparedCount, 0, total);
+
+            // Renderer は state 変化のたびに呼ぶ（打鍵1回ごと・毎ティック）。
+            // 変わっていなければ ToString の割り当てごと省く。
+            if (prepared == currentPrepared && total == currentOrderCount)
+            {
+                return;
+            }
+
+            currentPrepared = prepared;
+            currentOrderCount = total;
+
+            if (orderNumeratorText != null)
+            {
+                orderNumeratorText.text = prepared.ToString();
+            }
+
+            if (orderDenominatorText != null)
+            {
+                orderDenominatorText.text = total.ToString();
+            }
+        }
+
+        /// <summary>屋号（表示名）を3枠へ割って反映する。割り方は <see cref="PlayerNameLayout"/> の担当。</summary>
+        public void SetPlayerName(string displayName)
+        {
+            var name = displayName ?? string.Empty;
+            if (name == currentPlayerName)
+            {
+                return;
+            }
+
+            currentPlayerName = name;
+            var layout = PlayerNameLayout.From(name);
+
+            if (playerNameLeftText != null)
+            {
+                playerNameLeftText.text = layout.Left;
+            }
+
+            if (playerNameMiddleText != null)
+            {
+                playerNameMiddleText.text = layout.Middle;
+            }
+
+            if (playerNameRightText != null)
+            {
+                playerNameRightText.text = layout.Right;
+            }
         }
 
         /// <summary>信用ライフ（提灯・暖簾・屋台土台）を反映する。</summary>

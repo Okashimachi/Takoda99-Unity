@@ -111,6 +111,9 @@ namespace Takoda99.View
             }
         }
 
+        /// <summary>モーダルを表示済みか。MatchEnd で二重に出さないための判定に使う。</summary>
+        public bool IsShown { get; private set; }
+
         /// <summary>自店が脱落した際、Renderer.OnStoreEliminated から呼ぶ。モーダルを表示する。</summary>
         public void Show(int selfFinalRank)
         {
@@ -121,7 +124,27 @@ namespace Takoda99.View
                 rankText.text = selfFinalRank.ToString();
             }
 
+            IsShown = true;
             gameObject.SetActive(true);
+
+            // 出た／出ないの切り分けを実機（WebGL のブラウザコンソール含む）で行えるようにする。
+            // 1試合に1回しか出ないためログとしても静か。
+            Debug.Log($"{nameof(EliminationResultView)}: リザルトモーダルを表示 rank={selfFinalRank}", this);
+        }
+
+        /// <summary>
+        /// まだ出していなければ出す。Renderer.OnMatchEnd から呼ぶ。
+        /// 優勝（最後まで残った）場合は自店に対して OnStoreEliminated が来ないため、
+        /// MatchEnd が唯一のモーダル表示の契機になる。既に脱落で出ている場合は順位を上書きしない。
+        /// </summary>
+        public void ShowIfHidden(int selfFinalRank)
+        {
+            if (IsShown)
+            {
+                return;
+            }
+
+            Show(selfFinalRank);
         }
 
         /// <summary>
@@ -186,7 +209,16 @@ namespace Takoda99.View
 
         private void OnNextClicked()
         {
-            Bootstrap.GameBootstrapper.Instance.GoToResult();
+            var bootstrap = Bootstrap.GameBootstrapper.Instance;
+            if (bootstrap == null)
+            {
+                // ここが null だと押しても無反応になり「遷移できない」に見える。原因を名指しで残す。
+                Debug.LogError($"{nameof(EliminationResultView)}: {nameof(Bootstrap.GameBootstrapper)}.Instance が null のため Result へ遷移できません。", this);
+                return;
+            }
+
+            Debug.Log($"{nameof(EliminationResultView)}: NextButton → Result シーンへ遷移します。", this);
+            bootstrap.GoToResult();
         }
     }
 }

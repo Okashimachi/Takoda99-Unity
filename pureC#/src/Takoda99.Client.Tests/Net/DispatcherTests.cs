@@ -27,6 +27,40 @@ public class DispatcherTests
         Assert.Equal(2, _store.State.CreditLife);
     }
 
+    /// <summary>
+    /// 優勝時の MatchEnd は `reason` が空文字になり、Go 正典の `omitempty` によって
+    /// payload からフィールドごと消える。これを必須欠落と見なして破棄すると、
+    /// 1位のときだけ MatchEnd が届かず Result へ進めなくなる。
+    /// </summary>
+    [Fact]
+    public void 優勝時のreason省略MatchEndは破棄されずResultへ進む()
+    {
+        string? droppedReason = null;
+        _dispatcher.OnMessageDropped += (_, reason) => droppedReason = reason;
+
+        _dispatcher.HandleRaw(
+            """{"type":"MatchEnd","payload":{"finalRank":1,"stats":{"servedCount":7,"normal":{"served":7,"left":0},"bonus":{"served":0,"left":0},"claimer":{"served":0,"left":0},"buzz":{"served":0,"left":0}}}}""");
+
+        Assert.Null(droppedReason);
+        Assert.Equal(ClientPhase.Result, _store.State.Phase);
+        Assert.NotNull(_store.State.Result);
+        Assert.Equal(1, _store.State.Result!.FinalRank);
+        Assert.Equal("", _store.State.Result.Reason);
+        Assert.Equal(7, _store.State.Result.Stats.ServedCount);
+    }
+
+    /// <summary>脱落時は reason が入って届く。こちらは従来どおり通ること。</summary>
+    [Fact]
+    public void 脱落時のreason付きMatchEndも従来どおり通る()
+    {
+        _dispatcher.HandleRaw(
+            """{"type":"MatchEnd","payload":{"finalRank":4,"reason":"SelfCollapse","stats":{"servedCount":2,"normal":{"served":2,"left":0},"bonus":{"served":0,"left":0},"claimer":{"served":0,"left":0},"buzz":{"served":0,"left":0}}}}""");
+
+        Assert.Equal(ClientPhase.Result, _store.State.Phase);
+        Assert.Equal(4, _store.State.Result!.FinalRank);
+        Assert.Equal("SelfCollapse", _store.State.Result.Reason);
+    }
+
     [Fact]
     public void 壊れたJSONは例外にならず後続メッセージが処理される()
     {

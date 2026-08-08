@@ -81,6 +81,7 @@ StarDelta  = EvaluationUpdate.starDelta    // そのまま
 ## 7. テスト観点
 
 - `EvalNormalized` の更新が `SelfPositionRatio` に正しく反映されるか
+- **`Rank` が 0（`EvaluationUpdate` 未受信）のとき、▲マーカーが最下位側（左端）に立つか。** 順位軸のクランプに任せると 0 が 1位 に丸められ、試合開始と同時に1位の位置へ立ってしまう
 - `AliveCount` / `MaxStores` が 0 のときに 0 除算等を起こさないか（表示比率計算に使う場合）
 - 脱落後（`Alive = false`）に▲マーカーをどう扱うかが決まった際、その挙動
 - `StarRating` / `StarDelta` が受信値のまま保持され、**クライアント側で再計算されていない**こと

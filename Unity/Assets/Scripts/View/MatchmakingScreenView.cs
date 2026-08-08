@@ -35,6 +35,10 @@ namespace Takoda99.View
         [SerializeField] private TextMeshProUGUI participantsNumText;   // PaticipantsNumPanel/Text (TMP)
         [SerializeField] private RectTransform participantsContainer;   // PaticipantsList/Paticipants
         [SerializeField] private PaticipantView participantPrefab;      // Prefabs/MatchMakingCanvas/Paticipant
+        [SerializeField] private GameObject matchingComplete;           // MatchingComplete（カウントダウン後〜MatchStart まで）
+
+        [Tooltip("残り秒数の文面。{0} が秒数に置き換わる。")]
+        [SerializeField] private string timerFormat = "のこり{0}秒";
 
         /// <summary>入力欄の上限。UX のための制限であり、サーバー正規化（24文字）の代替ではない（02-display-name.md §4）。</summary>
         public const int DisplayNameInputLimit = 6;
@@ -45,6 +49,15 @@ namespace Takoda99.View
         private IDisposable subscription;
         private Bootstrap.GameBootstrapper bootstrap;
         private readonly List<PaticipantView> participantViews = new();
+
+        // カウントダウンの締切（ローカル単調時刻ms）。サーバーは尽きた瞬間に 0 を送り直さないため、
+        // 「尽きた」の判定だけはローカルで持つ（表示上の目安であり、成立判定ではない）。
+        private long? countdownDeadlineMs;
+        private int? lastCountdownMs;
+        private bool hasCountdownObservation;
+
+        /// <summary>直近に描いたパネル。Update から MatchingComplete を出し直す判断に使う。</summary>
+        private MatchmakingPanel currentPanel;
 
         private void OnEnable()
         {
@@ -58,6 +71,12 @@ namespace Takoda99.View
             if (nameInputField != null)
             {
                 nameInputField.characterLimit = DisplayNameInputLimit;
+
+                var imeBridge = nameInputField.GetComponent<WebGLNameInputImeBridge>();
+                if (imeBridge != null)
+                {
+                    imeBridge.CharacterLimit = DisplayNameInputLimit;
+                }
             }
 
             if (decideButton != null)
@@ -150,6 +169,8 @@ namespace Takoda99.View
 
         private void Apply(MatchmakingViewState view)
         {
+            currentPanel = view.Panel;
+
             SetActive(writeNameModal, view.Panel == MatchmakingPanel.WriteNameModal);
             SetActive(waitingPanel, view.Panel == MatchmakingPanel.WaitingPanel);
             SetActive(matchingPanel, view.Panel == MatchmakingPanel.MatchingPanel);
@@ -159,16 +180,75 @@ namespace Takoda99.View
                 participantsNumText.text = view.WaitingCount.ToString();
             }
 
+            TrackCountdown(view.CountdownMs);
+            ApplyCountdown();
+            ApplyParticipants(view.Participants);
+        }
+
+        /// <summary>
+        /// カウントダウンの締切をサーバー値に合わせ直す。値が変わったときだけ再同期し、
+        /// 尽きたあとの経過はローカルで進める。
+        /// </summary>
+        private void TrackCountdown(int? countdownMs)
+        {
+            if (hasCountdownObservation && countdownMs == lastCountdownMs)
+            {
+                return;
+            }
+
+            hasCountdownObservation = true;
+            lastCountdownMs = countdownMs;
+
+            if (countdownMs.HasValue)
+            {
+                countdownDeadlineMs = NowMs() + countdownMs.Value;
+                return;
+            }
+
+            // まだ時間が残っているうちに countdownMs が消えたのなら中断（minPlayers 割れ・§5.2）。
+            // 尽きたあとの欠落は完了なので、締切はそのまま残す。
+            if (countdownDeadlineMs.HasValue && countdownDeadlineMs.Value - NowMs() > 0L)
+            {
+                countdownDeadlineMs = null;
+            }
+        }
+
+        private void Update()
+        {
+            // カウントダウンが尽きる瞬間は MatchmakingStatus の受信と一致しない
+            // （サーバーは尽きた時に送り直さない）ため、毎フレーム見に行く。
+            if (currentPanel == MatchmakingPanel.MatchingPanel)
+            {
+                ApplyCountdown();
+            }
+        }
+
+        private void ApplyCountdown()
+        {
+            var remaining = countdownDeadlineMs.HasValue
+                ? (long?)(countdownDeadlineMs.Value - NowMs())
+                : null;
+
+            var countdown = MatchmakingCountdownState.From(lastCountdownMs, remaining);
+
             if (timerText != null)
             {
                 // countdownMs はカウントダウン中しか届かない。欠落を 0 と表示すると
                 // 「あと0秒」のまま始まらない画面になる（§3 / §5.2）。
-                timerText.text = view.CountdownMs.HasValue
-                    ? Mathf.CeilToInt(view.CountdownMs.Value / 1000f).ToString()
+                timerText.text = countdown.IsCountingDown || countdown.IsComplete
+                    ? string.Format(timerFormat, countdown.RemainingSeconds)
                     : string.Empty;
             }
 
-            ApplyParticipants(view.Participants);
+            // 締切を過ぎてから MatchStart が届くまでの数秒だけ出す。
+            // MatchStart で Panel が None になるため、ここで畳む処理は要らない。
+            SetActive(matchingComplete, countdown.IsComplete);
+        }
+
+        /// <summary>ローカル単調時刻(ms)。カウントダウンの残りを引くためだけに使う。</summary>
+        private static long NowMs()
+        {
+            return (long)(Time.realtimeSinceStartupAsDouble * 1000d);
         }
 
         /// <summary>参加者一覧を表示ぶんだけ生成し、増減に合わせてプレハブを足し引きする。</summary>

@@ -12,7 +12,7 @@ TagManager:
   - Water
   - UI
   - DebugUI
-  - 
+  - BackUI
   - 
   - 
   - 
@@ -38,8 +38,14 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: BackUI
+    uniqueID: 573677811
+    locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: UI
+    uniqueID: 3088982737
     locked: 0
   m_RenderingLayers:
   - Default

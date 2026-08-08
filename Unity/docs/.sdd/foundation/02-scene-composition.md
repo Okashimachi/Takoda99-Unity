@@ -152,7 +152,7 @@ namespace Takoda99.View
 
 ### ★ここで接続しない
 
-Start ボタンは**シーンを切り替えるだけ**で、`BeginPlay()` を呼ばない。接続は表示名が確定してから（[01-matchmaking-flow.md](../matchmaking/01-matchmaking-flow.md) §8.5）。**ここで接続すると、名前入力に3秒以上かかった時点で表示名が失われる。**
+Start ボタンは**シーンを切り替えるだけ**で、`BeginPlay()` を呼ばない。接続は表示名が確定してから（[01-matchmaking-flow.md](../matchmaking/01-matchmaking-flow.md) §8.6）。**ここで接続すると、名前入力に3秒以上かかった時点で表示名が失われる。**
 
 ### 実装
 

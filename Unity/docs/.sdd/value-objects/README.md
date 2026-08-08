@@ -27,8 +27,13 @@ Unity側 View用派生状態（本ディレクトリの対象）
 | 04 | `04-credit-life-lantern-state.md` | `CreditLifeLanternState`（提灯の点灯/消灯） | 左上の提灯3つ |
 | 05 | `05-rank-bar-and-eval-delta-view-state.md` | `RankBarViewState` / `EvalDeltaDisplayState` | 上部順位バー・淘汰圏の帯・星評価と増減表示 |
 | 06 | `06-sub-store-tile-state.md` | `SubStoreTileState`（信用ライフ3段階＋脱落直後／完全脱落） | 99店ミニ盤面の1マスの屋台画像・順位表示 |
+| 07 | `07-patience-gauge-state.md` | `PatienceGaugeState`（残量比＋色段階3段階） | 我慢ゲージのバーの長さと色 |
 
 新しい派生値オブジェクトが増えたら、この表に行を追加してから仕様書ファイルを作る。
+
+> **例外：`StarRatingFill` / `PlayerNameLayout` は本ディレクトリに専用の仕様書を持たない。** どちらも `Assets/Scripts/View/ValueObjects/` にある純粋関数だが、`Store` の値を「区分」へ落とすのではなく、**1つのHUDの中でどう割り振るか**だけを決める配分計算である。仕様は [match-view/07-match-hud.md](../match-view/07-match-hud.md) §4・§5 が正典（`StarRatingFill` の入力となる `starRating` の定義は [05](./05-rank-bar-and-eval-delta-view-state.md)）。テストは他の値オブジェクトと同じ `Unity/tests/Takoda99.View.Tests` にある。
+
+> **例外：`MatchmakingCountdownState` も本ディレクトリに仕様書を持たない。** `MatchmakingViewState` と同じ理由（試合前の画面の話）で、仕様は [01-matchmaking-flow.md](../matchmaking/01-matchmaking-flow.md) §8.5 が正典。
 
 > **例外：`MatchmakingViewState` は本ディレクトリに仕様書を持たない。** 実装は他の値オブジェクトと同じ `Assets/Scripts/View/ValueObjects/` にあるが、**`Store` から導出する「試合中の表示区分」ではなく、試合前の画面遷移そのもの**であるため、仕様は [01-matchmaking-flow.md](../matchmaking/01-matchmaking-flow.md) §2〜§3・§8.4 が正典。**同じモジュールの仕様を二重に書かない**という [README.md](../README.md) §5-4 の方針に従う。
 

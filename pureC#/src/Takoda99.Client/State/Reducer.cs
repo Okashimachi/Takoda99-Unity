@@ -15,13 +15,24 @@ public static class Reducer
             CustomerArrivedAction a => ApplyCustomerArrived(state, a),
             CustomerLeftAction a => ApplyCustomerLeft(state, a),
             CreditUpdateAction a => state.With(creditLife: a.Life),
-            EvaluationUpdateAction a => state.With(evalRaw: a.EvalRaw, normalized: a.Normalized, rank: a.Rank, aliveCount: a.AliveCount),
+            EvaluationUpdateAction a => state.With(evalRaw: a.EvalRaw, normalized: a.Normalized, rank: a.Rank, aliveCount: a.AliveCount, starRating: a.StarRating, starDelta: a.StarDelta),
             DifficultyUpdateAction a => state.With(heatLevel: a.HeatLevel),
             PhaseChangeAction a => state.With(matchPhase: a.Phase),
             StoreListUpdateAction a => state.With(stores: a.Stores, aliveCount: a.AliveCount),
             ForcedEliminationWarningAction a => state.With(storm: new StormWarning { UntilTick = a.UntilTick, ThresholdPct = a.ThresholdPct }),
             StoreEliminatedAction a => ApplyStoreEliminated(state, a),
-            MatchEndAction a => state.With(result: new MatchResult { FinalRank = a.FinalRank, Stats = a.Stats }, phase: ClientPhase.Result),
+            MatchEndAction a => state.With(
+                result: new MatchResult
+                {
+                    FinalRank = a.FinalRank,
+                    Stats = a.Stats,
+                    Reason = a.Reason,
+                    MatchElapsedMs = a.MatchElapsedMs,
+                    CreditLeft = a.CreditLeft,
+                    EvalRaw = a.EvalRaw,
+                    EvalNormalized = a.EvalNormalized,
+                },
+                phase: ClientPhase.Result),
             MatchmakingStatusAction a => state.With(waitingCount: a.WaitingCount, minPlayers: a.MinPlayers, countdownMs: a.CountdownMs, clearCountdownMs: a.CountdownMs is null, selfStoreId: a.SelfStoreId, matchmakingParticipants: a.Participants),
 
             LocalOrderBeganAction a => state.With(currentOrder: new CurrentOrder { CustomerId = a.CustomerId, OrderCount = a.OrderCount }),
@@ -84,7 +95,7 @@ public static class Reducer
     private static ClientState ApplyStoreEliminated(ClientState state, StoreEliminatedAction a)
     {
         var stores = state.Stores
-            .Select(s => s.StoreId == a.StoreId ? CloneWithAlive(s, false) : s)
+            .Select(s => s.StoreId == a.StoreId ? CloneWithAlive(s, false, a.FinalRank) : s)
             .ToList();
 
         if (a.StoreId == state.SelfStoreId)
@@ -143,7 +154,7 @@ public static class Reducer
         return -1;
     }
 
-    private static StoreSummary CloneWithAlive(StoreSummary source, bool alive)
+    private static StoreSummary CloneWithAlive(StoreSummary source, bool alive, int finalRank)
     {
         return new StoreSummary
         {
@@ -153,6 +164,7 @@ public static class Reducer
             Rank = source.Rank,
             CreditLife = source.CreditLife,
             Alive = alive,
+            FinalRank = finalRank,
         };
     }
 }

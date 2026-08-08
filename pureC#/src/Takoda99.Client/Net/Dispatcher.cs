@@ -135,6 +135,8 @@ public sealed class Dispatcher : IDispatcher
                         Normalized = evaluationUpdate.Normalized,
                         Rank = evaluationUpdate.Rank,
                         AliveCount = evaluationUpdate.AliveCount,
+                        StarRating = evaluationUpdate.StarRating,
+                        StarDelta = evaluationUpdate.StarDelta,
                     };
 
             case MessageType.DifficultyUpdate:
@@ -171,7 +173,16 @@ public sealed class Dispatcher : IDispatcher
                 var matchEnd = _codec.DecodePayload<MatchEnd>(envelope);
                 return matchEnd is null
                     ? null
-                    : new MatchEndAction { FinalRank = matchEnd.FinalRank, Stats = matchEnd.Stats };
+                    : new MatchEndAction
+                    {
+                        FinalRank = matchEnd.FinalRank,
+                        Stats = matchEnd.Stats,
+                        Reason = matchEnd.Reason,
+                        MatchElapsedMs = matchEnd.MatchElapsedMs,
+                        CreditLeft = matchEnd.CreditLeft,
+                        EvalRaw = matchEnd.EvalRaw,
+                        EvalNormalized = matchEnd.EvalNormalized,
+                    };
 
             default:
                 return null;

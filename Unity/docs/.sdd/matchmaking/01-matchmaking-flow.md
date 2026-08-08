@@ -124,7 +124,9 @@ MatchMakingCanvas               ← MatchmakingScreenView
     ├── PaticipantsNumPanel     （待機人数）
     ├── PaticipantsList         （§9.1・Proto v0.5.0で実装可能）
     │   └── Paticipants         （Paticipant Prefab の親。参加人数ぶん生成し自店を強調表示）
-    └── Timer                   （countdownMs）
+    ├── Timer                   （countdownMs。「のこりOO秒」・§8.5）
+    │   └── Text (TMP)
+    └── MatchingComplete        （既定で非表示。カウントダウン後〜MatchStart まで・§8.5）
 ```
 
 ## 8. ふるまいの詳細
@@ -161,7 +163,29 @@ MatchMakingCanvas               ← MatchmakingScreenView
 
 > **`CountingDown` → `Waiting` の巻き戻り（§5.2）はパネルの巻き戻りではない。** どちらも `MatchingPanel` に対応するため、カウントダウンが中断しても画面は切り替わらず、`Timer` の表示だけが消える。**「不可逆」と §5.2 は矛盾しない。**
 
-### 8.5 名前確定と接続の順序
+### 8.5 `Timer` の表示と `MatchingComplete`
+
+`Timer/Text (TMP)` は「のこり**OO**秒」の形で出す（文面は `MatchmakingScreenView.timerFormat`）。秒数は `countdownMs` を**切り上げ**た値で、`countdownMs` が欠落している間は**空文字**にする（§3 のとおり 0 と出さない）。
+
+**カウントダウンが尽きてから `MatchStart` が届くまで数秒の空白がある。** この間 `MatchingPanel/MatchingComplete` を出す。
+
+問題は「尽きた」をどう知るかで、**サーバーは尽きた瞬間に `countdownMs: 0` を送り直さない**（配信されるのは待機ティッカー・開始時・中断時のみ。§5）。最後に届いた値のまま止まるので、サーバー値だけを見ていると「のこり1秒」で固まる。
+
+そこで `countdownMs` を受け取った時刻からローカルの締切（`受信時刻 + countdownMs`）を引き、締切を過ぎたら完了として扱う。区分の判定は [`MatchmakingCountdownState`](../value-objects/README.md) の純粋関数が持つ。
+
+| `countdownMs` | ローカル締切までの残り | 区分 |
+|---|---|---|
+| あり | > 0 | カウントダウン中（秒数を表示） |
+| あり | ≦ 0 | **完了**（`MatchingComplete` を出す） |
+| なし | > 0 | **中断**（§5.2。何も出さない） |
+| なし | ≦ 0 | 完了 |
+| なし | 締切なし | 待機中（何も出さない） |
+
+- 締切はサーバー値が**変わったときだけ**引き直す。毎フレーム引き直すと締切が前へ逃げ続けて永久に尽きない
+- **「尽きた」はマッチング成立の根拠ではない。** 成立は `MatchStart` 受信のみ（§1）。`MatchingComplete` は待ち時間の見た目にすぎず、これを根拠に画面遷移や送信を行わない
+- 中断（§5.2）と完了を取り違えないこと。`minPlayers` を割り込んで `countdownMs` が消えた場合はまだ時間が残っているため、上表のとおり中断側に落ちる
+
+### 8.6 名前確定と接続の順序
 
 **`WriteNameModal` の Decide を押して初めて接続する。** `Boot` シーンでも `Title` シーンでも接続しない。
 
@@ -201,6 +225,8 @@ Boot（生成のみ・接続しない）
 - カウントダウン中に `countdownMs` の無いメッセージが来たら `Waiting` へ戻ること
 - 接続直後〜最初の `MatchmakingStatus` 受信までの間、待機人数の数値が画面に出ないこと
 - `MatchStart` 受信で `Starting` へ遷移し、以降 `MatchmakingStatus` を受けても状態が巻き戻らないこと
+- カウントダウンの最後の値（例 1000ms）が届いたまま更新が止まっても、**「のこり1秒」で固まらず**に `MatchingComplete` へ移ること（§8.5）
+- `minPlayers` 割れで `countdownMs` が消えたとき、`MatchingComplete` が**出ない**こと（中断と完了の取り違え）
 
 ## 11. 未確定事項
 

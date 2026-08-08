@@ -181,4 +181,74 @@ public class TypingJudgeTests
 
         Assert.Equal(KeyResult.Ignored, _judge.PressKey('t'));
     }
+
+    // ── CurrentRoma / TypedRomaLength（お題のローマ字表示） ──────────────
+
+    [Fact]
+    public void CurrentRomaは打鍵前から単語全体のローマ字を返す()
+    {
+        _judge.BeginOrder("c1", Words("たこ"));
+
+        var view = _judge.CurrentView;
+
+        Assert.Equal("tako", view.CurrentRoma);
+        Assert.Equal(0, view.TypedRomaLength);
+    }
+
+    [Fact]
+    public void TypedRomaLengthは打鍵に追従する()
+    {
+        _judge.BeginOrder("c1", Words("たこ"));
+
+        Type("ta");
+        Assert.Equal(2, _judge.CurrentView.TypedRomaLength);
+
+        Type("k");
+        // 未確定バッファ "k" のぶんも打鍵済みに数える。
+        Assert.Equal(3, _judge.CurrentView.TypedRomaLength);
+        Assert.Equal("tako", _judge.CurrentView.CurrentRoma);
+    }
+
+    [Fact]
+    public void ゆらぎのあるかなは打鍵中の入力に沿った候補を出す()
+    {
+        _judge.BeginOrder("c1", Words("し"));
+
+        // 打鍵前は代表候補。
+        var before = _judge.CurrentView.CurrentRoma;
+
+        // "s" まで打った時点では、まだ si / shi のどちらにも進める。
+        Type("s");
+        var afterS = _judge.CurrentView;
+        Assert.StartsWith("s", afterS.CurrentRoma);
+        Assert.Equal(1, afterS.TypedRomaLength);
+
+        // "h" まで打つと shi に確定する。表示も shi 側へ寄っていなければ、
+        // 残り表示（"i"）と実際に受理される打鍵がずれる。
+        Type("h");
+        var afterSh = _judge.CurrentView;
+        Assert.Equal("shi", afterSh.CurrentRoma);
+        Assert.Equal(2, afterSh.TypedRomaLength);
+
+        Assert.NotNull(before);
+    }
+
+    [Fact]
+    public void 単語が進むとCurrentRomaも次の単語に切り替わる()
+    {
+        _judge.BeginOrder("c1", Words("たこ", "やき"));
+
+        Type("tako");
+
+        var view = _judge.CurrentView;
+        Assert.Equal("yaki", view.CurrentRoma);
+        Assert.Equal(0, view.TypedRomaLength);
+    }
+
+    [Fact]
+    public void Idle中のCurrentRomaは空()
+    {
+        Assert.Equal(string.Empty, _judge.CurrentView.CurrentRoma);
+        Assert.Equal(0, _judge.CurrentView.TypedRomaLength);
+    }
 }
