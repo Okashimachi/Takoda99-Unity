@@ -134,9 +134,26 @@ namespace Takoda99.View
             //
             // state.Result は MatchEnd でしか入らない（Reducer）ので、条件としてはこれで十分。
             // 描画処理より前に置くことで、後続で何が起きてもモーダルだけは必ず出る。
-            if (state.Phase == ClientPhase.Result && state.Result != null)
+            //
+            // 1位（優勝）にも MatchEnd は届く。中身は Dispatcher → MatchEndAction → Reducer と
+            // 欠けずに state.Result へ入る（FinalRank・Stats のほか、終わり方を表す Reason を持ち、
+            // 優勝＝最後まで残った場合は空文字）。
+            // 自店が最後まで残ると StoreEliminated（自店宛）は来ないため、優勝時にモーダルを出せる
+            // 根拠はこの MatchEnd 由来の state.Result だけになる。ここを唯一の契機として扱う。
+            if (state.Phase == ClientPhase.Result && state.Result != null && resultView != null)
             {
-                resultView?.ShowIfHidden(state.Result.FinalRank);
+                var result = state.Result;
+
+                // Result フェーズ中は state 変化のたびここへ来る。ログは実際に出す瞬間だけに絞る。
+                if (!resultView.IsShown)
+                {
+                    var won = string.IsNullOrEmpty(result.Reason);
+                    Debug.Log(
+                        $"{nameof(Renderer)}: MatchEnd 受信 rank={result.FinalRank} reason=\"{result.Reason}\" 優勝={won}。リザルトモーダルを表示します。",
+                        this);
+                }
+
+                resultView.ShowIfHidden(result.FinalRank);
             }
 
             // 試合開始の合図はサーバー（MatchStart ＝ InMatch 到達）。カウントダウンが
@@ -355,6 +372,14 @@ namespace Takoda99.View
 
         public void OnMatchEnd(int finalRank, MatchStats stats)
         {
+            // MatchEnd が届いたこと自体を必ず1回残す。1試合に1回しか来ないためログとしても静か。
+            // このログが出ない＝MatchEnd がクライアントまで届いていない（もしくは Dispatcher の
+            // OnActionApplied が手前で落ちている）と切り分けられる。
+            var served = stats != null ? stats.ServedCount : 0;
+            Debug.Log(
+                $"{nameof(Renderer)}.{nameof(OnMatchEnd)}: MatchEnd 受信 rank={finalRank} 提供数={served}",
+                this);
+
             customerQueue?.ClearAll();
             orderBubble?.Hide();
             patienceTimer?.Stop();

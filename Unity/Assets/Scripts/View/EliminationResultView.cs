@@ -209,7 +209,16 @@ namespace Takoda99.View
 
         private void OnNextClicked()
         {
-            Bootstrap.GameBootstrapper.Instance.GoToResult();
+            var bootstrap = Bootstrap.GameBootstrapper.Instance;
+            if (bootstrap == null)
+            {
+                // ここが null だと押しても無反応になり「遷移できない」に見える。原因を名指しで残す。
+                Debug.LogError($"{nameof(EliminationResultView)}: {nameof(Bootstrap.GameBootstrapper)}.Instance が null のため Result へ遷移できません。", this);
+                return;
+            }
+
+            Debug.Log($"{nameof(EliminationResultView)}: NextButton → Result シーンへ遷移します。", this);
+            bootstrap.GoToResult();
         }
     }
 }
