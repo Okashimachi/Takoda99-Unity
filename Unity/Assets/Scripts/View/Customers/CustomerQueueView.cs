@@ -164,7 +164,12 @@ namespace Takoda99.View.Customers
         /// <c>Renderer</c> から毎 state 変化で呼ぶ。
         /// <see cref="ClientState"/> を表示に必要な最小限へ写して <see cref="Apply(IReadOnlyList{CustomerQueueItem}, string)"/> に渡す。
         /// </summary>
-        public void Apply(ClientState state)
+        /// <param name="nowMs">
+        /// <c>Time.realtimeSinceStartupAsDouble</c> 基準のローカル時刻。<c>Renderer</c> が
+        /// PatienceTimer の起点と同じ1回の計算値を渡す（<see cref="Renderer.ApplyServingCustomer"/>）。
+        /// 先頭客の表情推定（<see cref="TrackFront"/>）とゲージの起点がずれないようにするため。
+        /// </param>
+        public void Apply(ClientState state, long nowMs)
         {
             DriverName = "Renderer(server)";
             _scratch.Clear();
@@ -177,7 +182,7 @@ namespace Takoda99.View.Customers
                     entry.ArrivedAtLocalMs));
             }
 
-            Apply(_scratch, state.CurrentOrder?.CustomerId);
+            Apply(_scratch, state.CurrentOrder?.CustomerId, nowMs);
         }
 
         /// <summary>
@@ -186,7 +191,8 @@ namespace Takoda99.View.Customers
         /// </summary>
         /// <param name="queue">行列。添字0が先頭。</param>
         /// <param name="servingCustomerId">対応中（注文を受け終わって提供待ち）の客。居なければ null。</param>
-        public void Apply(IReadOnlyList<CustomerQueueItem> queue, string servingCustomerId)
+        /// <param name="nowMs">先頭交代の基準時刻。テストドライバは自前で現在時刻を渡す。</param>
+        public void Apply(IReadOnlyList<CustomerQueueItem> queue, string servingCustomerId, long nowMs)
         {
             if (_layout == null || _actorPrefab == null)
             {
@@ -271,7 +277,7 @@ namespace Takoda99.View.Customers
                 actor.MoveTo(Localize(_layout.QueuePose(i)), _layout.AdvanceDuration, _advanceEase);
             }
 
-            TrackFront();
+            TrackFront(queue, nowMs);
             ApplyStates(servingCustomerId);
             ApplySiblingOrder();
         }
@@ -279,23 +285,26 @@ namespace Takoda99.View.Customers
         /// <summary>
         /// 先頭の客の入れ替わりを見張り、入れ替わった瞬間を我慢の起点として記録する。
         /// 行列に並んだ時刻を起点にすると、後ろで待っていた客が先頭に来た時点で既に怒った顔になる。
+        /// 判定は <paramref name="queue"/>（サーバー状態そのまま。<c>Renderer.ApplyServingCustomer</c>
+        /// と同じ添字0）を基準にする。表示上限で切った <c>_visible</c> を基準にすると、
+        /// ゲージ側と表情側で「先頭客」の定義がずれる。
         /// </summary>
-        private void TrackFront()
+        private void TrackFront(IReadOnlyList<CustomerQueueItem> queue, long nowMs)
         {
-            if (_visible.Count == 0)
+            if (queue.Count == 0)
             {
                 _frontCustomerId = null;
                 return;
             }
 
-            var frontId = _visible[0].CustomerId;
+            var frontId = queue[0].CustomerId;
             if (frontId == _frontCustomerId)
             {
                 return;
             }
 
             _frontCustomerId = frontId;
-            _frontSinceLocalMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
+            _frontSinceLocalMs = nowMs;
         }
 
         /// <summary>

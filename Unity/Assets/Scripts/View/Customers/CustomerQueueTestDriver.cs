@@ -249,7 +249,8 @@ namespace Takoda99.View.Customers
 
         private void Push()
         {
-            _queueView.Apply(_queue, _servingCustomerId);
+            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
+            _queueView.Apply(_queue, _servingCustomerId, nowMs);
         }
 
         private CustomerAttribute NextAttribute()
