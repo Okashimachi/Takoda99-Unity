@@ -18,6 +18,7 @@ namespace Takoda99.View
     public sealed class Renderer : MonoBehaviour, IRenderer
     {
         [SerializeField] private MainStoreView mainStore;
+        [SerializeField] private TakoyakiStandView takoyakiStand;
         [SerializeField] private SubStoreBoardView subStoreBoard;
         [SerializeField] private PatienceTimer patienceTimer;
         [SerializeField] private EliminationResultView resultView;
@@ -32,6 +33,13 @@ namespace Takoda99.View
         private IDisposable subscription;
         private string servingCustomerId;
         private bool subStoreBoardBound;
+
+        /// <summary>
+        /// HandleStateChanged の再入防止。GameBeforeView.Finished がその場で
+        /// HandleStateChanged を呼び直すため（下記コメント参照）、外側の呼び出しが
+        /// 継続している間に同じフレームで二重に全描画が走るのを防ぐ。
+        /// </summary>
+        private bool isHandlingStateChanged;
 
         /// <summary>自店が脱落済みか。以降は観戦なので行列を描かない。</summary>
         private bool selfEliminated;
@@ -72,6 +80,7 @@ namespace Takoda99.View
             // 未割り当ての参照は「その機能だけが黙って動かない」形で表面化する。
             // 画面が出ない原因を探すより、起動時に名指しで知らせるほうが早い。
             WarnIfMissing(mainStore, nameof(mainStore));
+            WarnIfMissing(takoyakiStand, nameof(takoyakiStand));
             WarnIfMissing(subStoreBoard, nameof(subStoreBoard));
             WarnIfMissing(patienceTimer, nameof(patienceTimer));
             WarnIfMissing(rankBar, nameof(rankBar));
@@ -124,6 +133,27 @@ namespace Takoda99.View
 
         private void HandleStateChanged(ClientState state)
         {
+            if (isHandlingStateChanged)
+            {
+                // GameBeforeView.Finished 経由の再入。外側の呼び出しがこの直後の行から
+                // 続行し、同じ最新 state を holding=false で描き直すため、ここで描いても
+                // 二重描画になるだけ。何もせず外側に任せる。
+                return;
+            }
+
+            isHandlingStateChanged = true;
+            try
+            {
+                HandleStateChangedCore(state);
+            }
+            finally
+            {
+                isHandlingStateChanged = false;
+            }
+        }
+
+        private void HandleStateChangedCore(ClientState state)
+        {
             // ★このメソッドの先頭で行う。
             // 試合終了の検知は state を正とし、OnMatchEnd（IRenderer コールバック）には依存しない。
             // Dispatcher は `_store.Apply(action)` → `OnActionApplied?.Invoke(action)` の順で走るため、
@@ -167,6 +197,11 @@ namespace Takoda99.View
             // state はそのまま溜め、明けた瞬間に HandleGameBeforeFinished から描き直す。
             var holding = gameBefore != null && gameBefore.IsHolding;
 
+            // 我慢ゲージ（PatienceTimer）・客の表情（CustomerQueueView）・注文カウンタ・お題を
+            // すべて同じ「行列の先頭客」定義（state.Queue[0]）に揃えるため、ここで1回だけ引く。
+            var front = state.Queue.Count > 0 ? state.Queue[0] : null;
+            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
+
             if (mainStore != null)
             {
                 mainStore.SetCreditLife(state.CreditLife);
@@ -177,11 +212,13 @@ namespace Takoda99.View
                 {
                     mainStore.SetWord(string.Empty, string.Empty);
                     mainStore.SetOrderProgress(0, 0);
+                    takoyakiStand?.SetTypedWordCount(0);
                 }
                 else
                 {
-                    ApplyWord(state);
-                    ApplyOrderCounter(state);
+                    ApplyWord(state, front);
+                    var prepared = ApplyOrderCounter(state, front);
+                    takoyakiStand?.SetTypedWordCount(prepared);
                 }
             }
 
@@ -224,18 +261,29 @@ namespace Takoda99.View
             // 自店が脱落した後は観戦なので、state.Queue に何が残っていても行列は描かない。
             if (customerQueue != null && !selfEliminated && !holding)
             {
-                customerQueue.Apply(state);
+                customerQueue.Apply(state, nowMs);
             }
 
             if (!holding)
             {
-                ApplyServingCustomer(state);
+                ApplyServingCustomer(front, nowMs);
             }
         }
 
-        private void ApplyWord(ClientState state)
+        /// <summary>
+        /// お題単語。<c>CurrentOrder</c> が先頭客（<paramref name="front"/>）とまだ一致していない間
+        /// （前の客が帰ってから次の客のオーダーがサーバーから届くまでの隙間）は、注文カウンタ
+        /// （<see cref="ApplyOrderCounter"/>）が新しい客の分母へ切り替わるのに対し、ここが前の客の
+        /// お題を出し続けると「新しい客の個数 × 前の客の単語」という食い違った組が一瞬出る。
+        /// 一致するまでは空欄にして、両者の切り替わりを揃える。
+        /// </summary>
+        private void ApplyWord(ClientState state, CustomerEntry front)
         {
-            if (state.CurrentOrder is null || typingJudge is null)
+            var matchesFront = state.CurrentOrder is not null
+                && front is not null
+                && state.CurrentOrder.CustomerId == front.View.CustomerId;
+
+            if (!matchesFront || typingJudge is null)
             {
                 mainStore.SetWord(string.Empty, string.Empty);
                 return;
@@ -248,21 +296,20 @@ namespace Takoda99.View
 
         /// <summary>
         /// 注文カウンタ。分子は準備できたたこ焼きの数（＝打ち終えた単語数 <c>WordIndex</c>）、
-        /// 分母は注文個数。
+        /// 分母は注文個数。呼び出し元へ分子（<c>prepared</c>）を返し、<see cref="takoyakiStand"/> の
+        /// 焼け具合と表示を揃える。
         /// </summary>
         /// <remarks>
         /// 分母は「行列の先頭の客」から引く。<c>CurrentOrder</c> だけを見ると、前の客が帰ってから
         /// 次の客の打鍵が始まるまでの間だけ 0/0 に落ち、注文数の表示が客の入れ替わりから遅れて見える。
         /// 先頭が入れ替わった瞬間に新しい注文数へ切り替わるようにする。
         /// </remarks>
-        private void ApplyOrderCounter(ClientState state)
+        private int ApplyOrderCounter(ClientState state, CustomerEntry front)
         {
-            var front = state.Queue.Count > 0 ? state.Queue[0] : null;
-
             if (front is null)
             {
                 mainStore.SetOrderProgress(0, 0);
-                return;
+                return 0;
             }
 
             // 対応中の注文が先頭客のものならその進捗を、まだ始まっていなければ 0 個目として出す。
@@ -271,6 +318,7 @@ namespace Takoda99.View
                 : 0;
 
             mainStore.SetOrderProgress(prepared, front.View.OrderCount);
+            return prepared;
         }
 
         /// <summary>自店の表示名。StoreListUpdate が届くまでは空になる（受信値をそのまま使う）。</summary>
@@ -287,9 +335,15 @@ namespace Takoda99.View
             return string.Empty;
         }
 
-        private void ApplyServingCustomer(ClientState state)
+        /// <summary>
+        /// 我慢ゲージ（PatienceTimer）と注文吹き出しの起点。<paramref name="front"/> と
+        /// <paramref name="nowMs"/> は呼び出し元（HandleStateChangedCore）が1回だけ計算した値を
+        /// そのまま受け取る。<c>customerQueue.Apply</c> 側の「先頭客が変わった」判定
+        /// （<see cref="Customers.CustomerQueueView.TrackFront"/>）と基準が分かれていると、
+        /// ゲージが減り始める瞬間と客の表情が変わる瞬間がずれるため、同じ値を共有する。
+        /// </summary>
+        private void ApplyServingCustomer(CustomerEntry front, long nowMs)
         {
-            var front = state.Queue.Count > 0 ? state.Queue[0] : null;
             var frontId = front?.View.CustomerId;
 
             if (frontId == servingCustomerId)
@@ -309,7 +363,6 @@ namespace Takoda99.View
             // 我慢は「先頭に来て注文した瞬間」から減り始める。行列に並び始めた時刻（ArrivedAtLocalMs）を
             // 起点にすると、待たされていた客ほど先頭に来た時点で既にゲージが減っており、
             // 前の客に提供し終えた直後からゲージが尽きたままライフだけが減る。
-            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
             patienceTimer?.Stop();
             patienceTimer?.Begin(nowMs, front.View.PatienceMaxMs);
 

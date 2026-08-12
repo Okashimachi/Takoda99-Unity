@@ -57,6 +57,8 @@ namespace Takoda99.View
         private int currentPrepared = -1;
         private int currentOrderCount = -1;
         private string currentPlayerName;
+        private int currentTypedHiraganaLength = -1;
+        private int currentTypedRomaLength = -1;
 
         /// <summary>評価3段階が変化したときに発火する。Takoyakis が購読する。</summary>
         public event Action<StoreEvalLevel> EvalLevelChanged;
@@ -76,10 +78,10 @@ namespace Takoda99.View
             {
                 Debug.LogError($"{nameof(MainStoreView)}.{nameof(lanterns)} が未設定です。", this);
             }
-        }
 
-        private void Start()
-        {
+            // 既定表示への初期化は Awake で行う（Start だと遅い）。Unity は全オブジェクトの Awake を
+            // 済ませてから OnEnable を呼ぶため、Renderer.OnEnable→Bind→HandleStateChanged が
+            // 初回描画を行った後に、この初期化で上書きしてしまう事故を避けられる。
             SetCreditLife(3);
             SetEvaluation(0d, true);
             SetWord(string.Empty, string.Empty);
@@ -253,12 +255,29 @@ namespace Takoda99.View
         {
             currentHiragana = hiragana ?? string.Empty;
             currentRoma = roma ?? string.Empty;
+
+            // 単語が変わった以上、直前の進捗キャッシュはもう無効。次の SetTypedProgress で
+            // 必ず 0 が反映されるよう、キャッシュ側も一緒に無効化する（そうしないと直前と
+            // 同じ typedLength=0 のときに再描画がスキップされ、古い単語の文字列が残る）。
+            currentTypedHiraganaLength = -1;
+            currentTypedRomaLength = -1;
             SetTypedProgress(0, 0);
         }
 
         /// <summary>入力進捗を反映する。引数はいずれも「確定した先頭からの文字数」。</summary>
         public void SetTypedProgress(int typedHiraganaLength, int typedRomaLength)
         {
+            // Renderer は打鍵1回ごと・毎ティックここへ来る。SetWord 直後の SetTypedProgress(0, 0)
+            // と、直後に呼ばれる実際の進捗値との二重描画を避けるため、他のセッターと同様に
+            // 値が変わらないフレームは ToString／文字列連結ごと省く。
+            if (typedHiraganaLength == currentTypedHiraganaLength && typedRomaLength == currentTypedRomaLength)
+            {
+                return;
+            }
+
+            currentTypedHiraganaLength = typedHiraganaLength;
+            currentTypedRomaLength = typedRomaLength;
+
             if (wordHiragana != null)
             {
                 wordHiragana.text = BuildProgressText(currentHiragana, typedHiraganaLength);

@@ -105,8 +105,7 @@ Prefabのリネームは `.meta` の GUID を保持したままファイル名�
 
 ### 3.3 MonoBehaviour のライフサイクル
 
-- `Awake`：参照の null チェック。欠落があれば `Debug.LogError` で対象フィールド名を出す（実行は続行し、該当パーツだけ更新をスキップする）
-- `Start`：`SetCreditLife(初期ライフ)` / `SetEvaluation(0, true)` / `SetWord("", "")` 相当の既定表示に初期化する
+- `Awake`：参照の null チェックに続けて、`SetCreditLife(初期ライフ)` / `SetEvaluation(0, true)` / `SetWord("", "")` 相当の既定表示への初期化も**ここで**行う（**`Start` ではない**）。Unity は同フレーム内で全オブジェクトの `Awake` を終えてから `OnEnable` を呼ぶため、`Renderer.OnEnable`（`Bind` → 初回 `HandleStateChanged`）より確実に先に走る。`Start` に置くと、`Renderer.OnEnable` が先に本物の値を描いた後で既定値に上書きしてしまう事故が起こる（実際に発生した不具合）
 - `Update`：**使わない**。表示は全て上記の公開メソッド呼び出しで駆動する
 - `OnDestroy`：`EvalLevelChanged` の購読解除は購読側（`TakoyakiStandView`）の責務
 
