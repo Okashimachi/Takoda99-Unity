@@ -10,7 +10,7 @@
 |---|---|---|---|
 | 注文カウンタ（x/N） | `MainStoreCanvas/Main/MainStore/OrderCounter` | `MainStoreView`（既存に統合） | お題単語のすぐ横。駆動元が `SetWord` と同じ `typingJudge.CurrentView` 系統 |
 | 注文吹き出し | `CustomerCanvas/Order` | `CustomerOrderBubbleView` | 客に属する表示。客Prefabと同じCanvasに置く |
-| 星評価 | `MainStoreCanvas/EvalCanvas` | `StarRatingView` | 他店98タイルを持つ `SubStoreCanvas` に置くと、星が変わるたび98タイルぶんのメッシュが再構築される。入れ子Canvasで切り離す |
+| 星評価 | `MainStoreCanvas/EvalCanvas` | `StarRatingView` | `MainStoreCanvas` は打鍵1回ごとにお題・注文カウンタ・たこ焼き台が再描画される Canvas。星は打鍵より低頻度（評価更新時のみ）なので、同じ Canvas に置くと打鍵のたびに星部分までメッシュが再構築される。入れ子Canvasで切り離す（`SubStoreCanvas` とは別の Canvas であることに注意） |
 | 屋号 | `MainStoreCanvas/Main/MainStore/PlayerName` | `MainStoreView`（既存に統合） | 屋台の見た目の一部。更新は表示名確定時の1回だけ |
 
 `MainStoreView` に統合した2つは、[02-main-store-view.md](./02-main-store-view.md) §1「責務を分割しない理由」に従う（`Image`/`Text` を状態で差し替えるだけで、個別に MonoBehaviour を立てる情報量が無い）。
@@ -114,6 +114,7 @@ MainStore/PlayerName
 | `CustomerCanvas/Order` の `CustomerOrderBubbleView` | `text` | `Order/Text (TMP)`（未設定なら子から自動解決） |
 | `EvalCanvas` の `StarRatingView` | `starsRoot` | `EvalCanvas/Stars`（`stars` は未設定でよい） |
 | `Render ` の `Renderer` | `orderBubble` / `starRating` | `CustomerCanvas/Order` / `MainStoreCanvas/EvalCanvas` |
+| 同上 | `takoyakiStand` | `MainStoreCanvas/Main/MainStore/Takoyakis`。未結線だと `ApplyOrderCounter` の分子（打ち終えた単語数）がたこ焼き台に伝わらず、鉄板が評価3段階の切り替わりでしか動かない |
 | `SubStorePanel` Prefab の `SubStoreTileView` | `nameText` | `SubStorePanel/Text (TMP)`（未設定なら直下から自動解決） |
 
 ## 8. テスト・確認観点

@@ -82,13 +82,20 @@ namespace Takoda99.View
 
 ### 4.3 対応中客の追跡
 
-`HandleStateChanged` の中で、直前フレームの `state.Queue` 先頭 `CustomerId` と今回を比較する：
+`HandleStateChanged` の中で、`state.Queue[0]`（先頭客。以下 `front`）の `CustomerId` が前回と変わったかを比較する。`front` と現在時刻（`nowMs`）は `HandleStateChangedCore` の先頭で**1回だけ**計算し、`ApplyServingCustomer` / `CustomerQueueView.Apply` / `ApplyWord` / `ApplyOrderCounter` へ同じ値を渡す（それぞれが自分で `Time.realtimeSinceStartupAsDouble` を読み直したり、`front` の定義を独自に持つと、我慢ゲージが減り始める瞬間と客の表情が変わる瞬間がずれる）：
 
-- 先頭が変わった（新しい客になった）→ `patienceTimer.Stop()` → `patienceTimer.Begin(now, newFront.View.PatienceMaxMs)`
-  - 起点は **先頭に来た「今」**（`Time.realtimeSinceStartupAsDouble`）であって `ArrivedAtLocalMs`（並び始めた時刻）ではない。理由は [05-patience-timer.md](./05-patience-timer.md) §4.1
+- 先頭が変わった（新しい客になった）→ `patienceTimer.Stop()` → `patienceTimer.Begin(nowMs, newFront.View.PatienceMaxMs)`
+  - 起点は **先頭に来た「今」**（`nowMs`）であって `ArrivedAtLocalMs`（並び始めた時刻）ではない。理由は [05-patience-timer.md](./05-patience-timer.md) §4.1
 - 先頭が居なくなった（行列が空になった）→ `patienceTimer.Stop()`
+- `CustomerQueueView` 側の客の表情推定（怒り顔）も同じ `front`（`queue[0]`。表示上限で切った `_visible[0]` ではない）を基準にする
 
-注文カウンタ（`MainStoreView.SetOrderProgress`）の**分母も先頭客から引く**。`CurrentOrder` だけを見ると、前の客が帰ってから次の客の打鍵が始まるまでの間だけ 0/0 に落ち、注文数の表示が客の入れ替わりから遅れて見えるため。分子は `CurrentOrder` が先頭客のものであればその `WordIndex`、まだ始まっていなければ 0。
+注文カウンタ（`MainStoreView.SetOrderProgress`）の**分母も先頭客から引く**。`CurrentOrder` だけを見ると、前の客が帰ってから次の客の打鍵が始まるまでの間だけ 0/0 に落ち、注文数の表示が客の入れ替わりから遅れて見えるため。分子は `CurrentOrder` が先頭客のものであればその `WordIndex`、まだ始まっていなければ 0。**お題単語（`ApplyWord`）も同じ「`CurrentOrder` が先頭客と一致しているか」で出す／出さないを決める**——分母（先頭客の注文個数）だけ先に切り替わって、まだ前の客のお題文字列が残るという食い違いを防ぐため。
+
+分子（`prepared`）はたこ焼き台（[03-takoyaki-stand-view.md](./03-takoyaki-stand-view.md)）の `TakoyakiStandView.SetTypedWordCount` にもそのまま渡す。ここが未結線だと、鉄板は評価3段階の切り替わりでしか動かない（実際に発生していた不具合）。
+
+### 4.4 HandleStateChanged の再入
+
+`GameBeforeView.SetMatchStarted` は待機明けの瞬間に `Finished` イベントを同期的に発火し、`HandleGameBeforeFinished` が `HandleStateChanged(store.State)` をその場で呼び直す。これは外側の `HandleStateChanged` 実行中に起こるため、素朴に実装すると同じフレームで全描画が2回走る。`Renderer` は `isHandlingStateChanged` フラグで再入をブロックし、実体（`HandleStateChangedCore`）は必ず最も外側の呼び出し1回だけが最後まで実行する。
 
 ## 5. 依存関係
 
