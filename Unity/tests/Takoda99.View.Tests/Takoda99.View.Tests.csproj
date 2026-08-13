@@ -21,6 +21,15 @@
     </Compile>
   </ItemGroup>
 
+  <!--
+    本選(v0.8.0)の値オブジェクトは pureC# の状態型（RankingRow / RankingTable / CullWarning）を
+    引数に取るため、Takoda99.Client を参照する。Unity 側は DLL 参照だが、
+    このテストプロジェクトはソースからビルドされたものを直接参照してよい（同一ソース）。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\pureC#\src\Takoda99.Client\Takoda99.Client.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />

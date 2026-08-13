@@ -6,6 +6,10 @@
 // 試合はまだ続いており（自店は Spectating）、MainGame の脱落モーダルの Next ボタンから
 // GameBootstrapper.GoToResult() で先にこの画面へ来る。MatchEnd はそのあと届く。
 // そのため一度読むだけにせず、Store を購読して結果の到着を待つ。
+//
+// ただし本選（v0.8.0）では **PersonalResult が脱落した瞬間に届いて state に保持されている**ため、
+// 「成績が無いまま画面が出る」のは通信の取りこぼし時だけになった。それでも待ち表示の経路は残す
+// （試合が終わったのに画面から出られない状態を作らないため）。
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +27,13 @@ namespace Takoda99.View
         [SerializeField] private Button titleButton;
         [SerializeField] private TakoyakiCreator takoyakiCreator;
         [SerializeField] private ResultStatsBoardView statsBoard;
+
+        [Header("順位別の演出（result-view/02）")]
+        [Tooltip("4つの Tier をそれぞれ Prefab として持つ。Show はどれを再生するか選ぶだけにする。")]
+        [SerializeField] private Result.ResultTierPresenter championPresenter;
+        [SerializeField] private Result.ResultTierPresenter podiumPresenter;
+        [SerializeField] private Result.ResultTierPresenter finalistPresenter;
+        [SerializeField] private Result.ResultTierPresenter standardPresenter;
 
         [Tooltip("ResultCanvas/Result/Rank 配下、自店の最終順位を表示する数値テキスト（「位」ラベルと兄弟にある数値の方）。")]
         [SerializeField] private TMP_Text rankText;
@@ -43,7 +54,7 @@ namespace Takoda99.View
         private IDisposable subscription;
         private bool hasRenderedResult;
         private bool hasRenderedPending;
-        private MatchResult latestResult;
+        private PersonalResultState latestResult;
         private string latestStoreName = "-";
 
         private void OnEnable()
@@ -104,20 +115,54 @@ namespace Takoda99.View
         private void ApplySample()
         {
             var result = ResultSampleData.CreateResult(testTakoyakiCount);
-            var stores = ResultSampleData.CreateStores();
+            var ranking = ResultSampleData.CreateRanking();
             latestResult = result;
-            latestStoreName = FindSelfName(stores, ResultSampleData.SelfStoreId);
+            latestStoreName = FindSelfName(ranking, ResultSampleData.SelfStoreId);
 
             if (statsBoard != null)
             {
-                statsBoard.Show(result, stores, ResultSampleData.SelfStoreId);
+                statsBoard.Show(result, ranking, ResultSampleData.SelfStoreId);
             }
 
             ApplyRankText(result);
+            PlayTier(result);
 
             if (takoyakiCreator != null)
             {
-                takoyakiCreator.SetTakoyakiCount(result.Stats.ServedCount);
+                takoyakiCreator.SetTakoyakiCount(result.TakoyakiCount);
+            }
+        }
+
+        /// <summary>
+        /// 最終順位に応じた Tier の演出を1つだけ再生する。
+        /// **分岐の基準は <c>FinalRank</c> だけ**（途中の StoreEliminatedBatch を使わない）。
+        /// result が null なら Standard 相当で成立させる。
+        /// </summary>
+        private void PlayTier(PersonalResultState result)
+        {
+            var tier = ValueObjects.ResultTierRule.From(result?.FinalRank ?? 0);
+
+            // 選ばれなかった Tier は畳む。重複再生させない。
+            SetTier(championPresenter, tier == ValueObjects.ResultTier.Champion, result);
+            SetTier(podiumPresenter, tier == ValueObjects.ResultTier.Podium, result);
+            SetTier(finalistPresenter, tier == ValueObjects.ResultTier.Finalist, result);
+            SetTier(standardPresenter, tier == ValueObjects.ResultTier.Standard, result);
+        }
+
+        private static void SetTier(Result.ResultTierPresenter presenter, bool selected, PersonalResultState result)
+        {
+            if (presenter == null)
+            {
+                return;
+            }
+
+            if (selected)
+            {
+                presenter.Play(result);
+            }
+            else
+            {
+                presenter.Hide();
             }
         }
 
@@ -128,7 +173,7 @@ namespace Takoda99.View
         /// そのまま画面に出てしまい、「何位でも99位になる」ように見える。シーンの初期値に依存しないよう、
         /// 待ち状態も含めて常にこちらから上書きする。
         /// </summary>
-        private void ApplyRankText(MatchResult result)
+        private void ApplyRankText(PersonalResultState result)
         {
             if (rankText == null)
             {
@@ -151,9 +196,9 @@ namespace Takoda99.View
                 return;
             }
 
-            var result = state.Result;
+            var result = state.PersonalResult;
             latestResult = result;
-            latestStoreName = FindSelfName(state.Stores, state.SelfStoreId);
+            latestStoreName = FindSelfName(state.Ranking, state.SelfStoreId);
 
             // 待ち表示は最初の1回だけ。観戦中は他店の更新が流れ続けるので、そのたびに組み直すと
             // TakoyakiCreator の表示演出が毎回リセットされ、いつまでも何も出てこなくなる。
@@ -164,17 +209,20 @@ namespace Takoda99.View
 
             if (statsBoard != null)
             {
-                statsBoard.Show(result, state.Stores, state.SelfStoreId);
+                statsBoard.Show(result, state.Ranking, state.SelfStoreId);
             }
 
             ApplyRankText(result);
+
+            // 成績が届いてから演出を選ぶ。未着の間は Standard で枠だけ出す。
+            PlayTier(result);
 
             if (takoyakiCreator != null)
             {
                 // Rank / Others / Buttons の表示は TakoyakiCreator の生成完了が起点なので、
                 // MatchEnd 待ちのあいだも 0 個で呼んでおく。呼ばないと Title ボタンごと出てこない。
                 // スコア（提供数）が 0 の店もいるため、0 でも必ず呼ぶ点は結果到着後も同じ。
-                takoyakiCreator.SetTakoyakiCount(result?.Stats.ServedCount ?? 0);
+                takoyakiCreator.SetTakoyakiCount(result?.TakoyakiCount ?? 0);
             }
 
             if (result == null)
@@ -236,20 +284,16 @@ namespace Takoda99.View
             }
         }
 
-        private static string FindSelfName(IReadOnlyList<StoreSummary> stores, string selfStoreId)
+        /// <summary>自店の表示名。ランキング表の行から引く（RankingRow.DisplayName は解決済み）。</summary>
+        private static string FindSelfName(RankingTable ranking, string selfStoreId)
         {
-            if (stores != null && !string.IsNullOrEmpty(selfStoreId))
+            if (ranking == null || string.IsNullOrEmpty(selfStoreId))
             {
-                foreach (var store in stores)
-                {
-                    if (store.StoreId == selfStoreId)
-                    {
-                        return store.DisplayName;
-                    }
-                }
+                return "-";
             }
 
-            return "-";
+            var row = ranking.Find(selfStoreId);
+            return row != null && !string.IsNullOrEmpty(row.DisplayName) ? row.DisplayName : "-";
         }
     }
 }

@@ -58,18 +58,23 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | # | 仕様書 | 依存先 | 実装 |
 |---|---|---|---|
 | — | **`pureC#` 側の本選対応6本**（[pureC#/docs/.sdd/README.md §2.1](../../../pureC%23/docs/.sdd/README.md)） | — | **先に完了させる** |
-| 1 | [value-objects/08-ranking-row-view-state.md](./value-objects/08-ranking-row-view-state.md) | pureC# | 未 |
-| 2 | [value-objects/09-cull-countdown-state.md](./value-objects/09-cull-countdown-state.md) | pureC# | 未 |
-| 3 | [value-objects/10-result-tier.md](./value-objects/10-result-tier.md) | なし | 未 |
-| 4 | [hud/01-hud-composition.md](./hud/01-hud-composition.md) | 1, pureC# | 未 |
-| 5 | [ranking-view/01-ranking-panel.md](./ranking-view/01-ranking-panel.md) | 1, 4 | 未 |
-| 6 | [ranking-view/02-cull-countdown-panel.md](./ranking-view/02-cull-countdown-panel.md) | 2, 5 | 未 |
-| 7 | [ranking-view/03-spectator-ranking-view.md](./ranking-view/03-spectator-ranking-view.md) | 5 | 未 |
-| 8 | [elimination/01-mass-elimination-effect.md](./elimination/01-mass-elimination-effect.md) | 4 | 未 |
-| 9 | [result-view/01-personal-result-view.md](./result-view/01-personal-result-view.md) | 3, pureC# | 未 |
-| 10 | [result-view/02-result-rank-tier.md](./result-view/02-result-rank-tier.md) | 3, 9 | 未 |
-| 11 | [hud/02-order-word-emphasis.md](./hud/02-order-word-emphasis.md) | 4 | 未（他と並行可） |
-| — | [cleanup/01-removed-views.md](./cleanup/01-removed-views.md) | 各PRに内包 | 未 |
+| 1 | [value-objects/08-ranking-row-view-state.md](./value-objects/08-ranking-row-view-state.md) | pureC# | ✅ |
+| 2 | [value-objects/09-cull-countdown-state.md](./value-objects/09-cull-countdown-state.md) | pureC# | ✅ |
+| 3 | [value-objects/10-result-tier.md](./value-objects/10-result-tier.md) | なし | ✅ |
+| 4 | [hud/01-hud-composition.md](./hud/01-hud-composition.md) | 1, pureC# | ✅ |
+| 5 | [ranking-view/01-ranking-panel.md](./ranking-view/01-ranking-panel.md) | 1, 4 | ✅ |
+| 6 | [ranking-view/02-cull-countdown-panel.md](./ranking-view/02-cull-countdown-panel.md) | 2, 5 | ✅ |
+| 7 | [ranking-view/03-spectator-ranking-view.md](./ranking-view/03-spectator-ranking-view.md) | 5 | ✅ |
+| 8 | [elimination/01-mass-elimination-effect.md](./elimination/01-mass-elimination-effect.md) | 4 | ✅ |
+| 9 | [result-view/01-personal-result-view.md](./result-view/01-personal-result-view.md) | 3, pureC# | ✅ |
+| 10 | [result-view/02-result-rank-tier.md](./result-view/02-result-rank-tier.md) | 3, 9 | ✅ |
+| 11 | [hud/02-order-word-emphasis.md](./hud/02-order-word-emphasis.md) | 4 | ✅ |
+| — | [cleanup/01-removed-views.md](./cleanup/01-removed-views.md) | 各PRに内包 | ✅ |
+
+> **「実装」列の ✅ はスクリプトの実装が済んだことを指す。** 4〜11 は
+> **シーン・Prefab への配置と Inspector 配線が別途必要**（Unity エディタを開いて行う作業であり、
+> スクリプトだけでは画面に出ない）。残作業は [cleanup/01-removed-views.md](./cleanup/01-removed-views.md) §4 と
+> [hud/01-hud-composition.md](./hud/01-hud-composition.md) §3 を参照。
 
 > **1〜3（値オブジェクト）は EditMode テストだけで完結する。** Unity エディタで画面を作る前にここを固めると、以降の View 実装が「値を描くだけ」になる。
 

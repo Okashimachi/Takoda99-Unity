@@ -1,7 +1,7 @@
 // 仕様書: Unity/docs/.sdd/value-objects/03-takoyaki-stand-state.md
 // たこ焼き台（6列×4行＝24穴）の各穴の見た目状態。提供の確定はしない（OrderProgressState 側の責務）。
 //
-// Unity は C# 9 までのため record struct（C# 10）を使わない（StoreVisualState.cs 冒頭の注記を参照）。
+// Unity は C# 9 までのため record struct（C# 10）を使わない（Unity のスクリプティングランタイム制約）。
 
 using System.Collections.Generic;
 
@@ -27,19 +27,22 @@ namespace Takoda99.View.ValueObjects
         public const int StandRows = 4;    // 縦
         public const int StandCapacity = StandColumns * StandRows; // 24
 
-        // 生地を流しておく穴の数（評価3段階に対応）。いずれも StandColumns の倍数。
-        public const int BatterCountLow = 12;
-        public const int BatterCountMid = 18;
-        public const int BatterCountHigh = StandCapacity; // 24
+        /// <summary>対応中の客がいないときに生地を流しておく穴の数。</summary>
+        public const int IdleBatterCount = 0;
 
         /// <summary>
-        /// 評価3段階（<c>StoreEvalLevel</c>）と、いま対応中の客のノルマのうち入力を終えた語数
-        /// （<c>OrderProgressState.TypedWordCount</c>）から変換する。
-        /// 生地を流す穴数（<c>occupiedCount</c>）は注文個数ではなく評価から決まる（決定ログ D-05）。
+        /// いま対応中の客の注文個数（<c>CustomerView.OrderCount</c> ＝ たこ焼きの個数）と、
+        /// そのうち入力を終えた語数（<c>OrderProgressState.TypedWordCount</c>）から変換する。
         /// </summary>
-        public static TakoyakiStandState From(StoreEvalLevel evalLevel, int typedWordCount)
+        /// <remarks>
+        /// **v0.8.0（本選）で入力が変わった。** 予選では生地を流す穴数を評価3段階から決めていたが
+        /// （決定ログ D-05）、相対評価そのものが廃止されたため供給元が無くなった。
+        /// 代わりに注文個数を使う。注文個数＝たこ焼きの個数なので、
+        /// 「台に並んだ生地の数 ＝ この客に出す個数」となり、注文カウンタ <c>x/N</c> と一致する。
+        /// </remarks>
+        public static TakoyakiStandState From(int orderCount, int typedWordCount)
         {
-            var occupiedCount = OccupiedCount(evalLevel);
+            var occupiedCount = Clamp(orderCount, 0, StandCapacity);
             var cookedCount = Clamp(typedWordCount, 0, occupiedCount);
 
             var slots = new TakoyakiSlotState[StandCapacity];
@@ -62,21 +65,8 @@ namespace Takoda99.View.ValueObjects
             return new TakoyakiStandState(slots);
         }
 
-        /// <summary>対応中の客がいないときの台（評価に応じた生地マスのみ・すべて未クリア）。</summary>
-        public static TakoyakiStandState Idle(StoreEvalLevel evalLevel) => From(evalLevel, 0);
-
-        private static int OccupiedCount(StoreEvalLevel evalLevel)
-        {
-            switch (evalLevel)
-            {
-                case StoreEvalLevel.High:
-                    return BatterCountHigh;
-                case StoreEvalLevel.Mid:
-                    return BatterCountMid;
-                default:
-                    return BatterCountLow;
-            }
-        }
+        /// <summary>対応中の客がいないときの台（すべて空）。</summary>
+        public static TakoyakiStandState Idle() => From(IdleBatterCount, 0);
 
         private static int Clamp(int value, int min, int max)
         {

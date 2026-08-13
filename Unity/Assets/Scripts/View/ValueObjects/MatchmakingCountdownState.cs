@@ -2,7 +2,7 @@
 // マッチングのカウントダウンを「残り秒数の表示」と「尽きた（＝MatchStart 待ち）」に分類する。
 // マッチングの成立判定はしない（サーバー権威。MatchStart が来たことが唯一の真実）。
 //
-// Unity は C# 9 までのため record struct（C# 10）を使わない（StoreVisualState.cs 冒頭の注記を参照）。
+// Unity は C# 9 までのため record struct（C# 10）を使わない（Unity のスクリプティングランタイム制約）。
 
 namespace Takoda99.View.ValueObjects
 {
