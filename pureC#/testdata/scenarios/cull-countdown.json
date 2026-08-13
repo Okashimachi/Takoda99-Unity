@@ -1,0 +1,34 @@
+{
+  "name": "cull-countdown",
+  "description": "ForcedEliminationWarningが常時（1〜2Hz）届く。秒読みは受信時刻起点のローカル補間で滑らかにする。selfAtRiskが立つ／降りる両方を踏む",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "ForcedEliminationWarning",
+      "payload": { "untilMs": 19000, "stageIndex": 1, "stageTotal": 6, "cutLineRank": 51, "cutStoreIds": [], "selfAtRisk": false }
+    },
+    {
+      "atMs": 6000,
+      "kind": "receive",
+      "type": "ForcedEliminationWarning",
+      "payload": { "untilMs": 14000, "stageIndex": 1, "stageTotal": 6, "cutLineRank": 51, "cutStoreIds": ["s-090", "s-091"], "selfAtRisk": true }
+    },
+    {
+      "atMs": 11000,
+      "kind": "receive",
+      "type": "ForcedEliminationWarning",
+      "payload": { "untilMs": 9000, "stageIndex": 1, "stageTotal": 6, "cutLineRank": 51, "cutStoreIds": null, "selfAtRisk": false }
+    },
+    { "atMs": 16000, "kind": "wait" },
+    {
+      "atMs": 19000,
+      "kind": "receive",
+      "type": "ForcedEliminationWarning",
+      "payload": { "untilMs": 500, "stageIndex": 1, "stageTotal": 6, "cutLineRank": 51, "cutStoreIds": [], "selfAtRisk": true }
+    },
+    { "atMs": 21000, "kind": "wait" }
+  ]
+}

@@ -32,7 +32,7 @@ pureC#/src/*.cs（仕様書の実装）
 | 04 | [04-store-reducer.md](./04-store-reducer.md) | `Store` / `Reducer`（状態管理） | 01 | ✅ | ✅ |
 | 05 | [05-dispatcher.md](./05-dispatcher.md) | `Dispatcher`（振り分け・送信キュー） | 01, 04 | ✅ | ✅ |
 | 06 | [06-match-client-controller.md](./06-match-client-controller.md) | `MatchClientController`（統括・ライフサイクル） | 01, 03, 04, 05 | ✅ | ✅ |
-| 07 | [07-scenario-player.md](./07-scenario-player.md) | `ScenarioPlayer`（サンプルデータ再生・テスト専用） | 01 | ✅ | 未 |
+| 07 | [07-scenario-player.md](./07-scenario-player.md) | `ScenarioPlayer`（サンプルデータ再生・テスト専用） | 01 | ✅ | ✅ |
 
 新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。実装が完了したら「実装」列を ✅ にする。
 
@@ -53,13 +53,13 @@ pureC#/src/*.cs（仕様書の実装）
 
 | # | 仕様書 | 依存先 | 実装 |
 |---|---|---|---|
-| 1 | [contract/01-proto-v0.8.0-migration.md](./contract/01-proto-v0.8.0-migration.md) | なし | 未 |
-| 2 | [match-state/01-score-and-self-rank.md](./match-state/01-score-and-self-rank.md) | 1 | 未 |
-| 3 | [match-state/02-ranking-store.md](./match-state/02-ranking-store.md) | 2 | 未 |
-| 4 | [match-state/03-cull-warning.md](./match-state/03-cull-warning.md) | 3 | 未 |
-| 5 | [result/01-personal-result.md](./result/01-personal-result.md) | 4 | 未 |
-| 6 | [result/02-lifecycle-and-renderer.md](./result/02-lifecycle-and-renderer.md) | 1〜5 | 未 |
-| — | [cleanup/01-removed-features.md](./cleanup/01-removed-features.md) | 1〜6 の各PRに内包 | 未 |
+| 1 | [contract/01-proto-v0.8.0-migration.md](./contract/01-proto-v0.8.0-migration.md) | なし | ✅ |
+| 2 | [match-state/01-score-and-self-rank.md](./match-state/01-score-and-self-rank.md) | 1 | ✅ |
+| 3 | [match-state/02-ranking-store.md](./match-state/02-ranking-store.md) | 2 | ✅ |
+| 4 | [match-state/03-cull-warning.md](./match-state/03-cull-warning.md) | 3 | ✅ |
+| 5 | [result/01-personal-result.md](./result/01-personal-result.md) | 4 | ✅ |
+| 6 | [result/02-lifecycle-and-renderer.md](./result/02-lifecycle-and-renderer.md) | 1〜5 | ✅ |
+| — | [cleanup/01-removed-features.md](./cleanup/01-removed-features.md) | 1〜6 の各PRに内包 | ✅ |
 
 > **6 が終わるまで Unity 側の描画は書けない**（`IRenderer` の形が変わるため）。逆に 1〜6 は Unity を一度も開かずに `dotnet test` だけで検証できる。
 

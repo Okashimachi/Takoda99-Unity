@@ -19,7 +19,6 @@ namespace Takoda99.Client.State
         Phase Phase,
         int AliveCount,
         int MaxStores,
-        double StormThresholdPct,
         int FinalStageAliveThreshold,
         int FinalRushAliveThreshold,
         int HeatLevel,
@@ -42,7 +41,6 @@ namespace Takoda99.Client.State
                 Phase: message.Phase,
                 AliveCount: CountAlive(message.Stores),
                 MaxStores: message.Params.MaxStores,
-                StormThresholdPct: message.Params.StormThresholdPct,
                 FinalStageAliveThreshold: message.Params.FinalStageAliveThreshold,
                 FinalRushAliveThreshold: message.Params.FinalRushAliveThreshold,
                 HeatLevel: 0,
@@ -58,8 +56,6 @@ namespace Takoda99.Client.State
         /// 自店専用メッセージだが <c>aliveCount</c> は試合全体の値のため、生存数のみ反映する。
         /// </summary>
         public MatchState Apply(EvaluationUpdate message) => this with { AliveCount = message.AliveCount };
-
-        public MatchState Apply(StoreListUpdate message) => this with { AliveCount = message.AliveCount };
 
         /// <summary>
         /// ローカル tick。<c>ElapsedMs</c> は <c>MatchStart</c> 受信時刻を起点としたクライアントの推定値であり、

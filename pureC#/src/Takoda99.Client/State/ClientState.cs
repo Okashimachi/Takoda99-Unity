@@ -27,33 +27,6 @@ public sealed class CurrentOrder
     public long StartedAtMs { get; init; }
 }
 
-/// <summary>強制下位淘汰（storm）の警告。Proto の ForcedEliminationWarning から作るローカル表示用の形。</summary>
-public sealed class StormWarning
-{
-    public int UntilTick { get; init; }
-    public double ThresholdPct { get; init; }
-}
-
-/// <summary>試合結果。Proto の MatchEnd から作るローカル表示用の形。</summary>
-public sealed class MatchResult
-{
-    public int FinalRank { get; init; }
-    public MatchStats Stats { get; init; } = new();
-
-    /// <summary>自店の終わり方。優勝（最後まで残った）なら空文字。</summary>
-    public string Reason { get; init; } = "";
-
-    /// <summary>試合の総経過時間（ms）。自店が途中脱落でも試合終了までの時間が入る。</summary>
-    public long MatchElapsedMs { get; init; }
-
-    /// <summary>終了時点の残り信用。自滅なら 0。</summary>
-    public int CreditLeft { get; init; }
-
-    /// <summary>最終評価（表示用。順位計算には使われない）。</summary>
-    public double EvalRaw { get; init; }
-    public double EvalNormalized { get; init; }
-}
-
 /// <summary>イベントログの1行（デバッグパネル・演出トリガー用）。</summary>
 public sealed class LogEntry
 {
@@ -82,27 +55,36 @@ public sealed class ClientState
     public Phase MatchPhase { get; init; }
     public long StartedAtMs { get; init; }
 
+    /// <summary>storeId → 表示名。MatchStart でのみ構築し、以降は再構築しない（表示名を配るのは MatchStart だけ）。</summary>
+    public IReadOnlyDictionary<string, string> DisplayNames { get; init; } = new Dictionary<string, string>();
+
     // 自店（すべて受信値。自前算出しない）
-    public int CreditLife { get; init; }
-    public double EvalRaw { get; init; }
-    public double Normalized { get; init; }
+
+    /// <summary>自店のスコア（順位を決める累積値）。EvaluationUpdate の受信値そのまま。
+    /// 積み上がる絶対値で上限がなく、**負値もあり得る**（ミスが先行した序盤）。</summary>
+    public int Score { get; init; }
+
     public int Rank { get; init; }
     public int AliveCount { get; init; }
-
-    /// <summary>表示専用の星（0..5）。EvaluationUpdate の受信値そのまま。Normalized とは別物で、再計算しない。</summary>
-    public double StarRating { get; init; }
-
-    /// <summary>前ティックからの星の増減。受信値そのまま。</summary>
-    public double StarDelta { get; init; }
 
     public int HeatLevel { get; init; }
     public bool Alive { get; init; }
 
     public IReadOnlyList<CustomerEntry> Queue { get; init; } = System.Array.Empty<CustomerEntry>();        // 先頭＝対応中
     public CurrentOrder? CurrentOrder { get; init; }
-    public IReadOnlyList<StoreSummary> Stores { get; init; } = System.Array.Empty<StoreSummary>();        // 99店概況
-    public StormWarning? Storm { get; init; }
-    public MatchResult? Result { get; init; }
+
+    /// <summary>全99店のランキング。MatchStart で初期化し、Snapshot/Delta で更新する。</summary>
+    public RankingTable Ranking { get; init; } = new();
+
+    /// <summary>次の足切りの予告。未受信なら null。</summary>
+    public CullWarning? Cull { get; init; }
+
+    /// <summary>受信して保持している個人成績。未受信なら null。</summary>
+    public PersonalResultState? PersonalResult { get; init; }
+
+    /// <summary>MatchEnd を受信済みか。試合全体が終わったことの唯一の合図。</summary>
+    public bool MatchEnded { get; init; }
+
     public IReadOnlyList<LogEntry> EventLog { get; init; } = System.Array.Empty<LogEntry>();
 
     /// <summary>
@@ -125,21 +107,21 @@ public sealed class ClientState
         GameParametersPublicSubset? gameParams = null,
         Phase? matchPhase = null,
         long? startedAtMs = null,
-        int? creditLife = null,
-        double? evalRaw = null,
-        double? normalized = null,
+        IReadOnlyDictionary<string, string>? displayNames = null,
+        int? score = null,
         int? rank = null,
         int? aliveCount = null,
-        double? starRating = null,
-        double? starDelta = null,
         int? heatLevel = null,
         bool? alive = null,
         IReadOnlyList<CustomerEntry>? queue = null,
         CurrentOrder? currentOrder = null,
         bool clearCurrentOrder = false,
-        IReadOnlyList<StoreSummary>? stores = null,
-        StormWarning? storm = null,
-        MatchResult? result = null,
+        RankingTable? ranking = null,
+        CullWarning? cull = null,
+        bool clearCull = false,
+        PersonalResultState? personalResult = null,
+        bool clearPersonalResult = false,
+        bool? matchEnded = null,
         IReadOnlyList<LogEntry>? eventLog = null)
     {
         return new ClientState
@@ -156,20 +138,18 @@ public sealed class ClientState
             Params = gameParams ?? Params,
             MatchPhase = matchPhase ?? MatchPhase,
             StartedAtMs = startedAtMs ?? StartedAtMs,
-            CreditLife = creditLife ?? CreditLife,
-            EvalRaw = evalRaw ?? EvalRaw,
-            Normalized = normalized ?? Normalized,
+            DisplayNames = displayNames ?? DisplayNames,
+            Score = score ?? Score,
             Rank = rank ?? Rank,
             AliveCount = aliveCount ?? AliveCount,
-            StarRating = starRating ?? StarRating,
-            StarDelta = starDelta ?? StarDelta,
             HeatLevel = heatLevel ?? HeatLevel,
             Alive = alive ?? Alive,
             Queue = queue ?? Queue,
             CurrentOrder = clearCurrentOrder ? null : (currentOrder ?? CurrentOrder),
-            Stores = stores ?? Stores,
-            Storm = storm ?? Storm,
-            Result = result ?? Result,
+            Ranking = ranking ?? Ranking,
+            Cull = clearCull ? null : (cull ?? Cull),
+            PersonalResult = clearPersonalResult ? null : (personalResult ?? PersonalResult),
+            MatchEnded = matchEnded ?? MatchEnded,
             EventLog = eventLog ?? EventLog,
         };
     }

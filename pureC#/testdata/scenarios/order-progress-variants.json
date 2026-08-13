@@ -12,8 +12,7 @@
         "customerId": "c-04",
         "attribute": "Normal",
         "orderCount": 4,
-        "words": ["たこ", "やき", "ふね", "かぜ"],
-        "patienceMaxMs": 12000
+        "words": ["たこ", "やき", "ふね", "かぜ"]
       }
     },
     { "atMs": 2000, "kind": "input", "keys": "takoyakifunekaze" },
@@ -25,8 +24,7 @@
         "customerId": "c-06",
         "attribute": "Normal",
         "orderCount": 6,
-        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ"],
-        "patienceMaxMs": 12000
+        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ"]
       }
     },
     { "atMs": 4000, "kind": "input", "keys": "takoyakifunekazemiseame" },
@@ -38,8 +36,7 @@
         "customerId": "c-08",
         "attribute": "Normal",
         "orderCount": 8,
-        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ", "そら", "うみ"],
-        "patienceMaxMs": 14000
+        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ", "そら", "うみ"]
       }
     },
     { "atMs": 6000, "kind": "input", "keys": "takoyakifunekazemiseamesorumi" },
@@ -51,8 +48,7 @@
         "customerId": "c-12",
         "attribute": "Normal",
         "orderCount": 12,
-        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ", "そら", "うみ", "やま", "かわ", "つき", "ほし"],
-        "patienceMaxMs": 16000
+        "words": ["たこ", "やき", "ふね", "かぜ", "みせ", "あめ", "そら", "うみ", "やま", "かわ", "つき", "ほし"]
       }
     }
   ]

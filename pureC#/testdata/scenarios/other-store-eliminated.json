@@ -1,6 +1,6 @@
 {
   "name": "other-store-eliminated",
-  "description": "他店のStoreEliminated -> ミニ盤面のみ更新、自店は無影響",
+  "description": "自店を含まないStoreEliminatedBatch -> ランキング表のみ更新、自店は無影響で打鍵を続けられる",
   "steps": [
     { "atMs": 0, "kind": "connection", "state": "Connected" },
     {
@@ -10,15 +10,34 @@
       "payload": {
         "matchId": "m-01",
         "selfStoreId": "s-self",
-        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
+        "params": { "maxStores": 99, "scoreWeightTakoyaki": 100, "scoreWeightMiss": 20 },
         "phase": "Early",
+        "startsAtServerMs": 1700000000000,
         "stores": [
-          { "storeId": "s-self", "displayName": "自店", "evalNormalized": 0.5, "rank": 50, "creditLife": 3, "alive": true },
-          { "storeId": "s-002", "displayName": "2号店", "evalNormalized": 0.1, "rank": 90, "creditLife": 0, "alive": true }
+          { "storeId": "s-self", "displayName": "自店", "rank": 50, "score": 400, "alive": true },
+          { "storeId": "s-002", "displayName": "2号店", "rank": 90, "score": 10, "alive": true },
+          { "storeId": "s-003", "displayName": "3号店", "rank": 91, "score": 5, "alive": true }
         ]
       }
     },
-    { "atMs": 1000, "kind": "receive", "type": "StoreEliminated", "payload": { "storeId": "s-002", "reason": "SelfCollapse", "finalRank": 90 } },
+    {
+      "atMs": 500,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": { "customerId": "c-01", "attribute": "Normal", "orderCount": 1, "words": ["たこ"] }
+    },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "StoreEliminatedBatch",
+      "payload": {
+        "stageIndex": 1,
+        "entries": [
+          { "storeId": "s-002", "reason": "Cull", "finalRank": 90 },
+          { "storeId": "s-003", "reason": "Cull", "finalRank": 91 }
+        ]
+      }
+    },
     { "atMs": 1500, "kind": "input", "keys": "tako" }
   ]
 }

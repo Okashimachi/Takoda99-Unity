@@ -1,4 +1,5 @@
 // 仕様書: pureC#/docs/.sdd/value-objects/02-store-state.md §8 テスト観点
+// 本選（Proto v0.8.0）で信用・相対評価・星が廃止されたため、期待値を Score ベースへ書き換えている。
 
 using System.Collections.Generic;
 using Takoda99.Client.State;
@@ -11,21 +12,20 @@ namespace Takoda99.Client.Tests.State
     {
         private static List<StoreSummary> ThreeStores() => new List<StoreSummary>
         {
-            TestMessages.Summary("store-01", evalNormalized: 0.5, rank: 50),
-            TestMessages.Summary("store-02", evalNormalized: 0.8, rank: 20),
-            TestMessages.Summary("store-03", evalNormalized: 0.1, rank: 90),
+            TestMessages.Summary("store-01", rank: 50, score: 300),
+            TestMessages.Summary("store-02", rank: 20, score: 800),
+            TestMessages.Summary("store-03", rank: 90, score: 100),
         };
 
         [Fact]
-        public void MatchStartで自店のStoreStateがinitialLifeと自店サマリーから初期化される()
+        public void MatchStartで自店のStoreStateが自店サマリーから初期化される()
         {
-            var message = TestMessages.MatchStart(selfStoreId: "store-02", initialLife: 3, stores: ThreeStores());
+            var message = TestMessages.MatchStart(selfStoreId: "store-02", stores: ThreeStores());
 
             var self = StoreState.FromMatchStart(message);
 
             Assert.Equal("store-02", self.StoreId);
-            Assert.Equal(3, self.CreditLife);
-            Assert.Equal(0.8, self.EvalNormalized);
+            Assert.Equal(800, self.Score);
             Assert.Equal(20, self.Rank);
             Assert.True(self.Alive);
             Assert.Empty(self.StoreQueue);
@@ -38,68 +38,36 @@ namespace Takoda99.Client.Tests.State
             var self = StoreState.FromMatchStart(message);
             var summaries = StoreSummaryState.FromAll(message.Stores);
 
-            self = self.Apply(new EvaluationUpdate { EvalRaw = 12.5, Normalized = 0.9, Rank = 7, AliveCount = 80 });
+            self = self.Apply(new EvaluationUpdate { Score = 1_250, Rank = 7, AliveCount = 80 });
 
-            Assert.Equal(0.9, self.EvalNormalized);
-            Assert.Equal(12.5, self.EvalRaw);
+            Assert.Equal(1_250, self.Score);
             Assert.Equal(7, self.Rank);
-            // 全店サマリーは StoreListUpdate 以外では変化しない
-            Assert.Equal(0.5, summaries[0].EvalNormalized);
+            // 全店サマリーは自店専用メッセージでは変化しない。
+            Assert.Equal(300, summaries[0].Score);
             Assert.Equal(50, summaries[0].Rank);
         }
 
+        /// <summary>スコアは累積の絶対値。序盤はミスが先行して負値になり得るので、クランプしない。</summary>
         [Fact]
-        public void StoreListUpdateは全店サマリーを置換するが自店のStoreStateを巻き戻さない()
-        {
-            var message = TestMessages.MatchStart(selfStoreId: "store-01", stores: ThreeStores());
-            var self = StoreState.FromMatchStart(message)
-                .Apply(new EvaluationUpdate { EvalRaw = 20, Normalized = 0.95, Rank = 3, AliveCount = 70 });
-
-            var update = new StoreListUpdate
-            {
-                AliveCount = 70,
-                Stores = new List<StoreSummary>
-                {
-                    TestMessages.Summary("store-01", evalNormalized: 0.4, rank: 60),
-                    TestMessages.Summary("store-02", evalNormalized: 0.7, rank: 30),
-                },
-            };
-            var summaries = StoreSummaryState.FromAll(update.Stores);
-
-            Assert.Equal(2, summaries.Count);
-            Assert.Equal(0.4, summaries[0].EvalNormalized);
-            // 自店の StoreState はより新しい EvaluationUpdate の値を保つ
-            Assert.Equal(0.95, self.EvalNormalized);
-            Assert.Equal(3, self.Rank);
-        }
-
-        [Fact]
-        public void CreditUpdateはlifeを確定値として使いdeltaで加減算しない()
-        {
-            var self = StoreState.FromMatchStart(TestMessages.MatchStart(initialLife: 3));
-
-            self = self.Apply(new CreditUpdate { Life = 1, Delta = -1, Reason = CreditReason.CustomerLeft });
-
-            Assert.Equal(1, self.CreditLife);
-        }
-
-        [Fact]
-        public void EvaluationUpdateのStarRatingとStarDeltaは受信値のまま保持され再計算されない()
+        public void EvaluationUpdateの負のScoreはそのまま保持される()
         {
             var self = StoreState.FromMatchStart(TestMessages.MatchStart(selfStoreId: "store-01"));
 
-            self = self.Apply(new EvaluationUpdate
-            {
-                EvalRaw = 12.5,
-                Normalized = 0.9,
-                Rank = 7,
-                AliveCount = 80,
-                StarRating = 3.4,
-                StarDelta = 0.2,
-            });
+            self = self.Apply(new EvaluationUpdate { Score = -40, Rank = 95, AliveCount = 99 });
 
-            Assert.Equal(3.4, self.StarRating);
-            Assert.Equal(0.2, self.StarDelta);
+            Assert.Equal(-40, self.Score);
+        }
+
+        [Fact]
+        public void EvaluationUpdateは差分を累積せず最後の値で置換する()
+        {
+            var self = StoreState.FromMatchStart(TestMessages.MatchStart(selfStoreId: "store-01"));
+
+            self = self.Apply(new EvaluationUpdate { Score = 100, Rank = 10, AliveCount = 99 });
+            self = self.Apply(new EvaluationUpdate { Score = 250, Rank = 6, AliveCount = 98 });
+
+            Assert.Equal(250, self.Score);
+            Assert.Equal(6, self.Rank);
         }
 
         [Fact]
@@ -109,12 +77,7 @@ namespace Takoda99.Client.Tests.State
             var self = StoreState.FromMatchStart(message);
             var summaries = StoreSummaryState.FromAll(message.Stores);
 
-            var otherEliminated = new StoreEliminated
-            {
-                StoreId = "store-03",
-                Reason = EliminationReason.Cull,
-                FinalRank = 90,
-            };
+            var otherEliminated = TestMessages.Eliminated("store-03", finalRank: 90);
             summaries = StoreSummaryState.ApplyEliminated(summaries, otherEliminated);
             self = self.Apply(otherEliminated);
 
@@ -124,12 +87,7 @@ namespace Takoda99.Client.Tests.State
             Assert.Null(summaries[0].FinalRank);
             Assert.True(self.Alive);
 
-            var selfEliminated = new StoreEliminated
-            {
-                StoreId = "store-01",
-                Reason = EliminationReason.SelfCollapse,
-                FinalRank = 55,
-            };
+            var selfEliminated = TestMessages.Eliminated("store-01", finalRank: 55);
             summaries = StoreSummaryState.ApplyEliminated(summaries, selfEliminated);
             self = self.Apply(selfEliminated);
 
@@ -155,11 +113,12 @@ namespace Takoda99.Client.Tests.State
             var self = StoreState.FromMatchStart(message);
 
             Assert.Equal("store-99", self.StoreId);
+            Assert.Equal(0, self.Rank);
             Assert.True(self.Alive);
         }
 
         [Fact]
-        public void 行列は到着順に積まれ離脱と提供完了で取り除かれる()
+        public void 行列は到着順に積まれ提供完了で取り除かれる()
         {
             var self = StoreState.FromMatchStart(TestMessages.MatchStart(selfStoreId: "store-01"))
                 .WithCustomerEnqueued("c1")
@@ -191,7 +150,7 @@ namespace Takoda99.Client.Tests.State
         {
             var self = StoreState.FromMatchStart(TestMessages.MatchStart(selfStoreId: "store-01"))
                 .WithCustomerEnqueued("c1")
-                .Apply(new StoreEliminated { StoreId = "store-01", Reason = EliminationReason.SelfCollapse });
+                .Apply(TestMessages.Eliminated("store-01", finalRank: 55));
 
             Assert.False(self.Alive);
             Assert.Equal(new[] { "c1" }, self.StoreQueue);

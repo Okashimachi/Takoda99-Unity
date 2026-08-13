@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Takoda99.Client.State;
 using Takoda99.Client.Typing;
 using Takoda99.Proto;
@@ -9,13 +10,27 @@ namespace Takoda99.Client.Lifecycle;
 public interface IRenderer
 {
     void OnCustomerArrived(CustomerView customer);
-    void OnCustomerLeft(string customerId, LeaveReason reason);
     void OnKeyFeedback(KeyResult result);                    // 正打/ミスの即時演出
     void OnOrderServed(string customerId);                   // 提供演出
     void OnPhaseChanged(Phase phase);
-    void OnForcedEliminationWarning(int untilTick, double thresholdPct);
-    void OnStoreEliminated(string storeId, EliminationReason reason, int finalRank);
-    void OnMatchEnd(int finalRank, MatchStats stats);
+
+    /// <summary>足切りの予告。常時届く（1〜2Hz）。秒読みは CullWarning.RemainingMsAt で補間する。</summary>
+    void OnCullWarning(CullWarning warning);
+
+    /// <summary>
+    /// 1ステージぶんの一斉脱落。**最大49件が1回で届く。**
+    /// 1件ずつ演出せず、まとめて1つの演出に集約すること（音も1回）。
+    /// </summary>
+    /// <param name="includesSelf">自店が entries に含まれるか。描画側で判定しない。</param>
+    void OnStoreEliminatedBatch(int stageIndex, IReadOnlyList<StoreEliminated> entries, bool includesSelf);
+
+    /// <summary>個人成績を受信した。保持は Store が行うので、ここは演出の契機としてだけ使う。</summary>
+    void OnPersonalResult(PersonalResultState result);
+
+    /// <summary>試合全体の終了。**引数を持たない**（MatchEnd は空ペイロード）。
+    /// 順位別の演出分岐は state.PersonalResult.FinalRank を読んで行う。</summary>
+    void OnMatchEnd();
+
     void OnLifecycleChanged(ClientPhase from, ClientPhase to);
     void OnConnectionTrouble(string kind);
 }

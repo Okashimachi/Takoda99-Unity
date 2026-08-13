@@ -1,0 +1,12 @@
+{
+  "name": "score-progresses",
+  "description": "EvaluationUpdateでscoreが積み上がり順位が上がる。序盤の負値も含め、クライアントが加算せず受信値で置換するか",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    { "atMs": 0, "kind": "receive", "type": "MatchStart", "payload": {} },
+    { "atMs": 1000, "kind": "receive", "type": "EvaluationUpdate", "payload": { "score": -40, "rank": 92, "aliveCount": 99 } },
+    { "atMs": 2000, "kind": "receive", "type": "EvaluationUpdate", "payload": { "score": 160, "rank": 45, "aliveCount": 99 } },
+    { "atMs": 3000, "kind": "receive", "type": "EvaluationUpdate", "payload": { "score": 780, "rank": 12, "aliveCount": 90 } },
+    { "atMs": 4000, "kind": "receive", "type": "EvaluationUpdate", "payload": { "score": 1240, "rank": 3, "aliveCount": 80 } }
+  ]
+}
