@@ -43,6 +43,54 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 └── value-objects/       01〜07 派生状態
 ```
 
+### 2.1 本選（Proto v0.8.0）差分のディレクトリ ★いま実装するのはこちら
+
+| ディレクトリ | 何が入るか | いつ読むか |
+|---|---|---|
+| [`hud/`](./hud/README.md) | 試合画面HUDの刷新（順位の大表示・お題の大型化・撤去の全体像） | **本選対応で最初に読む** |
+| [`ranking-view/`](./ranking-view/README.md) | ランキング・足切り秒読み・観戦の全員順位（★新規UIの中核） | hud の後 |
+| [`elimination/`](./elimination/README.md) | 一斉脱落の集約演出 | ranking-view の後 |
+| [`result-view/`](./result-view/README.md) | 個人成績画面・リザルトの順位別演出分岐 | 最後 |
+| [`cleanup/`](./cleanup/README.md) | 撤去チェックリスト（単独PRにしない） | 全部終わったあとの確認 |
+
+**実装順（1本＝1ブランチ＝1PR）**
+
+| # | 仕様書 | 依存先 | 実装 |
+|---|---|---|---|
+| — | **`pureC#` 側の本選対応6本**（[pureC#/docs/.sdd/README.md §2.1](../../../pureC%23/docs/.sdd/README.md)） | — | **先に完了させる** |
+| 1 | [value-objects/08-ranking-row-view-state.md](./value-objects/08-ranking-row-view-state.md) | pureC# | 未 |
+| 2 | [value-objects/09-cull-countdown-state.md](./value-objects/09-cull-countdown-state.md) | pureC# | 未 |
+| 3 | [value-objects/10-result-tier.md](./value-objects/10-result-tier.md) | なし | 未 |
+| 4 | [hud/01-hud-composition.md](./hud/01-hud-composition.md) | 1, pureC# | 未 |
+| 5 | [ranking-view/01-ranking-panel.md](./ranking-view/01-ranking-panel.md) | 1, 4 | 未 |
+| 6 | [ranking-view/02-cull-countdown-panel.md](./ranking-view/02-cull-countdown-panel.md) | 2, 5 | 未 |
+| 7 | [ranking-view/03-spectator-ranking-view.md](./ranking-view/03-spectator-ranking-view.md) | 5 | 未 |
+| 8 | [elimination/01-mass-elimination-effect.md](./elimination/01-mass-elimination-effect.md) | 4 | 未 |
+| 9 | [result-view/01-personal-result-view.md](./result-view/01-personal-result-view.md) | 3, pureC# | 未 |
+| 10 | [result-view/02-result-rank-tier.md](./result-view/02-result-rank-tier.md) | 3, 9 | 未 |
+| 11 | [hud/02-order-word-emphasis.md](./hud/02-order-word-emphasis.md) | 4 | 未（他と並行可） |
+| — | [cleanup/01-removed-views.md](./cleanup/01-removed-views.md) | 各PRに内包 | 未 |
+
+> **1〜3（値オブジェクト）は EditMode テストだけで完結する。** Unity エディタで画面を作る前にここを固めると、以降の View 実装が「値を描くだけ」になる。
+
+> **⚠ 下の §3 の一覧（`match-view/` 等）は予選版の記述。** 本選の実装は §2.1 が正典であり、矛盾したらそちらが優先する。実装完了後に §3 側を更新する。
+
+**本選の上流（正典）**
+
+| リポジトリ | ファイル |
+|---|---|
+| Takoda99-Docs | [00_本選差分/](https://github.com/Okashimachi/Takoda99-Docs/tree/main/00_本選差分) 一式。特に [12_差分_クライアント](https://github.com/Okashimachi/Takoda99-Docs/blob/main/00_本選差分/12_差分_クライアント.md) と [30_通信シーケンス](https://github.com/Okashimachi/Takoda99-Docs/blob/main/00_本選差分/30_通信シーケンス.md) |
+| Takoda99-Proto | `csharp/Takoda99.Proto/Messages.cs` **v0.8.0** |
+
+**本選で変わらないこと（作業を減らすための前提）**
+
+| 項目 | 内容 |
+|---|---|
+| 画面の向き | **縦画面のまま。** レイアウトの枠組みを作り直さない |
+| 新規に受信すべきデータ | **ゼロ。** 受信済みデータの表示替えが中心 |
+| 打鍵判定・`OrderServed` 送信 | 変更なし |
+| 客キャラクター・行列・背景 | **画面から消えない**（内部でゲームに効かなくなるだけ） |
+
 ## 3. 全仕様書の一覧
 
 ### [`foundation/`](./foundation/README.md) — 土台
