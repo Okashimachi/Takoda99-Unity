@@ -2,7 +2,6 @@
 // 試合中のランキングパネル（上位N＋自分）。順位・スコアは計算せず、Ranking が持つ値を描くだけ。
 
 using System.Collections.Generic;
-using DG.Tweening;
 using Takoda99.Client.State;
 using Takoda99.View.ValueObjects;
 using UnityEngine;
@@ -15,31 +14,71 @@ namespace Takoda99.View.Ranking
         [SerializeField] private RankingRowView rowPrefab;
         [SerializeField] private RectTransform rowsRoot;
 
+        [Header("配置（ranking-view/04）")]
+        [SerializeField] private TopRankingSlots slots;
+        [SerializeField] private RankingRowPalette palette;
+
         /// <summary>
         /// 表示件数。**10 を下回る値を設定しない**。100秒時点の生存数が10人＝
         /// 上位10名リストがそのまま生存者全員になるため（ranking-view/01 §4）。
+        /// slots が配線されていれば、その要素数で上書きされる（04 §5.1）。
         /// </summary>
         [SerializeField] private int visibleCount = 10;
 
-        /// <summary>行の移動にかける秒数。0 で即時。</summary>
-        [SerializeField] private float rowMoveDuration = 0.25f;
-
-        /// <summary>1行ぶんの高さ（px）。行の目標位置の算出に使う。</summary>
-        [SerializeField] private float rowHeight = 56f;
+        /// <summary>入れ替え演出の調整値（ranking-view/06）。moveDuration が旧 rowMoveDuration を兼ねる。</summary>
+        [SerializeField] private RankingSwapSettings swapSettings = RankingSwapSettings.Default;
 
         private RankingRowPool pool;
+        private IRankingSlotSource slotSource;
         private readonly HashSet<string> visibleIds = new HashSet<string>();
+        private readonly List<RankingRowStyle> styleBuffer = new List<RankingRowStyle>();
 
         private void Awake()
         {
-            if (visibleCount < RankingRowsBuilder.MinVisibleCount)
+            // 04 §5.1: スロットの要素数を正とする。
+            if (slots == null)
             {
+                // 1. slots が未配線 → 従来どおり visibleCount を使い、警告を出す（縦積みへフォールバック）。
                 Debug.LogWarning(
-                    $"{nameof(RankingPanelView)}.{nameof(visibleCount)} が {visibleCount} でした。" +
-                    $"決勝では上位{RankingRowsBuilder.MinVisibleCount}名＝生存者全員になるため、" +
-                    $"{RankingRowsBuilder.MinVisibleCount} にクランプします。",
+                    $"{nameof(RankingPanelView)}.{nameof(slots)} が未配線です。" +
+                    "スロットを使わず、visibleCount による縦積みへフォールバックします。",
+                    this);
+
+                if (visibleCount < RankingRowsBuilder.MinVisibleCount)
+                {
+                    Debug.LogWarning(
+                        $"{nameof(RankingPanelView)}.{nameof(visibleCount)} が {visibleCount} でした。" +
+                        $"決勝では上位{RankingRowsBuilder.MinVisibleCount}名＝生存者全員になるため、" +
+                        $"{RankingRowsBuilder.MinVisibleCount} にクランプします。",
+                        this);
+                    visibleCount = RankingRowsBuilder.MinVisibleCount;
+                }
+
+                slotSource = new EvenlySpacedSlotSource(visibleCount, 56f);
+            }
+            else if (slots.Count < RankingRowsBuilder.MinVisibleCount)
+            {
+                // 2. slots.Count < 10 → 警告して 10 にクランプ（01 §4 の要件は維持）。
+                Debug.LogWarning(
+                    $"{nameof(RankingPanelView)}.{nameof(slots)} の要素数が {slots.Count} でした。" +
+                    $"{RankingRowsBuilder.MinVisibleCount} 未満のため、10 にクランプします。",
                     this);
                 visibleCount = RankingRowsBuilder.MinVisibleCount;
+                slotSource = slots;
+            }
+            else
+            {
+                // 3. それ以外 → visibleCount = slots.Count。
+                visibleCount = slots.Count;
+                slotSource = slots;
+            }
+
+            // 04 §3.1.1: スロットは目印として見える状態のまま残してよい（デバッグの下敷き）。
+            // uGUI は後の兄弟を手前に描くため、RowsRoot を最後の兄弟にしておけば
+            // 実行時の行が必ずスロットの上に乗る。
+            if (rowsRoot != null)
+            {
+                rowsRoot.SetAsLastSibling();
             }
 
             pool = new RankingRowPool(rowPrefab, rowsRoot);
@@ -68,7 +107,58 @@ namespace Takoda99.View.Ranking
             }
 
             SetPanelVisible(true);
-            RankingRowLayout.Apply(pool, rows, visibleIds, rowHeight, rowMoveDuration);
+            BuildStyles(state, rows);
+            RankingRowLayout.Apply(pool, rows, styleBuffer, visibleIds, slotSource, palette, swapSettings);
+        }
+
+        /// <summary>
+        /// value-objects/12 §3.2・§4.1・§4.2。上位パネルの見た目は順位（＝表示順の index）で決まり、
+        /// 脱落確定／脱落済みだけが Tone を上書きする。
+        /// 寸法だけはシーンのスロットが持つ値を優先する（04 §5.2.1）。
+        /// </summary>
+        private void BuildStyles(ClientState state, IReadOnlyList<RankingRowViewState> rows)
+        {
+            styleBuffer.Clear();
+            var cutStoreIds = state.Cull?.CutStoreIds;
+
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                var rank = i + 1;
+                var style = RankingRowStyle.ForTopRank(rank);
+
+                // 04 §5.2.1: 大きさと配置はエディタで決める。スロットが寸法を持つならそちらが正。
+                // フォントサイズと Tone は表の値のまま（行の中身の可読性は外形とは別の判断）。
+                if (slotSource != null && slotSource.TryGetSize(i, out var slotSize))
+                {
+                    style = style.WithSize(slotSize);
+                }
+
+                var isCutTarget = cutStoreIds != null && Contains(cutStoreIds, row.StoreId);
+                if (!row.IsAlive)
+                {
+                    style = style.WithTone(RankingRowTone.Dead);
+                }
+                else if (isCutTarget)
+                {
+                    style = style.WithTone(RankingRowTone.Doomed);
+                }
+
+                styleBuffer.Add(style);
+            }
+        }
+
+        private static bool Contains(IReadOnlyList<string> list, string storeId)
+        {
+            for (var i = 0; i < list.Count; i++)
+            {
+                if (string.Equals(list[i], storeId, System.StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>待機中・リザルトで畳む。</summary>
@@ -77,69 +167,6 @@ namespace Takoda99.View.Ranking
             if (rowsRoot != null && rowsRoot.gameObject.activeSelf != visible)
             {
                 rowsRoot.gameObject.SetActive(visible);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 行の並べ替えとアニメーション。パネル・観戦画面で同じ規則を使うため切り出している。
-    /// </summary>
-    internal static class RankingRowLayout
-    {
-        public static void Apply(
-            RankingRowPool pool,
-            IReadOnlyList<RankingRowViewState> rows,
-            HashSet<string> visibleIds,
-            float rowHeight,
-            float moveDuration)
-        {
-            if (pool == null)
-            {
-                return;
-            }
-
-            visibleIds.Clear();
-            for (var i = 0; i < rows.Count; i++)
-            {
-                visibleIds.Add(rows[i].StoreId);
-            }
-
-            // リストから出ていった行はプールへ戻す（破棄しない）。
-            pool.ReleaseAllExcept(visibleIds);
-
-            for (var i = 0; i < rows.Count; i++)
-            {
-                var state = rows[i];
-                var row = pool.Acquire(state.StoreId);
-                if (row == null)
-                {
-                    continue;
-                }
-
-                // A4: 順位の数字はアニメーションさせない。位置だけ動かし、数字は即時更新する
-                // （読めない時間を作らない）。
-                row.SetState(state);
-
-                var rect = row.transform as RectTransform;
-                if (rect == null)
-                {
-                    continue;
-                }
-
-                row.transform.SetSiblingIndex(i);
-                var target = new Vector2(rect.anchoredPosition.x, -rowHeight * i);
-
-                // A2 / A5: 次の Apply が来たら現在位置から追従する。Tween を Kill してから張り直すので
-                // 積み重ならない。
-                rect.DOKill();
-                if (moveDuration <= 0f)
-                {
-                    rect.anchoredPosition = target;
-                }
-                else
-                {
-                    rect.DOAnchorPos(target, moveDuration).SetEase(Ease.OutCubic);
-                }
             }
         }
     }

@@ -23,6 +23,18 @@ namespace Takoda99.View.Ranking
 
         private RankingRowPool pool;
         private readonly HashSet<string> visibleIds = new HashSet<string>();
+        private EvenlySpacedSlotSource slotSource;
+
+        /// <summary>
+        /// 観戦画面は移動も強調も行わない（03: 99行が一斉に動くと読めない／06 §7: emphasisScale = 1 を明示）。
+        /// </summary>
+        private static readonly RankingSwapSettings SpectatorSwapSettings = new RankingSwapSettings
+        {
+            moveDuration = 0f,
+            emphasisScale = 1f,
+            emphasisDuration = 0f,
+            maxEmphasisRows = 0,
+        };
 
         private bool isOpen;
 
@@ -77,7 +89,19 @@ namespace Takoda99.View.Ranking
             }
 
             // 位置移動のアニメーションは付けない（99行が一斉に動くと読めなくなる）。
-            RankingRowLayout.Apply(pool, rows, visibleIds, rowHeight, 0f);
+            // SetStyle は呼ばない＝styles を null にする（04 §6：99行に順位別の寸法を適用すると
+            // スクロールの行高が揃わなくなるため。Prefab の既定値のまま描く）。
+            // 強調も行わない（06 §7：emphasisScale = 1 を明示）。
+            if (slotSource == null)
+            {
+                slotSource = new EvenlySpacedSlotSource(rows.Count, rowHeight);
+            }
+            else
+            {
+                slotSource.Count = rows.Count;
+            }
+
+            RankingRowLayout.Apply(pool, rows, null, visibleIds, slotSource, null, SpectatorSwapSettings);
         }
 
         /// <summary>S5: Open した瞬間、自分の行が画面中央に来る位置へスクロールする。</summary>
