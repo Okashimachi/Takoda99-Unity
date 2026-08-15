@@ -78,11 +78,11 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 
 | # | 仕様書 | 依存先 | 実装 |
 |---|---|---|---|
-| 12 | [value-objects/11-rank-ordinal.md](./value-objects/11-rank-ordinal.md) | なし | ⬜ |
-| 13 | [value-objects/12-ranking-row-style.md](./value-objects/12-ranking-row-style.md) | なし | ⬜ |
-| 14 | [ranking-view/04-top-ranking-slots.md](./ranking-view/04-top-ranking-slots.md) | 12, 13, 5 | ⬜ |
-| 15 | [ranking-view/05-bottom-ranking-panel.md](./ranking-view/05-bottom-ranking-panel.md) | 12, 13, 5 | ⬜ |
-| 16 | [ranking-view/06-rank-swap-animation.md](./ranking-view/06-rank-swap-animation.md) | 14, 15 | ⬜ |
+| 12 | [value-objects/11-rank-ordinal.md](./value-objects/11-rank-ordinal.md) | なし | ✅ |
+| 13 | [value-objects/12-ranking-row-style.md](./value-objects/12-ranking-row-style.md) | なし | ✅ |
+| 14 | [ranking-view/04-top-ranking-slots.md](./ranking-view/04-top-ranking-slots.md) | 12, 13, 5 | ✅ |
+| 15 | [ranking-view/05-bottom-ranking-panel.md](./ranking-view/05-bottom-ranking-panel.md) | 12, 13, 5 | ✅ |
+| 16 | [ranking-view/06-rank-swap-animation.md](./ranking-view/06-rank-swap-animation.md) | 14, 15 | ✅ |
 
 > **12・13 から着手する。** どちらも EditMode テストだけで完結し、
 > ここが固まると 14〜16 は「値を描くだけ」になる（1〜3 と同じ進め方）。
