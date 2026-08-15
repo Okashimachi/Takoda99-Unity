@@ -28,6 +28,7 @@ namespace Takoda99.View
         [Header("本選 HUD")]
         [SerializeField] private SelfRankView selfRank;                        // 順位の大表示＋スコア＋生存数
         [SerializeField] private Ranking.RankingPanelView rankingPanel;        // ranking-view/01
+        [SerializeField] private Ranking.BottomRankingPanelView bottomRankingPanel; // ranking-view/05
         [SerializeField] private Ranking.CullCountdownPanelView cullPanel;     // ranking-view/02
         [SerializeField] private Elimination.MassEliminationEffect massElim;   // elimination/01
 
@@ -79,6 +80,7 @@ namespace Takoda99.View
             WarnIfMissing(gameBefore, nameof(gameBefore));
             WarnIfMissing(selfRank, nameof(selfRank));
             WarnIfMissing(rankingPanel, nameof(rankingPanel));
+            WarnIfMissing(bottomRankingPanel, nameof(bottomRankingPanel));
             WarnIfMissing(cullPanel, nameof(cullPanel));
             WarnIfMissing(massElim, nameof(massElim));
 
@@ -190,6 +192,19 @@ namespace Takoda99.View
                 else
                 {
                     rankingPanel.Apply(state);
+                }
+            }
+
+            // 下位30行の足切り警告パネル（ranking-view/05）。待機中は描かない。
+            if (bottomRankingPanel != null)
+            {
+                if (holding)
+                {
+                    bottomRankingPanel.SetPanelVisible(false);
+                }
+                else
+                {
+                    bottomRankingPanel.Apply(state);
                 }
             }
 
@@ -383,6 +398,7 @@ namespace Takoda99.View
             customerQueue?.ClearAll();
             orderBubble?.Hide();
             rankingPanel?.SetPanelVisible(false);
+            bottomRankingPanel?.SetPanelVisible(false);
             cullPanel?.SetPanelVisible(false);
 
             // モーダル自体は HandleStateChanged（state 駆動）が先に出していることもある。
