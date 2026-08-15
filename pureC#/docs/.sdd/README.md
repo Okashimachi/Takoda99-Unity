@@ -32,9 +32,43 @@ pureC#/src/*.cs（仕様書の実装）
 | 04 | [04-store-reducer.md](./04-store-reducer.md) | `Store` / `Reducer`（状態管理） | 01 | ✅ | ✅ |
 | 05 | [05-dispatcher.md](./05-dispatcher.md) | `Dispatcher`（振り分け・送信キュー） | 01, 04 | ✅ | ✅ |
 | 06 | [06-match-client-controller.md](./06-match-client-controller.md) | `MatchClientController`（統括・ライフサイクル） | 01, 03, 04, 05 | ✅ | ✅ |
-| 07 | [07-scenario-player.md](./07-scenario-player.md) | `ScenarioPlayer`（サンプルデータ再生・テスト専用） | 01 | ✅ | 未 |
+| 07 | [07-scenario-player.md](./07-scenario-player.md) | `ScenarioPlayer`（サンプルデータ再生・テスト専用） | 01 | ✅ | ✅ |
 
 新しいモジュールが増えたら、この表に行を追加してから仕様書ファイルを作る。実装が完了したら「実装」列を ✅ にする。
+
+> **⚠ 01〜07 は予選版の記述。** 本選（Proto v0.8.0）の実装は §2.1 のディレクトリが正典であり、矛盾したらそちらが優先する。
+
+### 2.1 本選（v0.8.0）差分の仕様書 ★いま実装するのはこちら
+
+本選向けの変更は**意味の単位でディレクトリに分けている**。番号はディレクトリ内で完結させ、ディレクトリをまたいだ通し番号にしない。
+
+| ディレクトリ | 何が入るか | いつ読むか |
+|---|---|---|
+| [`contract/`](./contract/README.md) | Proto v0.8.0 の取り込みと Obsolete の扱い | **最初に読む・最初に実装する** |
+| [`match-state/`](./match-state/README.md) | 試合中の state（スコア／ランキング／足切り） | contract の後 |
+| [`result/`](./result/README.md) | 個人成績・試合終了・`IRenderer`・ライフサイクル | match-state の後 |
+| [`cleanup/`](./cleanup/README.md) | 撤去チェックリスト（単独PRにしない） | 全部終わったあとの確認 |
+
+**実装順（＝依存順。1本＝1ブランチ＝1PR）**
+
+| # | 仕様書 | 依存先 | 実装 |
+|---|---|---|---|
+| 1 | [contract/01-proto-v0.8.0-migration.md](./contract/01-proto-v0.8.0-migration.md) | なし | ✅ |
+| 2 | [match-state/01-score-and-self-rank.md](./match-state/01-score-and-self-rank.md) | 1 | ✅ |
+| 3 | [match-state/02-ranking-store.md](./match-state/02-ranking-store.md) | 2 | ✅ |
+| 4 | [match-state/03-cull-warning.md](./match-state/03-cull-warning.md) | 3 | ✅ |
+| 5 | [result/01-personal-result.md](./result/01-personal-result.md) | 4 | ✅ |
+| 6 | [result/02-lifecycle-and-renderer.md](./result/02-lifecycle-and-renderer.md) | 1〜5 | ✅ |
+| — | [cleanup/01-removed-features.md](./cleanup/01-removed-features.md) | 1〜6 の各PRに内包 | ✅ |
+
+> **6 が終わるまで Unity 側の描画は書けない**（`IRenderer` の形が変わるため）。逆に 1〜6 は Unity を一度も開かずに `dotnet test` だけで検証できる。
+
+**本選の上流（正典）**
+
+| リポジトリ | ファイル |
+|---|---|
+| Takoda99-Docs | [00_本選差分/](https://github.com/Okashimachi/Takoda99-Docs/tree/main/00_本選差分) 一式。特に [30_通信シーケンス](https://github.com/Okashimachi/Takoda99-Docs/blob/main/00_本選差分/30_通信シーケンス.md) は送受信の順序と周期の正典 |
+| Takoda99-Proto | `csharp/Takoda99.Proto/Messages.cs` **v0.8.0**。各メッセージのコメントに用途・タイミング・分類が書かれている |
 
 > `07-scenario-player.md` はテスト専用モジュール。**サーバーのロジックは一切再現せず、サーバー権威の値はシナリオに書かれたものをそのまま流す。** サーバー未接続でクライアントの状態遷移・表示分岐を検証するために使う。
 

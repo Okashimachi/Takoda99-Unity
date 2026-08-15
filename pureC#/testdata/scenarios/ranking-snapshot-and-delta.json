@@ -1,0 +1,54 @@
+{
+  "name": "ranking-snapshot-and-delta",
+  "description": "RankingSnapshot（全量）で表が置き換わり、RankingDelta（差分）でscore/aliveだけが上書きされる。差分はrankを運ばないのでローカルで振り直す",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    {
+      "atMs": 0,
+      "kind": "receive",
+      "type": "MatchStart",
+      "payload": {
+        "matchId": "m-01",
+        "selfStoreId": "s-self",
+        "params": {
+          "maxStores": 99,
+          "cullSchedule": [
+            { "atMs": 20000, "targetAliveCount": 50 },
+            { "atMs": 40000, "targetAliveCount": 30 }
+          ],
+          "scoreWeightTakoyaki": 100,
+          "scoreWeightMiss": 20
+        },
+        "phase": "Early",
+        "startsAtServerMs": 1700000000000,
+        "stores": [
+          { "storeId": "s-self", "displayName": "自店", "rank": 1, "score": 0, "alive": true },
+          { "storeId": "s-002", "displayName": "2号店", "rank": 2, "score": 0, "alive": true },
+          { "storeId": "s-003", "displayName": "3号店", "rank": 3, "score": 0, "alive": true }
+        ]
+      }
+    },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "RankingSnapshot",
+      "payload": {
+        "entries": [
+          { "storeId": "s-002", "rank": 1, "score": 500, "alive": true },
+          { "storeId": "s-self", "rank": 2, "score": 300, "alive": true },
+          { "storeId": "s-003", "rank": 3, "score": 100, "alive": true }
+        ]
+      }
+    },
+    {
+      "atMs": 2000,
+      "kind": "receive",
+      "type": "RankingDelta",
+      "payload": {
+        "entries": [{ "storeId": "s-self", "score": 900, "alive": true }]
+      }
+    },
+    { "atMs": 3000, "kind": "receive", "type": "RankingDelta", "payload": { "entries": [] } },
+    { "atMs": 4000, "kind": "receive", "type": "RankingSnapshot", "payload": {} }
+  ]
+}

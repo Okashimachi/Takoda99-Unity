@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Takoda99.Proto;
@@ -13,28 +14,34 @@ public static class Reducer
         {
             MatchStartAction a => ApplyMatchStart(state, a),
             CustomerArrivedAction a => ApplyCustomerArrived(state, a),
-            CustomerLeftAction a => ApplyCustomerLeft(state, a),
-            CreditUpdateAction a => state.With(creditLife: a.Life),
-            EvaluationUpdateAction a => state.With(evalRaw: a.EvalRaw, normalized: a.Normalized, rank: a.Rank, aliveCount: a.AliveCount, starRating: a.StarRating, starDelta: a.StarDelta),
+            EvaluationUpdateAction a => state.With(score: a.Score, rank: a.Rank, aliveCount: a.AliveCount),
             DifficultyUpdateAction a => state.With(heatLevel: a.HeatLevel),
             PhaseChangeAction a => state.With(matchPhase: a.Phase),
-            StoreListUpdateAction a => state.With(stores: a.Stores, aliveCount: a.AliveCount),
-            ForcedEliminationWarningAction a => state.With(storm: new StormWarning { UntilTick = a.UntilTick, ThresholdPct = a.ThresholdPct }),
-            StoreEliminatedAction a => ApplyStoreEliminated(state, a),
-            MatchEndAction a => state.With(
-                result: new MatchResult
-                {
-                    FinalRank = a.FinalRank,
-                    Stats = a.Stats,
-                    Reason = a.Reason,
-                    MatchElapsedMs = a.MatchElapsedMs,
-                    CreditLeft = a.CreditLeft,
-                    EvalRaw = a.EvalRaw,
-                    EvalNormalized = a.EvalNormalized,
-                },
-                phase: ClientPhase.Result),
+            RankingSnapshotAction a => ApplyRankingSnapshot(state, a),
+            RankingDeltaAction a => ApplyRankingDelta(state, a),
+            ForcedEliminationWarningAction a => state.With(cull: new CullWarning
+            {
+                UntilMs = a.UntilMs,
+                ReceivedAtLocalMs = a.ReceivedAtLocalMs,
+                StageIndex = a.StageIndex,
+                StageTotal = a.StageTotal,
+                CutLineRank = a.CutLineRank,
+                CutStoreIds = a.CutStoreIds,
+                SelfAtRisk = a.SelfAtRisk,
+            }),
+            StoreEliminatedBatchAction a => ApplyStoreEliminatedBatch(state, a),
+            PersonalResultAction a => state.With(personalResult: new PersonalResultState
+            {
+                FinalRank = a.FinalRank,
+                Score = a.Score,
+                TakoyakiCount = a.TakoyakiCount,
+                SurvivedMs = a.SurvivedMs,
+                Stats = a.Stats,
+            }),
+            MatchEndAction => state.With(matchEnded: true, phase: ClientPhase.Result),
             MatchmakingStatusAction a => state.With(waitingCount: a.WaitingCount, minPlayers: a.MinPlayers, countdownMs: a.CountdownMs, clearCountdownMs: a.CountdownMs is null, selfStoreId: a.SelfStoreId, matchmakingParticipants: a.Participants),
 
+            LocalMatchResetAction => ApplyLocalMatchReset(state),
             LocalOrderBeganAction a => state.With(currentOrder: new CurrentOrder { CustomerId = a.CustomerId, OrderCount = a.OrderCount }),
             LocalKeyJudgedAction a => ApplyLocalKeyJudged(state, a),
             LocalOrderClearedAction => ApplyLocalOrderCleared(state),
@@ -47,16 +54,47 @@ public static class Reducer
 
     private static ClientState ApplyMatchStart(ClientState state, MatchStartAction a)
     {
+        // storeId → 表示名。表示名が配られるのは MatchStart だけなのでここでキャッシュする。
+        // 重複した storeId は先勝ち（match-state/01 §3.1 手順3）。
+        var displayNames = new Dictionary<string, string>(a.Stores.Count, StringComparer.Ordinal);
+        foreach (var s in a.Stores)
+        {
+            if (!displayNames.ContainsKey(s.StoreId))
+            {
+                displayNames[s.StoreId] = s.DisplayName;
+            }
+        }
+
+        var rows = a.Stores
+            .Select(s => new RankingRow
+            {
+                StoreId = s.StoreId,
+                DisplayName = s.DisplayName,
+                Rank = s.Rank,
+                Score = s.Score,
+                Alive = s.Alive,
+            });
+
+        var self = a.Stores.FirstOrDefault(s => string.Equals(s.StoreId, a.SelfStoreId, StringComparison.Ordinal));
+
         return state.With(
             matchId: a.MatchId,
             selfStoreId: a.SelfStoreId,
             gameParams: a.Params,
             matchPhase: a.MatchPhase,
-            startedAtMs: state.StartedAtMs,
-            creditLife: a.Params.InitialLife,
-            stores: a.Stores,
+            startedAtMs: a.StartedAtLocalMs,
+            displayNames: displayNames,
+            ranking: new RankingTable { Rows = SortRows(rows) },
+            score: 0,
+            // 自店が Stores に居なければ 0（順位未確定）。例外を投げない。
+            rank: self?.Rank ?? 0,
+            aliveCount: a.Stores.Count,
+            alive: true,
             phase: ClientPhase.InMatch,
-            queue: System.Array.Empty<CustomerEntry>());
+            queue: Array.Empty<CustomerEntry>(),
+            // 前の試合の成績が残らないための保険（破棄の責務は LocalMatchReset 側。result/01 §4）。
+            clearPersonalResult: true,
+            matchEnded: false);
     }
 
     private static ClientState ApplyCustomerArrived(ClientState state, CustomerArrivedAction a)
@@ -74,41 +112,195 @@ public static class Reducer
         return state.With(queue: queue);
     }
 
-    private static ClientState ApplyCustomerLeft(ClientState state, CustomerLeftAction a)
+    private static ClientState ApplyRankingSnapshot(ClientState state, RankingSnapshotAction a)
     {
-        var index = FindIndex(state.Queue, a.CustomerId);
-        if (index < 0)
+        // 空の全量は「情報なし」と解釈し、表を消さない（99店ぶんが必ず来る契約であり、空はサーバー不整合）。
+        if (a.Entries.Count == 0)
         {
-            // 未知の customerId：無視して state 不変（§3.4）。
             return state;
         }
 
-        var queue = state.Queue.Where((_, i) => i != index).ToList();
-        var wasServing = index == 0;
+        // 全量はサーバーが正しい順位を付けているので、Rank をローカル再計算しない。
+        var rows = a.Entries.Select(e => new RankingRow
+        {
+            StoreId = e.StoreId,
+            DisplayName = ResolveDisplayName(state, e.StoreId),
+            Rank = e.Rank,
+            Score = e.Score,
+            Alive = e.Alive,
+        });
 
-        return state.With(
-            queue: queue,
-            currentOrder: wasServing ? null : state.CurrentOrder,
-            clearCurrentOrder: wasServing);
+        // 既存の Rows は破棄する（マージしない。全量の役割は整合性の回復）。
+        return state.With(ranking: new RankingTable { Rows = SortRows(rows) });
     }
 
-    private static ClientState ApplyStoreEliminated(ClientState state, StoreEliminatedAction a)
+    private static ClientState ApplyRankingDelta(ClientState state, RankingDeltaAction a)
     {
-        var stores = state.Stores
-            .Select(s => s.StoreId == a.StoreId ? CloneWithAlive(s, false, a.FinalRank) : s)
-            .ToList();
-
-        if (a.StoreId == state.SelfStoreId)
+        if (a.Entries.Count == 0)
         {
-            return state.With(
-                stores: stores,
-                alive: false,
-                phase: ClientPhase.Spectating,
-                clearCurrentOrder: true,
-                queue: System.Array.Empty<CustomerEntry>());
+            // 無駄な再ソートをしない。
+            return state;
         }
 
-        return state.With(stores: stores);
+        var byStoreId = new Dictionary<string, RankingRow>(StringComparer.Ordinal);
+        var order = new List<string>(state.Ranking.Rows.Count + a.Entries.Count);
+        foreach (var row in state.Ranking.Rows)
+        {
+            if (byStoreId.TryAdd(row.StoreId, row))
+            {
+                order.Add(row.StoreId);
+            }
+        }
+
+        foreach (var change in a.Entries)
+        {
+            if (byStoreId.TryGetValue(change.StoreId, out var existing))
+            {
+                byStoreId[change.StoreId] = new RankingRow
+                {
+                    StoreId = existing.StoreId,
+                    DisplayName = existing.DisplayName,
+                    Rank = existing.Rank,
+                    Score = change.Score,
+                    Alive = change.Alive,
+                };
+            }
+            else
+            {
+                // 表に無い storeId は新しい行として追加する（Rank = 0）。
+                byStoreId[change.StoreId] = new RankingRow
+                {
+                    StoreId = change.StoreId,
+                    DisplayName = ResolveDisplayName(state, change.StoreId),
+                    Rank = 0,
+                    Score = change.Score,
+                    Alive = change.Alive,
+                };
+                order.Add(change.StoreId);
+            }
+        }
+
+        return state.With(ranking: new RankingTable { Rows = Rerank(order.Select(id => byStoreId[id])) });
+    }
+
+    /// <summary>
+    /// 差分は rank を運ばないため、表示用の順位をクライアントが決める（match-state/02 §3.4）。
+    /// 同じ入力から常に同じ並びになること（行入れ替えアニメーションがちらつくため）。
+    /// </summary>
+    private static IReadOnlyList<RankingRow> Rerank(IEnumerable<RankingRow> rows)
+    {
+        var all = rows.ToList();
+
+        // 生存店を Score 降順 → StoreId 序数昇順で並べ、先頭から 1,2,3,… を振る。
+        // Score は整数で同点が頻出するため、安定したタイブレーク基準を持たないと UI が意味なく踊る。
+        var alive = all
+            .Where(r => r.Alive)
+            .OrderByDescending(r => r.Score)
+            .ThenBy(r => r.StoreId, StringComparer.Ordinal)
+            .ToList();
+
+        var assigned = new Dictionary<string, int>(alive.Count, StringComparer.Ordinal);
+        for (var i = 0; i < alive.Count; i++)
+        {
+            assigned[alive[i].StoreId] = i + 1;
+        }
+
+        var provisionalDeadRank = alive.Count + 1;
+
+        var result = all.Select(r =>
+        {
+            if (r.Alive)
+            {
+                return WithRank(r, assigned[r.StoreId]);
+            }
+
+            // 脱落済みの確定順位は以後不変。Rank == 0 のまま脱落している行（差分だけで脱落を知った行）
+            // だけは暫定値を入れる。次の RankingSnapshot で正しい値に直る。
+            return r.Rank > 0 ? r : WithRank(r, provisionalDeadRank);
+        });
+
+        return SortRows(result);
+    }
+
+    private static ClientState ApplyStoreEliminatedBatch(ClientState state, StoreEliminatedBatchAction a)
+    {
+        if (a.Entries.Count == 0)
+        {
+            return state;
+        }
+
+        var finalRanks = new Dictionary<string, int>(a.Entries.Count, StringComparer.Ordinal);
+        foreach (var e in a.Entries)
+        {
+            // 同じ storeId が2度含まれても最後の値で上書きする（冪等）。
+            finalRanks[e.StoreId] = e.FinalRank;
+        }
+
+        var rows = state.Ranking.Rows
+            .Select(r => finalRanks.TryGetValue(r.StoreId, out var finalRank)
+                ? new RankingRow
+                {
+                    StoreId = r.StoreId,
+                    DisplayName = r.DisplayName,
+                    Rank = finalRank,
+                    Score = r.Score,
+                    Alive = false,
+                }
+                : r)
+            .ToList();
+
+        // 表に無い storeId は行を追加する。
+        var known = new HashSet<string>(rows.Select(r => r.StoreId), StringComparer.Ordinal);
+        foreach (var e in a.Entries)
+        {
+            if (known.Add(e.StoreId))
+            {
+                rows.Add(new RankingRow
+                {
+                    StoreId = e.StoreId,
+                    DisplayName = ResolveDisplayName(state, e.StoreId),
+                    Rank = e.FinalRank,
+                    Score = 0,
+                    Alive = false,
+                });
+            }
+        }
+
+        // **生存店の再ランクは行わない。** 直後に届く EvaluationUpdate と RankingSnapshot が
+        // 正しい値を運ぶ。ここで独自計算すると一瞬だけ嘘の順位が出る（match-state/03 §4.1 手順4）。
+        var ranking = new RankingTable { Rows = SortRows(rows) };
+
+        if (!finalRanks.ContainsKey(state.SelfStoreId))
+        {
+            return state.With(ranking: ranking);
+        }
+
+        // 自店が含まれる場合。Phase は Result にしない（試合は続き、観戦しながら MatchEnd を待つ）。
+        return state.With(
+            ranking: ranking,
+            alive: false,
+            phase: ClientPhase.Spectating,
+            clearCurrentOrder: true,
+            queue: Array.Empty<CustomerEntry>());
+    }
+
+    private static ClientState ApplyLocalMatchReset(ClientState state)
+    {
+        return state.With(
+            clearPersonalResult: true,
+            matchEnded: false,
+            ranking: new RankingTable(),
+            displayNames: new Dictionary<string, string>(),
+            clearCull: true,
+            score: 0,
+            rank: 0,
+            aliveCount: 0,
+            alive: false,
+            matchId: "",
+            selfStoreId: "",
+            queue: Array.Empty<CustomerEntry>(),
+            clearCurrentOrder: true,
+            gameParams: new GameParametersPublicSubset());
     }
 
     private static ClientState ApplyLocalKeyJudged(ClientState state, LocalKeyJudgedAction a)
@@ -141,30 +333,21 @@ public static class Reducer
         return state.With(queue: state.Queue.Skip(1).ToList(), clearCurrentOrder: true);
     }
 
-    private static int FindIndex(IReadOnlyList<CustomerEntry> queue, string customerId)
-    {
-        for (var i = 0; i < queue.Count; i++)
-        {
-            if (queue[i].View.CustomerId == customerId)
-            {
-                return i;
-            }
-        }
+    /// <summary>Rank 昇順 → StoreId 序数昇順。表示順を決定的にするための唯一の並べ方。</summary>
+    private static IReadOnlyList<RankingRow> SortRows(IEnumerable<RankingRow> rows)
+        => rows.OrderBy(r => r.Rank).ThenBy(r => r.StoreId, StringComparer.Ordinal).ToList();
 
-        return -1;
-    }
-
-    private static StoreSummary CloneWithAlive(StoreSummary source, bool alive, int finalRank)
-    {
-        return new StoreSummary
+    private static RankingRow WithRank(RankingRow source, int rank)
+        => new()
         {
             StoreId = source.StoreId,
             DisplayName = source.DisplayName,
-            EvalNormalized = source.EvalNormalized,
-            Rank = source.Rank,
-            CreditLife = source.CreditLife,
-            Alive = alive,
-            FinalRank = finalRank,
+            Rank = rank,
+            Score = source.Score,
+            Alive = source.Alive,
         };
-    }
+
+    /// <summary>未知の storeId は捨てず、DisplayName を空文字にする（描画側でフォールバックできる形）。</summary>
+    private static string ResolveDisplayName(ClientState state, string storeId)
+        => state.DisplayNames.TryGetValue(storeId, out var name) ? name : "";
 }

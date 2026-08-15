@@ -1,0 +1,49 @@
+{
+  "name": "elimination-batch-while-typing",
+  "description": "打鍵の途中で自店を含むStoreEliminatedBatchが届く。本選に残る唯一の中断経路。以後の入力が無効になり、幽霊注文が残らないか",
+  "steps": [
+    { "atMs": 0, "kind": "connection", "state": "Connected" },
+    {
+      "atMs": 0,
+      "kind": "receive",
+      "type": "MatchStart",
+      "payload": {
+        "matchId": "m-01",
+        "selfStoreId": "s-self",
+        "params": { "maxStores": 99, "scoreWeightTakoyaki": 100, "scoreWeightMiss": 20 },
+        "phase": "Mid",
+        "startsAtServerMs": 1700000000000,
+        "stores": [
+          { "storeId": "s-self", "displayName": "自店", "rank": 90, "score": 120, "alive": true },
+          { "storeId": "s-002", "displayName": "2号店", "rank": 91, "score": 100, "alive": true }
+        ]
+      }
+    },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": { "customerId": "c-01", "attribute": "Normal", "orderCount": 3, "words": ["たこ", "やき", "ふね"] }
+    },
+    {
+      "atMs": 1500,
+      "kind": "receive",
+      "type": "CustomerArrived",
+      "payload": { "customerId": "c-02", "attribute": "Normal", "orderCount": 2, "words": ["かぜ", "みせ"] }
+    },
+    { "atMs": 2000, "kind": "input", "keys": "tak" },
+    {
+      "atMs": 3000,
+      "kind": "receive",
+      "type": "StoreEliminatedBatch",
+      "payload": {
+        "stageIndex": 3,
+        "entries": [
+          { "storeId": "s-self", "reason": "Cull", "finalRank": 90 },
+          { "storeId": "s-002", "reason": "Cull", "finalRank": 91 }
+        ]
+      }
+    },
+    { "atMs": 3500, "kind": "input", "keys": "kazemise" }
+  ]
+}

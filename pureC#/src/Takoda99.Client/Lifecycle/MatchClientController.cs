@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Takoda99.Client.Net;
 using Takoda99.Client.State;
 using Takoda99.Client.Typing;
@@ -58,6 +59,8 @@ public sealed class MatchClientController : IMatchClientController
     public void BeginPlay(string displayName = "")
     {
         _displayName = displayName ?? "";
+        // 前の試合の保持値を捨てる。破棄はここと Rematch の2箇所だけ（result/01 §4）。
+        _store.Apply(new LocalMatchResetAction());
         _store.Apply(new LocalLifecycleChangedAction(ClientPhase.Connecting));
         _networkClient.Connect(_config.WebSocketUrl);
     }
@@ -72,6 +75,7 @@ public sealed class MatchClientController : IMatchClientController
     {
         // 再マッチは接続の張り直し（既存接続を再利用しない。§3.1）。
         _networkClient.Disconnect();
+        _store.Apply(new LocalMatchResetAction());
         _store.Apply(new LocalLifecycleChangedAction(ClientPhase.Connecting));
         _networkClient.Connect(_config.WebSocketUrl);
     }
@@ -189,34 +193,35 @@ public sealed class MatchClientController : IMatchClientController
                 TryBeginNextOrder();
                 break;
 
-            case CustomerLeftAction a:
-                _renderer.OnCustomerLeft(a.CustomerId, a.Reason);
-                if (_servingCustomerId == a.CustomerId)
+            // 本選では客が逃げないため CustomerLeft の割り込みが無い。
+            // 一度出たお題は必ず打ち切られる（result/02 §5.1）。
+
+            case ForcedEliminationWarningAction:
+                // OnActionApplied は Apply の後に発火するため state は更新済み。
+                _renderer.OnCullWarning(_store.State.Cull!);
+                break;
+
+            case StoreEliminatedBatchAction a:
+            {
+                // includesSelf の判定はここで1回だけ行い、描画側へ渡す。
+                var includesSelf = a.Entries.Any(e => e.StoreId == _store.State.SelfStoreId);
+                _renderer.OnStoreEliminatedBatch(a.StageIndex, a.Entries, includesSelf);
+                if (includesSelf)
                 {
-                    // 対応中の客が離脱：計測を破棄し OrderServed を送らない（§3.3）。
+                    // 本選に残る唯一の中断経路（「客が消える」のではなく「試合から出る」）。
                     _typingJudge.AbortOrder();
                     _servingCustomerId = null;
                 }
 
-                TryBeginNextOrder();
+                break;
+            }
+
+            case PersonalResultAction:
+                _renderer.OnPersonalResult(_store.State.PersonalResult!);
                 break;
 
-            case ForcedEliminationWarningAction a:
-                _renderer.OnForcedEliminationWarning(a.UntilTick, a.ThresholdPct);
-                break;
-
-            case StoreEliminatedAction a:
-                _renderer.OnStoreEliminated(a.StoreId, a.Reason, a.FinalRank);
-                if (a.StoreId == _store.State.SelfStoreId)
-                {
-                    _typingJudge.AbortOrder();
-                    _servingCustomerId = null;
-                }
-
-                break;
-
-            case MatchEndAction a:
-                _renderer.OnMatchEnd(a.FinalRank, a.Stats);
+            case MatchEndAction:
+                _renderer.OnMatchEnd();
                 break;
 
             case PhaseChangeAction a:

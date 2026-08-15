@@ -18,6 +18,10 @@ public sealed class MatchStartAction : IAction
     public GameParametersPublicSubset Params { get; init; } = new();
     public Phase MatchPhase { get; init; }
     public IReadOnlyList<StoreSummary> Stores { get; init; } = System.Array.Empty<StoreSummary>();
+
+    /// <summary>Dispatcher が IClock.MonotonicMs を入れる。MatchStart.StartsAtServerMs は使わない
+    /// （ローカル補間の基準はローカル単調時計で揃える）。</summary>
+    public long StartedAtLocalMs { get; init; }
 }
 
 public sealed class CustomerArrivedAction : IAction
@@ -26,30 +30,11 @@ public sealed class CustomerArrivedAction : IAction
     public long ArrivedAtLocalMs { get; init; }
 }
 
-public sealed class CustomerLeftAction : IAction
-{
-    public string CustomerId { get; init; } = "";
-    public LeaveReason Reason { get; init; }
-}
-
-public sealed class CreditUpdateAction : IAction
-{
-    public int Life { get; init; }
-    public CreditReason Reason { get; init; }
-}
-
 public sealed class EvaluationUpdateAction : IAction
 {
-    public double EvalRaw { get; init; }
-    public double Normalized { get; init; }
+    public int Score { get; init; }
     public int Rank { get; init; }
     public int AliveCount { get; init; }
-
-    /// <summary>表示専用の星（0..5）。サーバー値をそのまま運ぶ（クライアントで算出しない）。</summary>
-    public double StarRating { get; init; }
-
-    /// <summary>前ティックからの星の増減。0 なら増減演出を出さない。</summary>
-    public double StarDelta { get; init; }
 }
 
 public sealed class DifficultyUpdateAction : IAction
@@ -62,34 +47,53 @@ public sealed class PhaseChangeAction : IAction
     public Phase Phase { get; init; }
 }
 
-public sealed class StoreListUpdateAction : IAction
+/// <summary>全店ランキングの全量配信（match-state/02 §3.2）。</summary>
+public sealed class RankingSnapshotAction : IAction
 {
-    public IReadOnlyList<StoreSummary> Stores { get; init; } = System.Array.Empty<StoreSummary>();
-    public int AliveCount { get; init; }
+    /// <summary>Dispatcher が null を空リストへ正規化して渡す。</summary>
+    public IReadOnlyList<RankingEntry> Entries { get; init; } = System.Array.Empty<RankingEntry>();
+}
+
+/// <summary>変化した店のみの差分配信（match-state/02 §3.3）。RankingChange は rank を持たない。</summary>
+public sealed class RankingDeltaAction : IAction
+{
+    public IReadOnlyList<RankingChange> Entries { get; init; } = System.Array.Empty<RankingChange>();
 }
 
 public sealed class ForcedEliminationWarningAction : IAction
 {
-    public int UntilTick { get; init; }
-    public double ThresholdPct { get; init; }
+    public int UntilMs { get; init; }
+
+    /// <summary>Dispatcher が IClock.MonotonicMs を入れる（補間の起点）。</summary>
+    public long ReceivedAtLocalMs { get; init; }
+
+    public int StageIndex { get; init; }
+    public int StageTotal { get; init; }
+    public int CutLineRank { get; init; }
+    public IReadOnlyList<string> CutStoreIds { get; init; } = System.Array.Empty<string>();
+    public bool SelfAtRisk { get; init; }
 }
 
-public sealed class StoreEliminatedAction : IAction
+/// <summary>1回の足切りで脱落した店のまとめ（match-state/03 §4）。1件ずつ Apply しない。</summary>
+public sealed class StoreEliminatedBatchAction : IAction
 {
-    public string StoreId { get; init; } = "";
-    public EliminationReason Reason { get; init; }
-    public int FinalRank { get; init; }
+    public int StageIndex { get; init; }
+    public IReadOnlyList<StoreEliminated> Entries { get; init; } = System.Array.Empty<StoreEliminated>();
 }
 
+/// <summary>自店の脱落確定と同時に届く個人成績（result/01 §3.1）。Phase を変えない。</summary>
+public sealed class PersonalResultAction : IAction
+{
+    public int FinalRank { get; init; }
+    public int Score { get; init; }
+    public int TakoyakiCount { get; init; }
+    public long SurvivedMs { get; init; }
+    public MatchStats Stats { get; init; } = new();
+}
+
+/// <summary>ペイロードを持たない（Proto v0.8.0 の MatchEnd は空クラス）。</summary>
 public sealed class MatchEndAction : IAction
 {
-    public int FinalRank { get; init; }
-    public MatchStats Stats { get; init; } = new();
-    public string Reason { get; init; } = "";
-    public long MatchElapsedMs { get; init; }
-    public int CreditLeft { get; init; }
-    public double EvalRaw { get; init; }
-    public double EvalNormalized { get; init; }
 }
 
 public sealed class MatchmakingStatusAction : IAction
@@ -102,6 +106,14 @@ public sealed class MatchmakingStatusAction : IAction
 }
 
 // ── ローカル Action（04-store-reducer.md §3.2） ─────────────────────
+
+/// <summary>
+/// 試合に紐づくローカル保持値をすべて捨てる（result/01 §4）。再戦・タイトル復帰の入口で1回だけ呼ぶ。
+/// Connection / Phase / LastError / EventLog は触らない（呼び出し側のライフサイクル管理に属する）。
+/// </summary>
+public sealed class LocalMatchResetAction : IAction
+{
+}
 
 public sealed class LocalOrderBeganAction : IAction
 {

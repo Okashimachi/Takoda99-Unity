@@ -6,8 +6,41 @@ NuGet/GitHub Packages ではなく**ソース手ミラー**を採用する（[Ta
 
 - 取得元: https://github.com/Okashimachi/Takoda99-Proto
 - ファイル: `csharp/Takoda99.Proto/Messages.cs`
-- 固定バージョン: タグ **`v0.5.0`**（`main` の同ファイルと一致）
-- 取得日: 2026-08-07
+- 固定バージョン: タグ **`v0.8.0`**（`main` の同ファイルと一致）
+- 取得日: 2026-08-13
+
+### v0.5.0 → v0.8.0 の差分（本選対応。[pureC#/docs/.sdd/contract/01-proto-v0.8.0-migration.md](../../docs/.sdd/contract/01-proto-v0.8.0-migration.md)）
+
+**増えた型・メッセージ**
+
+| 種別 | 名前 | 用途 |
+|---|---|---|
+| DTO | `CullStageView` | 段階的足切りの1ステージ（`atMs` / `targetAliveCount`） |
+| DTO | `RankingEntry` | 全量ランキングの1行（`storeId` / `rank` / `score` / `alive`） |
+| DTO | `RankingChange` | 差分ランキングの1行（`rank` を持たない） |
+| S2C | `RankingSnapshot` | 全店の順位の全量配信（低頻度・整合性の回復） |
+| S2C | `RankingDelta` | 変化した店のみの差分配信（高頻度・取りこぼし可） |
+| S2C | `StoreEliminatedBatch` | 1回の足切りで脱落した店をまとめて配信 |
+| S2C | `PersonalResult` | 自店の脱落確定と同時に届く個人成績 |
+
+**中身が変わったメッセージ**
+
+| メッセージ | 変更 |
+|---|---|
+| `StoreSummary` | `score` 追加。`evalNormalized` / `creditLife` は Obsolete。`finalRank` が `int?` へ |
+| `EvaluationUpdate` | `score` 追加。`evalRaw` / `normalized` / `starRating` / `starDelta` は Obsolete |
+| `ForcedEliminationWarning` | `untilMs` / `stageIndex` / `stageTotal` / `cutLineRank` / `cutStoreIds` / `selfAtRisk` 追加。`untilTick` / `thresholdPct` は Obsolete |
+| `GameParametersPublicSubset` | `cullSchedule` / `scoreWeightTakoyaki` / `scoreWeightMiss` 追加。`initialLife` / `stormThresholdPct` / `patienceLateMul` / `patienceAlertMs` は Obsolete |
+| **`MatchEnd`** | **ペイロードを持たない空クラスになった**（破壊的）。個人成績は `PersonalResult` から取る |
+| `CustomerView` | `patienceMaxMs` / `patienceStartedAtServerMs` は Obsolete（我慢ゲージの廃止） |
+| `MatchmakingParticipant` | `isBot` 追加 |
+
+**サーバーが送らなくなったメッセージ**（型は残るが受信しない前提）
+
+`CustomerLeft` / `CreditUpdate` / `StoreListUpdate` / `StoreEliminated`（単体・`StoreEliminatedBatch.entries` の要素としては残る）
+
+> **Obsolete フィールドはゼロ値で届く。** 読むと「ライフ0」「星0」「我慢0ms」で描かれるため、
+> このリポジトリのコードからは参照ごと削除する（[cleanup/01-removed-features.md](../../docs/.sdd/cleanup/01-removed-features.md)）。
 
 ### v0.4.0 → v0.5.0 の差分（[Proto PR #7](https://github.com/Okashimachi/Takoda99-Proto/pull/7)、Unity REQ-03対応）
 

@@ -1,6 +1,6 @@
 {
   "name": "self-eliminated",
-  "description": "自店のStoreEliminated -> リザルト遷移、以後の入力が無効になるか",
+  "description": "自店を含むStoreEliminatedBatch -> Spectating、PersonalResultを即座に受け取って保持、120秒のMatchEndでResultへ。以後の入力が無効になるか",
   "steps": [
     { "atMs": 0, "kind": "connection", "state": "Connected" },
     {
@@ -10,14 +10,60 @@
       "payload": {
         "matchId": "m-01",
         "selfStoreId": "s-self",
-        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
-        "phase": "Early",
-        "stores": []
+        "params": {
+          "maxStores": 99,
+          "cullSchedule": [
+            { "atMs": 20000, "targetAliveCount": 50 },
+            { "atMs": 40000, "targetAliveCount": 30 }
+          ],
+          "scoreWeightTakoyaki": 100,
+          "scoreWeightMiss": 20
+        },
+        "phase": "Mid",
+        "startsAtServerMs": 1700000000000,
+        "stores": [
+          { "storeId": "s-self", "displayName": "自店", "rank": 42, "score": 800, "alive": true }
+        ]
       }
     },
-    { "atMs": 1000, "kind": "receive", "type": "CreditUpdate", "payload": { "life": 0, "delta": -1, "reason": "CustomerLeft" } },
-    { "atMs": 1500, "kind": "receive", "type": "StoreEliminated", "payload": { "storeId": "s-self", "reason": "SelfCollapse", "finalRank": 42 } },
+    {
+      "atMs": 1000,
+      "kind": "receive",
+      "type": "ForcedEliminationWarning",
+      "payload": { "untilMs": 500, "stageIndex": 3, "stageTotal": 6, "cutLineRank": 31, "cutStoreIds": ["s-self"], "selfAtRisk": true }
+    },
+    {
+      "atMs": 1500,
+      "kind": "receive",
+      "type": "StoreEliminatedBatch",
+      "payload": {
+        "stageIndex": 3,
+        "entries": [{ "storeId": "s-self", "reason": "Cull", "finalRank": 42 }]
+      }
+    },
+    {
+      "atMs": 1600,
+      "kind": "receive",
+      "type": "PersonalResult",
+      "payload": {
+        "finalRank": 42,
+        "score": 800,
+        "takoyakiCount": 34,
+        "survivedMs": 60000,
+        "stats": {
+          "servedCount": 10,
+          "avgAccuracy": 0.9,
+          "avgElapsedMs": 4000,
+          "totalKeystrokes": 420,
+          "totalMisses": 42,
+          "normal": { "served": 8, "left": 0 },
+          "bonus": { "served": 1, "left": 0 },
+          "claimer": { "served": 1, "left": 0 },
+          "buzz": { "served": 0, "left": 0 }
+        }
+      }
+    },
     { "atMs": 2000, "kind": "input", "keys": "takoyaki" },
-    { "atMs": 3000, "kind": "receive", "type": "MatchEnd", "payload": { "finalRank": 42, "stats": { "servedCount": 10, "avgAccuracy": 0.9, "avgElapsedMs": 4000 } } }
+    { "atMs": 3000, "kind": "receive", "type": "MatchEnd", "payload": {} }
   ]
 }

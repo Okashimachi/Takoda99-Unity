@@ -1,42 +1,64 @@
 // 仕様書: Unity/docs/.sdd/match-view/06-view-sample-data.md
-// 開発用。サンプル値で主画面・小画面のViewを駆動する。本番シーンには置かない。
-// サーバーの挙動を模したシミュレーション（評価計算・客分配・脱落判定）は書かない。
+//         Unity/docs/.sdd/cleanup/01-removed-views.md §6（本選のサンプルへ差し替え）
+// 開発用。サンプル値で本選HUDを駆動する。本番シーンには置かない。
+// サーバーの挙動を模したシミュレーション（スコア計算・順位決定・脱落判定）は書かない。
+// 値はすべて「サーバーから届いたことにする」固定値であり、ここで導出しない。
 
 using System.Collections.Generic;
+using Takoda99.Client.State;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace Takoda99.View.Sample
 {
-    /// <summary>開発用。サンプル値で主画面・小画面のViewを駆動する。本番シーンには置かない。</summary>
+    /// <summary>開発用。サンプル値で本選HUDを駆動する。本番シーンには置かない。</summary>
     public sealed class MainGameViewSampleDriver : MonoBehaviour
     {
         [SerializeField] private MainStoreView mainStore;
         [SerializeField] private TakoyakiStandView takoyakiStand;
-        [SerializeField] private SubStoreBoardView subStoreBoard;
 
-        [Header("自店のサンプル値")]
-        [SerializeField, Range(0, 3)] private int creditLife = 3;
-        [SerializeField, Range(0f, 1f)] private float evalNormalized = 0.5f;
-        [SerializeField] private bool alive = true;
+        [Header("本選 HUD")]
+        [SerializeField] private SelfRankView selfRank;
+        [SerializeField] private Ranking.RankingPanelView rankingPanel;
+        [SerializeField] private Ranking.CullCountdownPanelView cullPanel;
+        [SerializeField] private Ranking.SpectatorRankingView spectatorRanking;
+        [SerializeField] private Elimination.MassEliminationEffect massElim;
+
+        [Header("お題のサンプル値")]
         [SerializeField] private string sampleHiragana = "たこやき";
         [SerializeField] private string sampleRoma = "takoyaki";
         [SerializeField] private int typedHiraganaLength;
         [SerializeField] private int typedRomaLength;
         [SerializeField] private int typedWordCount;
+        [SerializeField] private int orderCount = 6;
 
-        [Header("他店のサンプル値")]
-        [SerializeField] private string selfStoreId = "50";
-        [SerializeField] private int eliminateStoreCount;
+        [Header("自店のサンプル値")]
+        [SerializeField] private string selfStoreId = "store-050";
+        [SerializeField] private int selfRankValue = 50;
+        [SerializeField] private int selfScore = 1200;
+        [SerializeField] private int aliveCount = 99;
 
-        private List<string> otherStoreIds = new List<string>();
+        [Header("足切りのサンプル値")]
+        [SerializeField] private int stageIndex = 1;
+        [SerializeField] private int stageTotal = 6;
+        [SerializeField] private int untilMs = 20_000;
+        [SerializeField] private int cutLineRank = 51;
+        [SerializeField] private bool selfAtRisk;
+
+        [Header("ストレステスト")]
+        [Tooltip("ON にすると毎フレーム全店のスコアをランダムに入れ替え、行の生成破棄が起きないかを見る。")]
+        [SerializeField] private bool shuffleStress;
+
+        /// <summary>サンプルの99行。実試合ではサーバーの RankingSnapshot 由来。</summary>
+        private readonly List<RankingRow> rows = new List<RankingRow>(99);
+
+        private CullWarning cull;
 
         private void Start()
         {
             // 本番の試合中は絶対に動かさない。GameBootstrapper が生きている＝サーバーに繋がった実試合であり、
-            // ここで Bind するとサンプル用の StoreId で対応表を上書きしてしまう（Start は Renderer.OnEnable より後に走る）。
-            // その結果サーバー由来の SetSummary / SetRank が全店ぶん「未知の StoreId」として捨てられ、
-            // 他店のダメージ・脱落が一切描画されなくなる。
+            // ここでサンプル値を流すと Renderer の描いた内容を上書きしてしまう
+            // （Start は Renderer.OnEnable より後に走る）。
             if (Bootstrap.GameBootstrapper.Instance != null)
             {
                 Debug.LogWarning(
@@ -46,31 +68,37 @@ namespace Takoda99.View.Sample
                 return;
             }
 
-            BuildOtherStoreIds();
-
-            if (subStoreBoard != null)
-            {
-                subStoreBoard.Bind(otherStoreIds);
-            }
-
+            BuildRanking();
+            ApplyCull();
             Apply();
         }
 
-        private void BuildOtherStoreIds()
+        /// <summary>99行を作る。1位が最高スコアになるよう単調に散らす。</summary>
+        private void BuildRanking()
         {
-            otherStoreIds = new List<string>();
+            rows.Clear();
             for (var i = 1; i <= 99; i++)
             {
-                var id = i.ToString();
-                if (id != selfStoreId)
+                var id = $"store-{i:000}";
+                rows.Add(new RankingRow
                 {
-                    otherStoreIds.Add(id);
-                }
+                    StoreId = id,
+                    DisplayName = id == selfStoreId ? "じぶん" : $"店{i:000}",
+                    Rank = i,
+                    Score = (100 - i) * 120,
+                    Alive = true,
+                });
             }
         }
 
         private void Update()
         {
+            if (shuffleStress)
+            {
+                ShuffleScores();
+                Apply();
+            }
+
             var keyboard = Keyboard.current;
             if (keyboard == null)
             {
@@ -79,26 +107,31 @@ namespace Takoda99.View.Sample
 
             if (keyboard.digit1Key.wasPressedThisFrame)
             {
-                creditLife = Mathf.Clamp(creditLife - 1, 0, 3);
+                // 自分の順位を上げる（1位側へ）。
+                selfRankValue = Mathf.Max(1, selfRankValue - 5);
+                selfScore += 500;
                 Apply();
             }
 
             if (keyboard.digit2Key.wasPressedThisFrame)
             {
-                creditLife = Mathf.Clamp(creditLife + 1, 0, 3);
+                selfRankValue = Mathf.Min(99, selfRankValue + 5);
+                selfScore -= 500;
                 Apply();
             }
 
             if (keyboard.digit3Key.wasPressedThisFrame)
             {
-                evalNormalized = Mathf.Clamp01(evalNormalized - 0.1f);
-                Apply();
+                // 自分が淘汰圏内に入った／出た。画面全体アラートの確認。
+                selfAtRisk = !selfAtRisk;
+                ApplyCull();
             }
 
             if (keyboard.digit4Key.wasPressedThisFrame)
             {
-                evalNormalized = Mathf.Clamp01(evalNormalized + 0.1f);
-                Apply();
+                // 次のステージへ。秒読みがリセットされることの確認。
+                stageIndex = Mathf.Min(stageTotal, stageIndex + 1);
+                ApplyCull();
             }
 
             if (keyboard.digit5Key.wasPressedThisFrame)
@@ -109,7 +142,7 @@ namespace Takoda99.View.Sample
 
             if (keyboard.digit6Key.wasPressedThisFrame)
             {
-                typedWordCount = typedWordCount + 1;
+                typedWordCount++;
                 Apply();
             }
 
@@ -127,13 +160,74 @@ namespace Takoda99.View.Sample
 
             if (keyboard.digit9Key.wasPressedThisFrame)
             {
-                EliminateNextStore();
+                // 24件の一斉脱落。**Play が1回・SEが1回**であることの確認。
+                EliminateBatch(24, includesSelf: false);
             }
 
             if (keyboard.digit0Key.wasPressedThisFrame)
             {
-                ResetSampleValues();
+                // 自店を含む一斉脱落 → 脱落モーダル → 観戦の全員順位。
+                EliminateBatch(10, includesSelf: true);
+                spectatorRanking?.Open(BuildState());
             }
+        }
+
+        /// <summary>行の生成破棄が起きないかを見るためのストレス。実試合では起こらない頻度で動かす。</summary>
+        private void ShuffleScores()
+        {
+            for (var i = 0; i < rows.Count; i++)
+            {
+                rows[i] = new RankingRow
+                {
+                    StoreId = rows[i].StoreId,
+                    DisplayName = rows[i].DisplayName,
+                    Rank = rows[i].Rank,
+                    Score = Random.Range(0, 12_000),
+                    Alive = rows[i].Alive,
+                };
+            }
+
+            rows.Sort((a, b) => b.Score.CompareTo(a.Score));
+            for (var i = 0; i < rows.Count; i++)
+            {
+                rows[i] = new RankingRow
+                {
+                    StoreId = rows[i].StoreId,
+                    DisplayName = rows[i].DisplayName,
+                    Rank = i + 1,
+                    Score = rows[i].Score,
+                    Alive = rows[i].Alive,
+                };
+            }
+        }
+
+        /// <summary>下位から指定件数を脱落させ、集約演出を1回だけ再生する。</summary>
+        private void EliminateBatch(int count, bool includesSelf)
+        {
+            var eliminated = 0;
+            for (var i = rows.Count - 1; i >= 0 && eliminated < count; i--)
+            {
+                if (!rows[i].Alive)
+                {
+                    continue;
+                }
+
+                rows[i] = new RankingRow
+                {
+                    StoreId = rows[i].StoreId,
+                    DisplayName = rows[i].DisplayName,
+                    Rank = rows[i].Rank,
+                    Score = rows[i].Score,
+                    Alive = false,
+                };
+                eliminated++;
+            }
+
+            aliveCount = Mathf.Max(0, aliveCount - eliminated);
+
+            // ★件数だけを渡す。1件ずつループして演出を呼ばない。
+            massElim?.Play(stageIndex, eliminated, includesSelf);
+            Apply();
         }
 
         private void AdjustTypedRomaLength(int delta)
@@ -148,65 +242,59 @@ namespace Takoda99.View.Sample
                 : 0;
         }
 
-        private void EliminateNextStore()
+        /// <summary>サーバーから届いたことにする ClientState を組む。</summary>
+        private ClientState BuildState()
         {
-            if (subStoreBoard == null)
+            return new ClientState
             {
-                return;
-            }
-
-            if (eliminateStoreCount >= otherStoreIds.Count)
-            {
-                return;
-            }
-
-            var storeId = otherStoreIds[eliminateStoreCount];
-            eliminateStoreCount++;
-
-            subStoreBoard.SetSummary(storeId, 0, false);
-
-            // サンプル専用の仮値（SV-15確定まで）。本番コードへ持ち込まない。
-            var rank = 98 - eliminateStoreCount + 1;
-            subStoreBoard.SetRank(storeId, rank);
+                Phase = ClientPhase.InMatch,
+                SelfStoreId = selfStoreId,
+                Rank = selfRankValue,
+                Score = selfScore,
+                AliveCount = aliveCount,
+                Alive = true,
+                Ranking = new RankingTable { Rows = new List<RankingRow>(rows) },
+                Cull = cull,
+            };
         }
 
-        private void ResetSampleValues()
+        private void ApplyCull()
         {
-            creditLife = 3;
-            evalNormalized = 0.5f;
-            alive = true;
-            typedHiraganaLength = 0;
-            typedRomaLength = 0;
-            typedWordCount = 0;
-            eliminateStoreCount = 0;
-
-            if (subStoreBoard != null)
+            cull = new CullWarning
             {
-                subStoreBoard.Bind(otherStoreIds);
-            }
+                UntilMs = untilMs,
+                ReceivedAtLocalMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d),
+                StageIndex = stageIndex,
+                StageTotal = stageTotal,
+                CutLineRank = cutLineRank,
+                SelfAtRisk = selfAtRisk,
+                CutStoreIds = new[] { "store-097", "store-098", "store-099" },
+            };
 
-            Apply();
-        }
-
-        private void OnValidate()
-        {
-            Apply();
+            var state = BuildState();
+            cullPanel?.SetWarning(cull, state);
+            cullPanel?.OnWarningReceived(cull);
         }
 
         private void Apply()
         {
             if (mainStore != null)
             {
-                mainStore.SetCreditLife(creditLife);
-                mainStore.SetEvaluation(evalNormalized, alive);
                 mainStore.SetWord(sampleHiragana, sampleRoma);
                 mainStore.SetTypedProgress(typedHiraganaLength, typedRomaLength);
+                mainStore.SetOrderProgress(typedWordCount, orderCount);
             }
 
             if (takoyakiStand != null)
             {
+                takoyakiStand.SetOrderCount(orderCount);
                 takoyakiStand.SetTypedWordCount(typedWordCount);
             }
+
+            var state = BuildState();
+            selfRank?.SetState(ValueObjects.SelfRankViewState.From(selfRankValue, selfScore, aliveCount));
+            rankingPanel?.Apply(state);
+            spectatorRanking?.Apply(state);
         }
     }
 }

@@ -14,29 +14,31 @@ namespace Takoda99.View
     public sealed class MainStoreView : MonoBehaviour
     {
         // ---- 信用ライフ（暖簾・屋台土台・提灯） ----
+        // 屋台の見た目（暖簾・土台）。v0.8.0 では信用ライフが廃止されたため、
+        // ライフ段階で差し替えず固定の絵を出す。
         [SerializeField] private Image noren;
-        [SerializeField] private Sprite norenLife1;      // stall_noren_life1
-        [SerializeField] private Sprite norenLife2;      // stall_noren_life2
-        [SerializeField] private Sprite norenLife3;      // stall_noren_life3
-
         [SerializeField] private Image stand;
-        [SerializeField] private Sprite standLife0;      // stall_booth_life0
-        [SerializeField] private Sprite standLife1;
-        [SerializeField] private Sprite standLife2;
-        [SerializeField] private Sprite standLife3;
-
-        [SerializeField] private Image[] lanterns;       // 添字 0 = Lantern1, 1 = Lantern2, 2 = Lantern3
-        [SerializeField] private Sprite lanternOn;       // stall_lantern_on
-        [SerializeField] private Sprite lanternOff;      // stall_lantern_off
-
-        // ---- 評価（鉄板） ----
-        [SerializeField] private Image griddle;
-        [SerializeField] private Sprite griddleNormal;   // stall_griddle_normal
-        [SerializeField] private Sprite griddleHot;      // stall_griddle_hot
 
         // ---- お題単語 ----
         [SerializeField] private TextMeshProUGUI wordHiragana;   // WordPanel/Hiragana
         [SerializeField] private TextMeshProUGUI wordRoma;       // WordPanel/Roma
+
+        // ---- お題の大型化（hud/02-order-word-emphasis.md §3.1）----
+        // TextMeshPro の Auto Size を使わず、単語長から段階的に決める。
+        // 閾値・実サイズは実機で詰めるため Inspector 公開値にしている。
+        [Header("お題の文字サイズ段階")]
+        [Tooltip("この文字数までが最大サイズ（L）。")]
+        [SerializeField] private int wordLargeMaxLength = OrderWordSizeRule.DefaultLargeMaxLength;
+
+        [Tooltip("この文字数までが中サイズ（M）。これを超えると小サイズ（S）。")]
+        [SerializeField] private int wordMediumMaxLength = OrderWordSizeRule.DefaultMediumMaxLength;
+
+        [SerializeField] private float wordFontSizeLarge = 140f;
+        [SerializeField] private float wordFontSizeMedium = 100f;
+        [SerializeField] private float wordFontSizeSmall = 72f;
+
+        [Tooltip("ローマ字行はかな行に対するこの倍率で描く。")]
+        [SerializeField] private float romaFontScale = 0.45f;
         [SerializeField, Range(0f, 1f)] private float typedAlpha = 0.35f;
 
         // ---- 注文カウンタ（OrderCounter） ----
@@ -50,7 +52,6 @@ namespace Takoda99.View
 
         private string currentHiragana = string.Empty;
         private string currentRoma = string.Empty;
-        private StoreVisualState? currentVisualState;
 
         // 直近に描いた値。同じ値での再描画（と文字列の割り当て）を避けるために持つ。
         // -1 は「まだ一度も描いていない」ことを表し、初回の 0/0 を必ず反映させる。
@@ -58,30 +59,16 @@ namespace Takoda99.View
         private int currentOrderCount = -1;
         private string currentPlayerName;
 
-        /// <summary>評価3段階が変化したときに発火する。Takoyakis が購読する。</summary>
-        public event Action<StoreEvalLevel> EvalLevelChanged;
-
-        /// <summary>現在の評価3段階。購読開始直後の初期化に使う。</summary>
-        public StoreEvalLevel EvalLevel { get; private set; }
-
         private void Awake()
         {
             CheckReference(noren, nameof(noren));
             CheckReference(stand, nameof(stand));
-            CheckReference(griddle, nameof(griddle));
             CheckReference(wordHiragana, nameof(wordHiragana));
             CheckReference(wordRoma, nameof(wordRoma));
-
-            if (lanterns == null || lanterns.Length == 0)
-            {
-                Debug.LogError($"{nameof(MainStoreView)}.{nameof(lanterns)} が未設定です。", this);
-            }
         }
 
         private void Start()
         {
-            SetCreditLife(3);
-            SetEvaluation(0d, true);
             SetWord(string.Empty, string.Empty);
             SetOrderProgress(0, 0);
             SetPlayerName(string.Empty);
@@ -146,114 +133,49 @@ namespace Takoda99.View
             }
         }
 
-        /// <summary>信用ライフ（提灯・暖簾・屋台土台）を反映する。</summary>
-        public void SetCreditLife(int creditLife)
-        {
-            var initialLife = lanterns != null ? lanterns.Length : 3;
-            var clamped = Clamp(creditLife, 0, Math.Max(initialLife, 3));
-
-            ApplyNoren(clamped);
-            ApplyStand(clamped);
-            ApplyLanterns(clamped);
-        }
-
-        private void ApplyNoren(int creditLife)
-        {
-            if (noren == null)
-            {
-                return;
-            }
-
-            if (creditLife <= 0)
-            {
-                // 暖簾に life0 の画像は存在しないため、非表示にする。
-                noren.enabled = false;
-                return;
-            }
-
-            noren.enabled = true;
-            noren.sprite = creditLife switch
-            {
-                1 => norenLife1,
-                2 => norenLife2,
-                _ => norenLife3,
-            };
-        }
-
-        private void ApplyStand(int creditLife)
-        {
-            if (stand == null)
-            {
-                return;
-            }
-
-            stand.sprite = creditLife switch
-            {
-                0 => standLife0,
-                1 => standLife1,
-                2 => standLife2,
-                _ => standLife3,
-            };
-        }
-
-        private void ApplyLanterns(int creditLife)
-        {
-            if (lanterns == null)
-            {
-                return;
-            }
-
-            // 番号の大きい方から消灯する。GameObject の破棄・非アクティブ化は行わない。
-            for (var i = 0; i < lanterns.Length; i++)
-            {
-                var lantern = lanterns[i];
-                if (lantern == null)
-                {
-                    continue;
-                }
-
-                lantern.sprite = i < creditLife ? lanternOn : lanternOff;
-            }
-        }
-
-        /// <summary>評価を反映する。evalNormalized は 0..1（生存店内パーセンタイル）。</summary>
-        public void SetEvaluation(double evalNormalized, bool alive)
-        {
-            var next = StoreVisualState.From(
-                gameObject.name,
-                evalNormalized,
-                alive,
-                StoreEvalThresholds.Default,
-                currentVisualState);
-
-            var levelChanged = !currentVisualState.HasValue || currentVisualState.Value.EvalLevel != next.EvalLevel;
-            currentVisualState = next;
-            EvalLevel = next.EvalLevel;
-
-            ApplyGriddle(next.EvalLevel);
-
-            if (levelChanged)
-            {
-                EvalLevelChanged?.Invoke(next.EvalLevel);
-            }
-        }
-
-        private void ApplyGriddle(StoreEvalLevel evalLevel)
-        {
-            if (griddle == null)
-            {
-                return;
-            }
-
-            griddle.sprite = evalLevel == StoreEvalLevel.High ? griddleHot : griddleNormal;
-        }
 
         /// <summary>お題単語を差し替える。typedRomaLength = 0 の未入力状態にリセットされる。</summary>
         public void SetWord(string hiragana, string roma)
         {
             currentHiragana = hiragana ?? string.Empty;
             currentRoma = roma ?? string.Empty;
+            ApplyWordFontSize();
             SetTypedProgress(0, 0);
+        }
+
+        /// <summary>
+        /// 単語長からサイズ段階を決めて反映する。**単語が変わったときだけ**呼ぶ
+        /// （打鍵ごとの SetTypedProgress では呼ばない。同じ単語の途中でサイズが動かないようにする）。
+        /// </summary>
+        private void ApplyWordFontSize()
+        {
+            var tier = OrderWordSizeRule.From(currentHiragana, wordLargeMaxLength, wordMediumMaxLength);
+
+            float size;
+            switch (tier)
+            {
+                case OrderWordSizeTier.Large:
+                    size = wordFontSizeLarge;
+                    break;
+                case OrderWordSizeTier.Medium:
+                    size = wordFontSizeMedium;
+                    break;
+                default:
+                    size = wordFontSizeSmall;
+                    break;
+            }
+
+            if (wordHiragana != null)
+            {
+                wordHiragana.enableAutoSizing = false;
+                wordHiragana.fontSize = size;
+            }
+
+            if (wordRoma != null)
+            {
+                wordRoma.enableAutoSizing = false;
+                wordRoma.fontSize = size * romaFontScale;
+            }
         }
 
         /// <summary>入力進捗を反映する。引数はいずれも「確定した先頭からの文字数」。</summary>

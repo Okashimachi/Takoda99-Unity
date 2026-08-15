@@ -1,6 +1,6 @@
 {
   "name": "few-players-match",
-  "description": "maxStoresに満たない人数（例20店）で開始。ミニ盤面が破綻しないか",
+  "description": "maxStoresに満たない人数（例3店）で開始。ランキング表が破綻しないか",
   "steps": [
     { "atMs": 0, "kind": "connection", "state": "Connected" },
     {
@@ -10,27 +10,28 @@
       "payload": {
         "matchId": "m-02",
         "selfStoreId": "s-self",
-        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
+        "params": { "maxStores": 99, "scoreWeightTakoyaki": 100, "scoreWeightMiss": 20 },
         "phase": "Early",
+        "startsAtServerMs": 1700000000000,
         "stores": [
-          { "storeId": "s-self", "displayName": "自店", "evalNormalized": 0.5, "rank": 1, "creditLife": 3, "alive": true },
-          { "storeId": "s-002", "displayName": "2号店", "evalNormalized": 0.5, "rank": 2, "creditLife": 3, "alive": true },
-          { "storeId": "s-003", "displayName": "3号店", "evalNormalized": 0.5, "rank": 3, "creditLife": 3, "alive": true }
+          { "storeId": "s-self", "displayName": "自店", "rank": 1, "score": 0, "alive": true },
+          { "storeId": "s-002", "displayName": "2号店", "rank": 2, "score": 0, "alive": true },
+          { "storeId": "s-003", "displayName": "3号店", "rank": 3, "score": 0, "alive": true }
         ]
       }
     },
     {
       "atMs": 1000,
       "kind": "receive",
-      "type": "StoreListUpdate",
+      "type": "RankingSnapshot",
       "payload": {
-        "aliveCount": 20,
-        "stores": [
-          { "storeId": "s-self", "displayName": "自店", "evalNormalized": 0.55, "rank": 1, "creditLife": 3, "alive": true },
-          { "storeId": "s-002", "displayName": "2号店", "evalNormalized": 0.5, "rank": 2, "creditLife": 3, "alive": true },
-          { "storeId": "s-003", "displayName": "3号店", "evalNormalized": 0.45, "rank": 3, "creditLife": 3, "alive": true }
+        "entries": [
+          { "storeId": "s-self", "rank": 1, "score": 300, "alive": true },
+          { "storeId": "s-002", "rank": 2, "score": 200, "alive": true },
+          { "storeId": "s-003", "rank": 3, "score": 100, "alive": true }
         ]
       }
-    }
+    },
+    { "atMs": 2000, "kind": "receive", "type": "EvaluationUpdate", "payload": { "score": 300, "rank": 1, "aliveCount": 3 } }
   ]
 }

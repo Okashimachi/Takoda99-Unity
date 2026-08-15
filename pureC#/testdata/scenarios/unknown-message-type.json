@@ -13,8 +13,7 @@
         "customerId": "c-01",
         "attribute": "Normal",
         "orderCount": 1,
-        "words": ["たこ"],
-        "patienceMaxMs": 12000
+        "words": ["たこ"]
       }
     }
   ]

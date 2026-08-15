@@ -48,7 +48,7 @@ namespace Takoda99.View
         private GameObject grid;
 
         /// <summary>成績を構築して表示する。データが無い場合は空表示になる。</summary>
-        public void Show(MatchResult result, IReadOnlyList<StoreSummary> stores, string selfStoreId)
+        public void Show(PersonalResultState result, RankingTable ranking, string selfStoreId)
         {
             Clear();
 
@@ -58,7 +58,7 @@ namespace Takoda99.View
                 return;
             }
 
-            var items = BuildItems(result, stores, selfStoreId);
+            var items = BuildItems(result, ranking, selfStoreId);
             var parent = CreateGrid();
             var area = ((RectTransform)transform).rect;
             var cellWidth = CellLength(area.width, GridColumns, spacing.x, padding);
@@ -173,31 +173,34 @@ namespace Takoda99.View
 
         /// <summary>
         /// 表示する8項目を、優先度の高い順（上の段から）に組み立てる。
-        /// MatchEnd がまだ届いていない（<paramref name="result"/> が null の）間も、
+        /// 成績がまだ届いていない（<paramref name="result"/> が null の）間も、
         /// 枠だけは組んで待ち表示にする。ここで空リストを返すと画面が真っ白になってしまう。
         /// </summary>
-        private static List<Item> BuildItems(MatchResult result, IReadOnlyList<StoreSummary> stores, string selfStoreId)
+        private static List<Item> BuildItems(PersonalResultState result, RankingTable ranking, string selfStoreId)
         {
             var items = new List<Item>(8);
 
             if (result == null)
             {
-                items.Add(new Item("提供数", Pending, Priority.High, 0, 0, 3));
-                items.Add(new Item("来客数", Pending, Priority.High, 0, 3, 3));
+                items.Add(new Item("スコア", Pending, Priority.High, 0, 0, 3));
+                items.Add(new Item("たこ焼き数", Pending, Priority.High, 0, 3, 3));
                 items.Add(new Item("総打鍵数", Pending, Priority.Middle, 1, 0, 2));
                 items.Add(new Item("ミス打鍵数", Pending, Priority.Middle, 1, 2, 2));
                 items.Add(new Item("平均正確率", Pending, Priority.Middle, 1, 4, 2));
-                items.Add(new Item("店の名前", FindSelfName(stores, selfStoreId), Priority.Low, 2, 0, 2));
-                items.Add(new Item("終わり方", Pending, Priority.Low, 2, 2, 2));
-                items.Add(new Item("試合時間", Pending, Priority.Low, 2, 4, 2));
+                items.Add(new Item("店の名前", FindSelfName(ranking, selfStoreId), Priority.Low, 2, 0, 2));
+                items.Add(new Item("提供数", Pending, Priority.Low, 2, 2, 2));
+                items.Add(new Item("生存時間", Pending, Priority.Low, 2, 4, 2));
                 return items;
             }
 
             var stats = result.Stats ?? new MatchStats();
 
             // 1段目（優先度 高）：2つで横6マスを折半する。
-            items.Add(new Item("提供数", $"{stats.ServedCount} 個", Priority.High, 0, 0, 3));
-            items.Add(new Item("来客数", $"{stats.ServedCount + stats.LeftCount} 人", Priority.High, 0, 3, 3));
+            // リザルトではスコアを大きく出す（試合中は順位が主役だが、ここでは具体的な数字が達成感になる）。
+            // 「来客数」は LeftCount（常に 0）に依存していたため撤去した。
+            items.Add(new Item("スコア", $"{result.Score}", Priority.High, 0, 0, 3));
+            // ★たこ焼きの個数。stats.ServedCount（提供した「客」の数）とは別物。
+            items.Add(new Item("たこ焼き数", $"{result.TakoyakiCount} 個", Priority.High, 0, 3, 3));
 
             // 2段目（優先度 中）：3つで横6マスを3等分する。
             items.Add(new Item("総打鍵数", $"{stats.TotalKeystrokes} 打", Priority.Middle, 1, 0, 2));
@@ -205,39 +208,20 @@ namespace Takoda99.View
             items.Add(new Item("平均正確率", Percent(stats.AvgAccuracy), Priority.Middle, 1, 4, 2));
 
             // 3段目（優先度 低）。
-            items.Add(new Item("店の名前", FindSelfName(stores, selfStoreId), Priority.Low, 2, 0, 2));
-            items.Add(new Item("終わり方", DescribeReason(result.Reason), Priority.Low, 2, 2, 2));
-            items.Add(new Item("試合時間", FormatDuration(result.MatchElapsedMs), Priority.Low, 2, 4, 2));
+            items.Add(new Item("店の名前", FindSelfName(ranking, selfStoreId), Priority.Low, 2, 0, 2));
+            items.Add(new Item("提供数", $"{stats.ServedCount} 人", Priority.Low, 2, 2, 2));
+            // 「終わり方」は撤去した。v0.8.0 では脱落経路が足切りの1本だけになり、
+            // 判別する意味が無くなった（MatchEnd.reason も消えている）。
+            items.Add(new Item("生存時間", FormatDuration(result.SurvivedMs), Priority.Low, 2, 4, 2));
 
             return items;
         }
 
-        private static string DescribeReason(string reason)
+        private static string FindSelfName(RankingTable ranking, string selfStoreId)
         {
-            if (string.IsNullOrEmpty(reason))
+            if (ranking != null && !string.IsNullOrEmpty(selfStoreId))
             {
-                return "優勝";
-            }
-
-            // Proto の EliminationReason と同じ文字列が入る。
-            if (reason == nameof(EliminationReason.SelfCollapse))
-            {
-                return "自滅";
-            }
-
-            if (reason == nameof(EliminationReason.Cull))
-            {
-                return "強制淘汰";
-            }
-
-            return reason;
-        }
-
-        private static string FindSelfName(IReadOnlyList<StoreSummary> stores, string selfStoreId)
-        {
-            if (stores != null && !string.IsNullOrEmpty(selfStoreId))
-            {
-                foreach (var store in stores)
+                foreach (var store in ranking.Rows)
                 {
                     if (store.StoreId == selfStoreId)
                     {

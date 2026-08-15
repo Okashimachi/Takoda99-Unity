@@ -7,6 +7,7 @@
 // （見つからない場合は Inspector の既定値にフォールバックする。02-scene-composition.md §4.1）。
 
 using System.Collections;
+using System.Collections.Generic;
 using Takoda99.Client.Contract;
 using Takoda99.Client.Lifecycle;
 using Takoda99.Client.Net;
@@ -342,12 +343,6 @@ namespace Takoda99.Bootstrap
                 Active?.OnCustomerArrived(customer);
             }
 
-            public void OnCustomerLeft(string customerId, LeaveReason reason)
-            {
-                ClientEventLog.Add(ClientEventSource.Net, "LEAVE", $"customerId={customerId} reason={reason}{StateSuffix()}");
-                Active?.OnCustomerLeft(customerId, reason);
-            }
-
             public void OnKeyFeedback(KeyResult result) => Active?.OnKeyFeedback(result);
 
             public void OnOrderServed(string customerId)
@@ -362,23 +357,40 @@ namespace Takoda99.Bootstrap
                 Active?.OnPhaseChanged(phase);
             }
 
-            public void OnForcedEliminationWarning(int untilTick, double thresholdPct) => Active?.OnForcedEliminationWarning(untilTick, thresholdPct);
-
-            public void OnStoreEliminated(string storeId, EliminationReason reason, int finalRank)
+            public void OnCullWarning(CullWarning warning)
             {
-                // 自店と他店はタグを分ける。同じタグだと自店の脱落が他店の連鎖にまとめられて見えなくなる。
-                var isSelf = storeId == Store?.State.SelfStoreId;
                 ClientEventLog.Add(
                     ClientEventSource.Net,
-                    isSelf ? "ELIM_SELF" : "ELIM_OTHER",
-                    $"storeId={storeId} reason={reason} rank={finalRank}{StateSuffix()}");
-                Active?.OnStoreEliminated(storeId, reason, finalRank);
+                    "CULL_WARN",
+                    $"stage={warning.StageIndex}/{warning.StageTotal} untilMs={warning.UntilMs} " +
+                    $"cutLine={warning.CutLineRank} selfAtRisk={warning.SelfAtRisk}{StateSuffix()}");
+                Active?.OnCullWarning(warning);
             }
 
-            public void OnMatchEnd(int finalRank, MatchStats stats)
+            public void OnStoreEliminatedBatch(int stageIndex, IReadOnlyList<StoreEliminated> entries, bool includesSelf)
             {
-                ClientEventLog.Add(ClientEventSource.Net, "MATCH_END", $"rank={finalRank}{StateSuffix()}");
-                Active?.OnMatchEnd(finalRank, stats);
+                // 自店を含むバッチとそうでないバッチはタグを分ける。同じタグだと自店の脱落が
+                // 他店の一斉脱落にまとめられて見えなくなる。
+                ClientEventLog.Add(
+                    ClientEventSource.Net,
+                    includesSelf ? "ELIM_SELF" : "ELIM_BATCH",
+                    $"stage={stageIndex} count={entries.Count}{StateSuffix()}");
+                Active?.OnStoreEliminatedBatch(stageIndex, entries, includesSelf);
+            }
+
+            public void OnPersonalResult(PersonalResultState result)
+            {
+                ClientEventLog.Add(
+                    ClientEventSource.Net,
+                    "PERSONAL_RESULT",
+                    $"rank={result.FinalRank} score={result.Score} takoyaki={result.TakoyakiCount}{StateSuffix()}");
+                Active?.OnPersonalResult(result);
+            }
+
+            public void OnMatchEnd()
+            {
+                ClientEventLog.Add(ClientEventSource.Net, "MATCH_END", $"(payload なし){StateSuffix()}");
+                Active?.OnMatchEnd();
             }
 
             public void OnLifecycleChanged(ClientPhase from, ClientPhase to)

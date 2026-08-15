@@ -15,16 +15,26 @@ public sealed class Dispatcher : IDispatcher
             [MessageType.MatchmakingStatus] = new() { ClientPhase.Connecting, ClientPhase.Matchmaking },
             [MessageType.MatchStart] = new() { ClientPhase.Matchmaking },
             [MessageType.CustomerArrived] = new() { ClientPhase.InMatch },
-            [MessageType.CustomerLeft] = new() { ClientPhase.InMatch },
-            [MessageType.CreditUpdate] = new() { ClientPhase.InMatch },
             [MessageType.EvaluationUpdate] = new() { ClientPhase.InMatch, ClientPhase.Spectating },
             [MessageType.DifficultyUpdate] = new() { ClientPhase.InMatch, ClientPhase.Spectating },
             [MessageType.PhaseChange] = new() { ClientPhase.InMatch, ClientPhase.Spectating },
-            [MessageType.StoreListUpdate] = new() { ClientPhase.Matchmaking, ClientPhase.InMatch, ClientPhase.Spectating, ClientPhase.Result },
+            // Result でも全量を受けるのは、120秒の配信順序が
+            // StoreEliminatedBatch → PersonalResult → RankingSnapshot → MatchEnd であり、
+            // 最後のスナップショット（＝全店の最終順位）をリザルト画面が使うため。
+            [MessageType.RankingSnapshot] = new() { ClientPhase.InMatch, ClientPhase.Spectating, ClientPhase.Result },
+            [MessageType.RankingDelta] = new() { ClientPhase.InMatch, ClientPhase.Spectating },
             [MessageType.ForcedEliminationWarning] = new() { ClientPhase.InMatch, ClientPhase.Spectating },
-            [MessageType.StoreEliminated] = new() { ClientPhase.InMatch, ClientPhase.Spectating, ClientPhase.Result },
+            [MessageType.StoreEliminatedBatch] = new() { ClientPhase.InMatch, ClientPhase.Spectating, ClientPhase.Result },
+            [MessageType.PersonalResult] = new() { ClientPhase.InMatch, ClientPhase.Spectating },
             [MessageType.MatchEnd] = new() { ClientPhase.InMatch, ClientPhase.Spectating },
         };
+
+    /// <summary>
+    /// Proto v0.8.0 では List 型のフィールドが null で届き得る。ClientState に null を入れないため
+    /// Decode の時点で空リストへ正規化する（contract/01 §5）。
+    /// </summary>
+    private static IReadOnlyList<T> OrEmpty<T>(List<T>? source)
+        => source ?? (IReadOnlyList<T>)Array.Empty<T>();
 
     private readonly IEnvelopeCodec _codec;
     private readonly IStore _store;
@@ -104,7 +114,8 @@ public sealed class Dispatcher : IDispatcher
                         SelfStoreId = matchStart.SelfStoreId,
                         Params = matchStart.Params,
                         MatchPhase = matchStart.Phase,
-                        Stores = matchStart.Stores,
+                        Stores = OrEmpty(matchStart.Stores),
+                        StartedAtLocalMs = _clock.MonotonicMs,
                     };
 
             case MessageType.CustomerArrived:
@@ -113,30 +124,16 @@ public sealed class Dispatcher : IDispatcher
                     ? null
                     : new CustomerArrivedAction { Customer = customer, ArrivedAtLocalMs = _clock.MonotonicMs };
 
-            case MessageType.CustomerLeft:
-                var customerLeft = _codec.DecodePayload<CustomerLeft>(envelope);
-                return customerLeft is null
-                    ? null
-                    : new CustomerLeftAction { CustomerId = customerLeft.CustomerId, Reason = customerLeft.Reason };
-
-            case MessageType.CreditUpdate:
-                var creditUpdate = _codec.DecodePayload<CreditUpdate>(envelope);
-                return creditUpdate is null
-                    ? null
-                    : new CreditUpdateAction { Life = creditUpdate.Life, Reason = creditUpdate.Reason };
-
             case MessageType.EvaluationUpdate:
                 var evaluationUpdate = _codec.DecodePayload<EvaluationUpdate>(envelope);
+                // evalRaw / normalized / starRating / starDelta は Obsolete（0 が届く）。読まない。
                 return evaluationUpdate is null
                     ? null
                     : new EvaluationUpdateAction
                     {
-                        EvalRaw = evaluationUpdate.EvalRaw,
-                        Normalized = evaluationUpdate.Normalized,
+                        Score = evaluationUpdate.Score,
                         Rank = evaluationUpdate.Rank,
                         AliveCount = evaluationUpdate.AliveCount,
-                        StarRating = evaluationUpdate.StarRating,
-                        StarDelta = evaluationUpdate.StarDelta,
                     };
 
             case MessageType.DifficultyUpdate:
@@ -151,38 +148,60 @@ public sealed class Dispatcher : IDispatcher
                     ? null
                     : new PhaseChangeAction { Phase = phaseChange.Phase };
 
-            case MessageType.StoreListUpdate:
-                var storeListUpdate = _codec.DecodePayload<StoreListUpdate>(envelope);
-                return storeListUpdate is null
+            case MessageType.RankingSnapshot:
+                var rankingSnapshot = _codec.DecodePayload<RankingSnapshot>(envelope);
+                return rankingSnapshot is null
                     ? null
-                    : new StoreListUpdateAction { Stores = storeListUpdate.Stores, AliveCount = storeListUpdate.AliveCount };
+                    : new RankingSnapshotAction { Entries = OrEmpty(rankingSnapshot.Entries) };
+
+            case MessageType.RankingDelta:
+                var rankingDelta = _codec.DecodePayload<RankingDelta>(envelope);
+                return rankingDelta is null
+                    ? null
+                    : new RankingDeltaAction { Entries = OrEmpty(rankingDelta.Entries) };
 
             case MessageType.ForcedEliminationWarning:
                 var warning = _codec.DecodePayload<ForcedEliminationWarning>(envelope);
+                // untilTick / thresholdPct は Obsolete。読まない。
+                // ReceivedAtLocalMs は「その予告を受け取った瞬間」でなければならないため、
+                // 純関数の Reducer ではなくここで時刻を取る（CustomerArrivedAction と同じ方式）。
                 return warning is null
                     ? null
-                    : new ForcedEliminationWarningAction { UntilTick = warning.UntilTick, ThresholdPct = warning.ThresholdPct };
+                    : new ForcedEliminationWarningAction
+                    {
+                        UntilMs = warning.UntilMs,
+                        ReceivedAtLocalMs = _clock.MonotonicMs,
+                        StageIndex = warning.StageIndex,
+                        StageTotal = warning.StageTotal,
+                        CutLineRank = warning.CutLineRank,
+                        CutStoreIds = OrEmpty(warning.CutStoreIds),
+                        SelfAtRisk = warning.SelfAtRisk,
+                    };
 
-            case MessageType.StoreEliminated:
-                var eliminated = _codec.DecodePayload<StoreEliminated>(envelope);
-                return eliminated is null
+            case MessageType.StoreEliminatedBatch:
+                var batch = _codec.DecodePayload<StoreEliminatedBatch>(envelope);
+                return batch is null
                     ? null
-                    : new StoreEliminatedAction { StoreId = eliminated.StoreId, Reason = eliminated.Reason, FinalRank = eliminated.FinalRank };
+                    : new StoreEliminatedBatchAction { StageIndex = batch.StageIndex, Entries = OrEmpty(batch.Entries) };
+
+            case MessageType.PersonalResult:
+                var personalResult = _codec.DecodePayload<PersonalResult>(envelope);
+                // reason / creditLeft / 評価まわりの4フィールドは Obsolete。読まない。
+                return personalResult is null
+                    ? null
+                    : new PersonalResultAction
+                    {
+                        FinalRank = personalResult.FinalRank,
+                        Score = personalResult.Score,
+                        TakoyakiCount = personalResult.TakoyakiCount,
+                        SurvivedMs = personalResult.SurvivedMs,
+                        Stats = personalResult.Stats ?? new MatchStats(),
+                    };
 
             case MessageType.MatchEnd:
+                // ペイロードは空クラス。`{}` でも decode が成功する。
                 var matchEnd = _codec.DecodePayload<MatchEnd>(envelope);
-                return matchEnd is null
-                    ? null
-                    : new MatchEndAction
-                    {
-                        FinalRank = matchEnd.FinalRank,
-                        Stats = matchEnd.Stats,
-                        Reason = matchEnd.Reason,
-                        MatchElapsedMs = matchEnd.MatchElapsedMs,
-                        CreditLeft = matchEnd.CreditLeft,
-                        EvalRaw = matchEnd.EvalRaw,
-                        EvalNormalized = matchEnd.EvalNormalized,
-                    };
+                return matchEnd is null ? null : new MatchEndAction();
 
             default:
                 return null;

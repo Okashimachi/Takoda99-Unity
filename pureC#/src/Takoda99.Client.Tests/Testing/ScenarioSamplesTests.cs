@@ -12,18 +12,16 @@ public class ScenarioSamplesTests
     [Theory]
     [InlineData("minimal-match")]
     [InlineData("order-progress-variants")]
-    [InlineData("customer-leaves-while-typing")]
-    [InlineData("patience-expires-but-no-leave")]
+    [InlineData("elimination-batch-while-typing")]
     [InlineData("queue-accumulates")]
-    [InlineData("evaluation-bands")]
-    [InlineData("credit-decreases")]
-    [InlineData("store-list-snapshot")]
+    [InlineData("score-progresses")]
+    [InlineData("ranking-snapshot-and-delta")]
+    [InlineData("cull-countdown")]
     [InlineData("self-eliminated")]
     [InlineData("other-store-eliminated")]
     [InlineData("phase-and-heat")]
     [InlineData("unknown-message-type")]
     [InlineData("few-players-match")]
-    [InlineData("claimer-drops-evaluation")]
     public void シナリオが最後まで再生できる(string name)
     {
         var player = new ScenarioPlayer(Scenario.Load(name));
@@ -34,14 +32,18 @@ public class ScenarioSamplesTests
         Assert.NotEmpty(player.Executed);
     }
 
+    /// <summary>
+    /// 本選に残る唯一の中断経路。打鍵中に自店を含むバッチが届き、後続の客の入力へ移れること。
+    /// 予選の customer-leaves-while-typing を置き換える（客は逃げなくなった）。
+    /// </summary>
     [Fact]
-    public void customerLeavesWhileTypingは進行中の客の離脱と後続の客の入力を両方踏む()
+    public void eliminationBatchWhileTypingは自店を含むバッチと後続の入力を両方踏む()
     {
-        var player = new ScenarioPlayer(Scenario.Load("customer-leaves-while-typing"));
+        var player = new ScenarioPlayer(Scenario.Load("elimination-batch-while-typing"));
         var receivedTypes = new List<string>();
         player.OnReceiveRaw += json =>
         {
-            foreach (var candidate in new[] { "CustomerLeft", "CustomerArrived" })
+            foreach (var candidate in new[] { "StoreEliminatedBatch", "CustomerArrived" })
             {
                 if (json.Contains($"\"type\":\"{candidate}\""))
                 {
@@ -52,55 +54,95 @@ public class ScenarioSamplesTests
 
         player.RunToEnd();
 
-        Assert.Contains("CustomerLeft", receivedTypes);
+        Assert.Contains("StoreEliminatedBatch", receivedTypes);
         Assert.Equal(2, receivedTypes.FindAll(t => t == "CustomerArrived").Count);
     }
 
-    [Fact]
-    public void patienceExpiresButNoLeaveはCustomerLeftを一度も流さない()
+    /// <summary>本選では客が逃げないので、廃止済みメッセージがサンプルに残っていないこと。</summary>
+    [Theory]
+    [InlineData("CustomerLeft")]
+    [InlineData("CreditUpdate")]
+    [InlineData("StoreListUpdate")]
+    public void 廃止済みメッセージはどのシナリオにも含まれない(string obsoleteType)
     {
-        var player = new ScenarioPlayer(Scenario.Load("patience-expires-but-no-leave"));
-        var received = new List<string>();
-        player.OnReceiveRaw += received.Add;
-
-        player.RunToEnd();
-
-        Assert.DoesNotContain(received, json => json.Contains("CustomerLeft"));
+        foreach (var name in new[]
+                 {
+                     "minimal-match", "order-progress-variants", "elimination-batch-while-typing",
+                     "queue-accumulates", "score-progresses", "ranking-snapshot-and-delta",
+                     "cull-countdown", "self-eliminated", "other-store-eliminated",
+                     "phase-and-heat", "unknown-message-type", "few-players-match",
+                 })
+        {
+            var scenario = Scenario.Load(name);
+            Assert.DoesNotContain(scenario.Steps, s => s.Type == obsoleteType);
+        }
     }
 
     [Fact]
-    public void creditDecreasesはlifeを3から0まで単調に流す()
+    public void scoreProgressesは負値から始まりscoreを単調に流す()
     {
-        var player = new ScenarioPlayer(Scenario.Load("credit-decreases"));
-        var lifeValues = new List<int>();
+        var player = new ScenarioPlayer(Scenario.Load("score-progresses"));
+        var scores = new List<int>();
         player.OnReceiveRaw += json =>
         {
             using var document = JsonDocument.Parse(json);
             var root = document.RootElement;
-            if (root.GetProperty("type").GetString() != "CreditUpdate")
+            if (root.GetProperty("type").GetString() != "EvaluationUpdate")
             {
                 return;
             }
 
-            lifeValues.Add(root.GetProperty("payload").GetProperty("life").GetInt32());
+            scores.Add(root.GetProperty("payload").GetProperty("score").GetInt32());
         };
 
         player.RunToEnd();
 
-        Assert.Equal(new[] { 2, 1, 0 }, lifeValues);
+        Assert.Equal(new[] { -40, 160, 780, 1240 }, scores);
     }
 
+    /// <summary>
+    /// 120秒の配信順序（StoreEliminatedBatch → PersonalResult → … → MatchEnd）を踏むこと。
+    /// 個人成績は脱落した瞬間に届き、MatchEnd を待たない。
+    /// </summary>
     [Fact]
-    public void selfEliminatedは自店脱落後にMatchEndまで到達する()
+    public void selfEliminatedは脱落直後にPersonalResultを受けMatchEndまで到達する()
     {
-        var player = new ScenarioPlayer(Scenario.Load("self-eliminated"));
-        var received = new List<string>();
-        player.OnReceiveRaw += received.Add;
+        var scenario = Scenario.Load("self-eliminated");
+        var order = new List<string>();
+        foreach (var step in scenario.Steps)
+        {
+            if (step.Kind == "receive" && step.Type is "StoreEliminatedBatch" or "PersonalResult" or "MatchEnd")
+            {
+                order.Add(step.Type!);
+            }
+        }
 
+        Assert.Equal(new[] { "StoreEliminatedBatch", "PersonalResult", "MatchEnd" }, order);
+
+        var player = new ScenarioPlayer(scenario);
         player.RunToEnd();
+        Assert.False(player.HasPendingSteps);
+    }
 
-        Assert.Contains(received, json => json.Contains("StoreEliminated"));
-        Assert.Contains(received, json => json.Contains("MatchEnd"));
+    /// <summary>差分は rank を運ばないので、表示順はクライアントが決める。</summary>
+    [Fact]
+    public void rankingDeltaのペイロードにrankが含まれない()
+    {
+        var scenario = Scenario.Load("ranking-snapshot-and-delta");
+
+        foreach (var step in scenario.Steps)
+        {
+            if (step.Kind != "receive" || step.Type != "RankingDelta" || step.Payload is not { } payload)
+            {
+                continue;
+            }
+
+            using var document = JsonDocument.Parse(payload.GetRawText());
+            foreach (var entry in document.RootElement.GetProperty("entries").EnumerateArray())
+            {
+                Assert.False(entry.TryGetProperty("rank", out _));
+            }
+        }
     }
 
     [Fact]

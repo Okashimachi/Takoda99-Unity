@@ -10,7 +10,7 @@
       "payload": {
         "matchId": "m-01",
         "selfStoreId": "s-self",
-        "params": { "matchTimeLimitMs": 300000, "initialLife": 3, "maxStores": 99 },
+        "params": { "maxStores": 99 },
         "phase": "Early",
         "stores": []
       }

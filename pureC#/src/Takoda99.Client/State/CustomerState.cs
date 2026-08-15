@@ -1,5 +1,6 @@
 // 仕様書: pureC#/docs/.sdd/value-objects/03-customer-state.md
-// 自店の行列に居る客1体ぶんの「サーバーから受信した事実」。我慢ゲージ残量・ムードは持たない。
+// 自店の行列に居る客1体ぶんの「サーバーから受信した事実」。
+// v0.8.0（本選）では我慢ゲージ・離脱が廃止されたため、我慢に関する値を一切持たない。
 
 using System.Collections.Generic;
 using Takoda99.Proto;
@@ -10,18 +11,17 @@ namespace Takoda99.Client.State
     /// 自店の行列に存在する客1体。<c>CustomerArrived</c>（= <see cref="CustomerView"/>）の受信値を保持する。
     /// </summary>
     /// <remarks>
-    /// 我慢ゲージの残量は保持しない。契約に <c>patienceLeftMs</c> を運ぶメッセージが存在せず（SV-03）、
-    /// 残量はクライアントの推定値にしかならないため、表示用の算出は Unity 側 <c>PatienceTimer</c> が
-    /// <see cref="PatienceStartedAtServerMs"/> を起点に行う。
+    /// 我慢ゲージに関する値は保持しない。v0.8.0（本選）で客が逃げなくなり、
+    /// <c>patienceMaxMs</c> / <c>patienceStartedAtServerMs</c> は Obsolete（0 が届く）になったため。
+    /// **一度出たお題は必ず打ち切られる。**
     /// <see cref="CustomerAttribute"/> は仕様書の定義（Proto と同一）に従い、Proto の列挙をそのまま使う。
+    /// v0.8.0 では見た目の出し分け専用で、スコアには影響しない。
     /// </remarks>
     public readonly record struct CustomerState(
         string CustomerId,
         CustomerAttribute Attribute,
-        int PatienceMaxMs,           // CustomerView.patienceMaxMs
-        int OrderCount,              // = 打つ単語数
+        int OrderCount,              // = 打つ単語数 = たこ焼きの個数
         IReadOnlyList<string> Words, // お題単語。サーバー発行
-        long PatienceStartedAtServerMs, // CustomerView.patienceStartedAtServerMs（Proto v0.3.0）。我慢ゲージ表示の起点
         long ArrivedAtElapsedMs      // 受信時点の MatchState.ElapsedMs。サーバー時刻の対応づけに使う（表示の起点には使わない）
     )
     {
@@ -34,10 +34,8 @@ namespace Takoda99.Client.State
             return new CustomerState(
                 CustomerId: view.CustomerId,
                 Attribute: view.Attribute,
-                PatienceMaxMs: view.PatienceMaxMs,
                 OrderCount: view.OrderCount,
                 Words: view.Words ?? new List<string>(),
-                PatienceStartedAtServerMs: view.PatienceStartedAtServerMs,
                 ArrivedAtElapsedMs: arrivedAtElapsedMs);
         }
 
