@@ -111,6 +111,20 @@ rank >= 1 ? rank.ToString() : UnknownRankText
 - 依存する：なし（純粋な静的クラス）
 - 依存される：[08-ranking-row-view-state.md](./08-ranking-row-view-state.md)
 
+### 6.1 なぜ `pureC#` 側に置かないか
+
+**このVOは `UnityEngine` に一切依存しないため、`pureC#/src` へ置くこともできる。それでも Unity 側に置く。**
+
+| # | 理由 |
+|---|---|
+| 1 | [README.md](./README.md) §1 が「`UnityEngine` に依存しない書き方ができる場合も、**初版はUnity側に置き、必要になった時点で移設を検討する**」と定めている |
+| 2 | [`pureC#/docs/.sdd`](../../../../pureC%23/docs/.sdd/README.md) §2 の索引は [Takoda99-Client-Docs 第3章](https://github.com/Okashimachi/Takoda99-Client-Docs/blob/main/03_モジュール分割とレイヤー責務.md) のモジュール一覧と1対1で対応している。表示用の文字列整形はそのモジュール一覧に無い |
+| 3 | 唯一の呼び出し元が [08](./08-ranking-row-view-state.md)（Unity側）の1行だけ。移すと呼ばれる側だけが DLL の向こうになる。`Takoda99.Client.dll` は各自がビルドする運用（[../foundation/01-purecs-dll-reference.md](../foundation/01-purecs-dll-reference.md)）なので、表を1文字直すたびにDLLリビルドが要る |
+| 4 | [09](./09-cull-countdown-state.md) / [10](./10-result-tier.md) も同じ性格（純粋な整形処理）で Unity 側にある。並びが揃う |
+
+**移設すべきになる条件：`pureC#` 側が序数表記を必要としたとき**（例：`PersonalResult` の成績テキストを `pureC#` で組み立てる設計に変えた場合）。
+依存が下向き1本しかないので、そのとき本ファイルだけを移せばよい。
+
 ## 7. テスト観点
 
 EditMode で完結する。
