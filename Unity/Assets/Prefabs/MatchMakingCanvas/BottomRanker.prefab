@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8655621359258251264}
   - component: {fileID: 4800381009244868853}
-  - component: {fileID: 8810894121423683921}
+  - component: {fileID: 5422705557350619077}
   m_Layer: 5
   m_Name: BottomRanker
   m_TagString: Untagged
@@ -54,7 +54,7 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &8810894121423683921
+--- !u!114 &5422705557350619077
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -69,6 +69,7 @@ MonoBehaviour:
   rankText: {fileID: 8634835045554870469}
   nameText: {fileID: 7604715659052918155}
   scoreText: {fileID: 2040045128014578998}
+  panelImage: {fileID: 1761201339617728982}
   canvasGroup: {fileID: 4800381009244868853}
   selfHighlight: {fileID: 5331218125547308080}
   deadAlpha: 0.4
@@ -83,6 +84,7 @@ GameObject:
   - component: {fileID: 2290247365636286494}
   - component: {fileID: 4389381288637246633}
   - component: {fileID: 8634835045554870469}
+  - component: {fileID: 4733653387124826580}
   m_Layer: 5
   m_Name: RankText
   m_TagString: Untagged
@@ -139,8 +141,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 99th.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
+  m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -209,6 +211,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &4733653387124826580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 886816925470158396}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f8b0e2d1a34c7f9b6e5d2c8a3f0b17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
+  _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
+  _weight: 1
 --- !u!1 &5331218125547308080
 GameObject:
   m_ObjectHideFlags: 0
@@ -295,6 +311,7 @@ GameObject:
   - component: {fileID: 361462026069985690}
   - component: {fileID: 5167068075059688637}
   - component: {fileID: 2040045128014578998}
+  - component: {fileID: 6790065106061728495}
   m_Layer: 5
   m_Name: ScoreText
   m_TagString: Untagged
@@ -351,8 +368,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 9999
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
+  m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -421,6 +438,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &6790065106061728495
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6847438838527887880}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f8b0e2d1a34c7f9b6e5d2c8a3f0b17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
+  _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
+  _weight: 1
 --- !u!1 &7915953514867321278
 GameObject:
   m_ObjectHideFlags: 0
@@ -432,6 +463,7 @@ GameObject:
   - component: {fileID: 6873664917445341323}
   - component: {fileID: 5252472264395190537}
   - component: {fileID: 7604715659052918155}
+  - component: {fileID: 3557282884182359561}
   m_Layer: 5
   m_Name: NameText
   m_TagString: Untagged
@@ -488,8 +520,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u30D7\u30EC\u30A4\u30E4\u30FC\u540D"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
+  m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -513,8 +545,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
-  m_fontSizeBase: 18
+  m_fontSize: 12
+  m_fontSizeBase: 12
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -558,6 +590,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &3557282884182359561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7915953514867321278}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4f8b0e2d1a34c7f9b6e5d2c8a3f0b17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
+  _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
+  _weight: 1
 --- !u!1 &8833264099325144711
 GameObject:
   m_ObjectHideFlags: 0
