@@ -26,7 +26,6 @@ namespace Takoda99.View
         private TMP_Text[] rankListTexts = new TMP_Text[10]; // 1st..10th
 
         // storeId -> 脱落時に確定した最終順位。Renderer が全店ぶんの OnStoreEliminated を転送する。
-        private readonly Dictionary<string, int> finalRanks = new Dictionary<string, int>();
 
         private IStore store;
         private IDisposable subscription;
@@ -114,7 +113,7 @@ namespace Takoda99.View
         /// <summary>モーダルを表示済みか。MatchEnd で二重に出さないための判定に使う。</summary>
         public bool IsShown { get; private set; }
 
-        /// <summary>自店が脱落した際、Renderer.OnStoreEliminated から呼ぶ。モーダルを表示する。</summary>
+        /// <summary>自店が脱落した際、Renderer.OnStoreEliminatedBatch から呼ぶ。モーダルを表示する。</summary>
         public void Show(int selfFinalRank)
         {
             EnsureInitialized();
@@ -133,9 +132,8 @@ namespace Takoda99.View
         }
 
         /// <summary>
-        /// まだ出していなければ出す。Renderer.OnMatchEnd から呼ぶ。
-        /// 優勝（最後まで残った）場合は自店に対して OnStoreEliminated が来ないため、
-        /// MatchEnd が唯一のモーダル表示の契機になる。既に脱落で出ている場合は順位を上書きしない。
+        /// まだ出していなければ出す。Renderer.OnMatchEnd と state 駆動の両方から呼ぶ。
+        /// 既に脱落で出ている場合は順位を上書きしない（冪等）。
         /// </summary>
         public void ShowIfHidden(int selfFinalRank)
         {
@@ -145,20 +143,6 @@ namespace Takoda99.View
             }
 
             Show(selfFinalRank);
-        }
-
-        /// <summary>
-        /// 全店ぶんの脱落イベントを Renderer から転送してもらう（自店以外も含む）。
-        /// <c>ClientState.Stores</c> は脱落時に FinalRank を保持しないため、ここで直接記録する。
-        /// </summary>
-        public void RecordElimination(string storeId, int finalRank)
-        {
-            finalRanks[storeId] = finalRank;
-
-            if (lastState != null && gameObject.activeInHierarchy)
-            {
-                RefreshRankList(lastState);
-            }
         }
 
         private void HandleStateChanged(ClientState state)
@@ -184,27 +168,17 @@ namespace Takoda99.View
         }
 
         /// <summary>
-        /// 指定順位の店名を返す。脱落済みで順位が確定していればそれを、まだなら現在生存中の店の
-        /// 現在順位から取得する（脱落時点で未確定な上位もリアルタイムに反映するため）。
+        /// 指定順位の店名を返す。
         /// </summary>
-        private string FindDisplayNameAtRank(ClientState state, int place)
+        /// <remarks>
+        /// v0.8.0 の <c>RankingRow.Rank</c> は**生存店なら現在順位・脱落店なら確定順位**を1本で持つため、
+        /// 生死で分岐せずそのまま引ける。予選版にあった「脱落店の確定順位を自前の辞書に記録しておく」
+        /// 処理（<c>RecordElimination</c>）は不要になった。
+        /// </remarks>
+        private static string FindDisplayNameAtRank(ClientState state, int place)
         {
-            foreach (var pair in finalRanks)
-            {
-                if (pair.Value != place)
-                {
-                    continue;
-                }
-
-                var eliminatedStore = state.Stores.FirstOrDefault(s => s.StoreId == pair.Key);
-                if (eliminatedStore != null)
-                {
-                    return eliminatedStore.DisplayName;
-                }
-            }
-
-            var aliveStore = state.Stores.FirstOrDefault(s => s.Alive && s.Rank == place);
-            return aliveStore?.DisplayName;
+            var row = state.Ranking.Rows.FirstOrDefault(r => r.Rank == place);
+            return row != null && !string.IsNullOrEmpty(row.DisplayName) ? row.DisplayName : null;
         }
 
         private void OnNextClicked()

@@ -1,7 +1,7 @@
 // 表示名を PlayerName の3テキスト（Left / Middle / Right）へ振り分ける純粋関数。
 // 表示名そのものはサーバー権威（MatchmakingJoin で確定した displayName）で、ここでは分割だけを行う。
 //
-// Unity は C# 9 までのため record struct（C# 10）を使わない（StoreVisualState.cs 冒頭の注記を参照）。
+// Unity は C# 9 までのため record struct（C# 10）を使わない（Unity のスクリプティングランタイム制約）。
 
 namespace Takoda99.View.ValueObjects
 {

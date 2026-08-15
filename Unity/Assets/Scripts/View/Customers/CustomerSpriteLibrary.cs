@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Takoda99.View.Customers
 {
     /// <summary>
-    /// 客の見た目の状態。我慢ゲージ由来の <c>CustomerMood</c> とは別物で、
+    /// 客の見た目の状態。行列内の位置と提供の有無から決まる表示状態で、
     /// こちらは「行列内での振る舞い」を表す表示専用の区分。
     /// </summary>
     public enum CustomerVisualState
@@ -26,7 +26,7 @@ namespace Takoda99.View.Customers
         /// <summary>喜び（提供直後）。</summary>
         Delighted = 3,
 
-        /// <summary>怒り（我慢ゲージ切れ間際）。</summary>
+        /// <summary>怒り。v0.8.0 では通常の試合中に発生しない（客が逃げないため）。</summary>
         Angry = 4,
 
         /// <summary>退店（離脱・提供後の立ち去り）。</summary>

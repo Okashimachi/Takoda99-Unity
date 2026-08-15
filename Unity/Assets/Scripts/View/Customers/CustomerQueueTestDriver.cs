@@ -11,7 +11,7 @@ namespace Takoda99.View.Customers
 {
     /// <summary>
     /// <see cref="CustomerQueueView"/> をサーバーなしで動かすテストドライバ。
-    /// サーバーから来る <c>CustomerArrived</c> / <c>CustomerLeft</c> / <c>OrderServed</c> に相当する操作を
+    /// サーバーから来る <c>CustomerArrived</c> / <c>OrderServed</c> に相当する操作を
     /// キーボードと自動送りで再現する。
     /// </summary>
     /// <remarks>
@@ -36,10 +36,6 @@ namespace Takoda99.View.Customers
         [SerializeField] private float _autoServeSeconds = 3f;
 
         [Header("客のパラメータ")]
-        [Tooltip("我慢の最大値（ms）。これを 1/3 切ると怒りの絵に変わる。")]
-        [Min(1000)]
-        [SerializeField] private int _patienceMaxMs = 12000;
-
         [Tooltip("注文を受けてから提供待機の絵に変わるまでの時間（秒）。サーバーの LocalOrderBegan 相当。")]
         [Min(0f)]
         [SerializeField] private float _orderingSeconds = 0.8f;
@@ -175,11 +171,6 @@ namespace Takoda99.View.Customers
                 Serve();
             }
 
-            if (keyboard.xKey.wasPressedThisFrame)
-            {
-                LeaveByTimeout();
-            }
-
             if (keyboard.cKey.wasPressedThisFrame)
             {
                 ClearAll();
@@ -198,7 +189,6 @@ namespace Takoda99.View.Customers
             _queue.Add(new CustomerQueueItem(
                 $"test-{_nextCustomerNumber++:D3}",
                 NextAttribute(),
-                _patienceMaxMs,
                 nowMs));
 
             Push();
@@ -220,23 +210,6 @@ namespace Takoda99.View.Customers
             // 本番と同じ順序：先に行列から抜き、そのあとで「提供された」と伝える。
             Push();
             _queueView.MarkServed(id);
-        }
-
-        /// <summary>我慢切れ離脱（<c>CustomerLeft</c> 相当）。先頭が怒って帰る。</summary>
-        public void LeaveByTimeout()
-        {
-            if (_queue.Count == 0)
-            {
-                return;
-            }
-
-            var id = _queue[0].CustomerId;
-            _queue.RemoveAt(0);
-            _servingCustomerId = null;
-            _headTimer = 0f;
-
-            Push();
-            _queueView.MarkLeft(id);
         }
 
         public void ClearAll()
@@ -277,7 +250,7 @@ namespace Takoda99.View.Customers
             GUILayout.BeginArea(new Rect(10f, 10f, width, height), GUI.skin.box);
 
             GUILayout.Label("客テストモード" + (_paused ? "（一時停止中）" : string.Empty));
-            GUILayout.Label("A: 来店 / Space: 提供して帰す / X: 我慢切れで帰す");
+            GUILayout.Label("A: 来店 / Space: 提供して帰す");
             GUILayout.Label("C: 全消し / P: 自動送りの一時停止");
             GUILayout.Label($"行列: {_queue.Count} 人（対応中: {_servingCustomerId ?? "なし"}）");
 

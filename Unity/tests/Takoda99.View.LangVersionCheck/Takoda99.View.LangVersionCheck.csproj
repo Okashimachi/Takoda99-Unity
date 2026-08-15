@@ -28,6 +28,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- 本選(v0.8.0)の値オブジェクトは pureC# の状態型を引数に取るため参照する。 -->
+    <ProjectReference Include="..\..\..\pureC#\src\Takoda99.Client\Takoda99.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--
       Takoda99.View.Tests と同じ範囲をリンクする。
       UnityEngine に依存するコード（MonoBehaviour 等）が Assets/ に増えても、

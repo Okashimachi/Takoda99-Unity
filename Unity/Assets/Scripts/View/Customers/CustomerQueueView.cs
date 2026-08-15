@@ -21,20 +21,13 @@ namespace Takoda99.View.Customers
 
         public CustomerAttribute Attribute { get; }
 
-        /// <summary>我慢の最大値（ms）。怒り表示の推定にだけ使う。</summary>
-        public int PatienceMaxMs { get; }
-
-        /// <summary>
-        /// 来店を受信したローカル時刻（<c>Time.realtimeSinceStartupAsDouble</c> 基準の ms）。
-        /// 我慢の起点ではない（我慢は先頭に来てから減る。<see cref="CustomerQueueView.TrackFront"/>）。
-        /// </summary>
+        /// <summary>来店を受信したローカル時刻（<c>Time.realtimeSinceStartupAsDouble</c> 基準の ms）。</summary>
         public long ArrivedAtLocalMs { get; }
 
-        public CustomerQueueItem(string customerId, CustomerAttribute attribute, int patienceMaxMs, long arrivedAtLocalMs)
+        public CustomerQueueItem(string customerId, CustomerAttribute attribute, long arrivedAtLocalMs)
         {
             CustomerId = customerId;
             Attribute = attribute;
-            PatienceMaxMs = patienceMaxMs;
             ArrivedAtLocalMs = arrivedAtLocalMs;
         }
     }
@@ -62,7 +55,7 @@ namespace Takoda99.View.Customers
         /// <summary>表示中の客。行列の並び順そのもの（添字0 = 先頭）。</summary>
         private readonly List<CustomerActor> _visible = new List<CustomerActor>();
 
-        /// <summary>表示中の客に対応する受信データ。我慢ゲージの推定に使う（客側には持たせない）。</summary>
+        /// <summary>表示中の客に対応する受信データ（客側には持たせない）。</summary>
         private readonly List<CustomerQueueItem> _visibleEntries = new List<CustomerQueueItem>();
 
         /// <summary><see cref="ClientState"/> からの写し取り用。毎回の確保を避けて使い回す。</summary>
@@ -77,10 +70,8 @@ namespace Takoda99.View.Customers
         private readonly List<CustomerActor> _exiting = new List<CustomerActor>();
 
         /// <summary>いま行列の先頭に居る客。表情の推定は先頭（＝注文中）の客だけが対象。</summary>
-        private string _frontCustomerId;
 
-        /// <summary>先頭に来た（＝注文した）ローカル時刻。我慢の推定はここを起点にする。</summary>
-        private long _frontSinceLocalMs;
+        /// <summary>先頭に来た（＝注文した）ローカル時刻。</summary>
 
         /// <summary>
         /// 客を生成する親。インスペクタ指定が最優先で、未設定なら Layout のアンカーの親、
@@ -173,7 +164,6 @@ namespace Takoda99.View.Customers
                 _scratch.Add(new CustomerQueueItem(
                     entry.View.CustomerId,
                     entry.View.Attribute,
-                    entry.View.PatienceMaxMs,
                     entry.ArrivedAtLocalMs));
             }
 
@@ -271,36 +261,12 @@ namespace Takoda99.View.Customers
                 actor.MoveTo(Localize(_layout.QueuePose(i)), _layout.AdvanceDuration, _advanceEase);
             }
 
-            TrackFront();
             ApplyStates(servingCustomerId);
             ApplySiblingOrder();
         }
 
         /// <summary>
-        /// 先頭の客の入れ替わりを見張り、入れ替わった瞬間を我慢の起点として記録する。
-        /// 行列に並んだ時刻を起点にすると、後ろで待っていた客が先頭に来た時点で既に怒った顔になる。
-        /// </summary>
-        private void TrackFront()
-        {
-            if (_visible.Count == 0)
-            {
-                _frontCustomerId = null;
-                return;
-            }
-
-            var frontId = _visible[0].CustomerId;
-            if (frontId == _frontCustomerId)
-            {
-                return;
-            }
-
-            _frontCustomerId = frontId;
-            _frontSinceLocalMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
-        }
-
-        /// <summary>
         /// 行列内の位置と現在の注文から、各客の表示状態を決める。
-        /// <see cref="CustomerVisualState.Angry"/> は我慢ゲージ推定なので <see cref="Update"/> 側で上書きする。
         /// </summary>
         private void ApplyStates(string servingCustomerId)
         {
@@ -338,34 +304,6 @@ namespace Takoda99.View.Customers
             foreach (var actor in _exiting)
             {
                 actor.transform.SetAsLastSibling();
-            }
-        }
-
-        private void Update()
-        {
-            if (_layout == null || _visible.Count == 0 || _visibleEntries.Count == 0)
-            {
-                return;
-            }
-
-            // 我慢が減るのは注文中の先頭客だけ。後ろに並んでいる客の顔は変えない。
-            var front = _visible[0];
-            if (front.State == CustomerVisualState.Delighted || front.State == CustomerVisualState.Leaving)
-            {
-                return;
-            }
-
-            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
-            var mood = CustomerMoodState.From(
-                front.CustomerId,
-                _visibleEntries[0].PatienceMaxMs,
-                _frontSinceLocalMs,
-                nowMs,
-                CustomerMoodThresholds.Default);
-
-            if (mood.Mood == CustomerMood.Angry || mood.Mood == CustomerMood.TurnedAway)
-            {
-                front.SetState(CustomerVisualState.Angry);
             }
         }
 
@@ -427,7 +365,11 @@ namespace Takoda99.View.Customers
             _pendingExits[customerId] = true;
         }
 
-        /// <summary>我慢切れによる離脱。この客は「怒り → 退店」で帰る。</summary>
+        /// <summary>
+        /// 提供されずに行列から消えた客を「怒り → 退店」で帰す。
+        /// **v0.8.0（本選）では客が逃げないため、通常の試合中には呼ばれない。**
+        /// MarkServed と対になる経路として、テストドライバ用に残している。
+        /// </summary>
         public void MarkLeft(string customerId)
         {
             if (!_pendingExits.ContainsKey(customerId))
@@ -454,7 +396,7 @@ namespace Takoda99.View.Customers
             _exiting.Clear();
             _byId.Clear();
             _pendingExits.Clear();
-            _frontCustomerId = null;
+
         }
 
         // ── 小物 ─────────────────────────────────────────────────────

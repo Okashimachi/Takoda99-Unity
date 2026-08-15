@@ -1,9 +1,9 @@
 // 仕様書: Unity/docs/.sdd/matchmaking/01-matchmaking-flow.md §2, §3
 // 試合前（マッチング画面）の状態区分と、その画面が必要とする表示用の値。
 //
-// Unity は C# 9 までのため record struct（C# 10）を使わない（StoreVisualState.cs 冒頭の注記を参照）。
+// Unity は C# 9 までのため record struct（C# 10）を使わない（Unity のスクリプティングランタイム制約）。
 // pureC# 側の型（ConnectionState / ClientPhase 等）を Unity から参照する方法が未確定のため、
-// 入力は素の値で受ける（pureC#/README.md §3、StoreVisualState.cs と同様の方針）。
+// 入力は素の値で受ける（pureC#/README.md §3）。
 
 using System.Collections.Generic;
 

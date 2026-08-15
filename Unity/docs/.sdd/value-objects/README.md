@@ -29,6 +29,19 @@ Unity側 View用派生状態（本ディレクトリの対象）
 | 06 | `06-sub-store-tile-state.md` | `SubStoreTileState`（信用ライフ3段階＋脱落直後／完全脱落） | 99店ミニ盤面の1マスの屋台画像・順位表示 |
 | 07 | `07-patience-gauge-state.md` | `PatienceGaugeState`（残量比＋色段階3段階） | 我慢ゲージのバーの長さと色 |
 
+### 2.1 本選（Proto v0.8.0）で追加したもの
+
+| # | ファイル | 派生値オブジェクト | 対応する画面要素 |
+|---|---|---|---|
+| 08 | [08-ranking-row-view-state.md](./08-ranking-row-view-state.md) | `RankingRowViewState` / `SelfRankViewState` / `RankingRowsBuilder` | ランキングの1行・自店HUD |
+| 09 | [09-cull-countdown-state.md](./09-cull-countdown-state.md) | `CullCountdownState`（残り秒・段階・境界・警告強度） | 足切り秒読みパネル |
+| 10 | [10-result-tier.md](./10-result-tier.md) | `ResultTier`（1位／2〜3位／4〜10位／11位以下） | リザルトの順位別演出分岐 |
+| 11 | [11-rank-ordinal.md](./11-rank-ordinal.md) | `RankOrdinal`（順位 → `1st` / `22nd` / `--`） | ランキング行の順位表記 |
+| 12 | [12-ranking-row-style.md](./12-ranking-row-style.md) | `RankingRowStyle` / `RankingRowTone`（寸法・フォント・配色） | 上位の金銀銅と段階的な大きさ、下位の足切り帯 |
+
+> **01・04〜07 は予選版で、本選では使われない**（信用ライフ・我慢ゲージ・相対評価の廃止に伴う）。
+> 撤去状況は [../cleanup/01-removed-views.md](../cleanup/01-removed-views.md) を参照。
+
 新しい派生値オブジェクトが増えたら、この表に行を追加してから仕様書ファイルを作る。
 
 > **例外：`StarRatingFill` / `PlayerNameLayout` は本ディレクトリに専用の仕様書を持たない。** どちらも `Assets/Scripts/View/ValueObjects/` にある純粋関数だが、`Store` の値を「区分」へ落とすのではなく、**1つのHUDの中でどう割り振るか**だけを決める配分計算である。仕様は [match-view/07-match-hud.md](../match-view/07-match-hud.md) §4・§5 が正典（`StarRatingFill` の入力となる `starRating` の定義は [05](./05-rank-bar-and-eval-delta-view-state.md)）。テストは他の値オブジェクトと同じ `Unity/tests/Takoda99.View.Tests` にある。
