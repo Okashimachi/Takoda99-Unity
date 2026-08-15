@@ -6,6 +6,7 @@
 |---|---|---|
 | 01 | [01-personal-result-view.md](./01-personal-result-view.md) | 保持データを表示するだけの個人成績画面（★予選のバグ対策） |
 | 02 | [02-result-rank-tier.md](./02-result-rank-tier.md) | リザルトの順位別演出分岐（1位／2〜3位／4〜10位／11位以下） |
+| 03 | [03-champion-modal-skip.md](./03-champion-modal-skip.md) | 優勝者に `MainGame` の脱落モーダルを出さず、`Result` へ直行させる |
 
 ## この2本が解いている問題
 

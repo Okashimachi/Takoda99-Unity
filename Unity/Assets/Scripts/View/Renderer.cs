@@ -351,7 +351,19 @@ namespace Takoda99.View
                 return;
             }
 
-            resultView?.Show(FindSelfFinalRank(entries, store?.State.SelfStoreId));
+            var selfFinalRank = FindSelfFinalRank(entries, store?.State.SelfStoreId);
+
+            // ★優勝者に脱落モーダルを出さない。
+            // 本選は120秒で1位も含む全店に StoreEliminatedBatch が飛ぶ（優勝＝最後まで残ったことの
+            // 表現であって、脱落イベント自体は全員に来る）。MatchEnd の到着を待って抑止する作りだと、
+            // batch → MatchEnd の順に届く間だけ優勝者に「脱落」が一瞬見える。順序に依存せず、
+            // finalRank だけで閉じる（リザルト演出の分岐基準 ResultTierRule と同じ考え方）。
+            if (selfFinalRank == 1)
+            {
+                return;
+            }
+
+            resultView?.Show(selfFinalRank);
         }
 
         /// <summary>個人成績の保持は Store の責務。画面に出すのは個人成績シーン。</summary>
