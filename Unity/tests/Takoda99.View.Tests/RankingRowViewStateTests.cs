@@ -79,7 +79,7 @@ namespace Takoda99.View.Tests
             // Ranking 側は古い値（差分の取りこぼしでズレ得る）。
             var state = RankingRowViewState.FromSelf(Row("s1", 40, score: 100, displayName: "自店"), 3, 900);
 
-            Assert.Equal("3", state.RankText);
+            Assert.Equal("3rd", state.RankText);
             Assert.Equal("900", state.ScoreText);
             Assert.Equal("自店", state.NameText);
             Assert.True(state.IsSelf);
@@ -153,7 +153,7 @@ namespace Takoda99.View.Tests
             var rows = RankingRowsBuilder.Build(Table99(), "store-50", 7, 888, 10);
 
             var self = rows.Single(r => r.IsSelf);
-            Assert.Equal("7", self.RankText);
+            Assert.Equal("7th", self.RankText);
             Assert.Equal("888", self.ScoreText);
         }
 
@@ -172,7 +172,7 @@ namespace Takoda99.View.Tests
             Assert.Equal(11, rows.Count);
             var self = rows[10];
             Assert.Equal("ghost", self.StoreId);
-            Assert.Equal("42", self.RankText);
+            Assert.Equal("42nd", self.RankText);
             Assert.Equal("300", self.ScoreText);
             // 表示名が解決できないので storeId をそのまま出す（空欄にしない）。
             Assert.Equal("ghost", self.NameText);
@@ -184,7 +184,7 @@ namespace Takoda99.View.Tests
             var rows = RankingRowsBuilder.Build(Table99(), "store-50", 50, 50, 10);
 
             Assert.Equal(
-                new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" },
+                new[] { "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th" },
                 rows.Take(10).Select(r => r.RankText));
         }
 
@@ -207,7 +207,7 @@ namespace Takoda99.View.Tests
             var rows = RankingRowsBuilder.BuildAll(Table99(), "store-50", 7, 888);
 
             var self = rows.Single(r => r.IsSelf);
-            Assert.Equal("7", self.RankText);
+            Assert.Equal("7th", self.RankText);
             Assert.Equal("888", self.ScoreText);
         }
 
@@ -228,7 +228,7 @@ namespace Takoda99.View.Tests
 
             Assert.Equal(2, rows.Count);
             Assert.False(rows[1].IsAlive);
-            Assert.Equal("40", rows[1].RankText);
+            Assert.Equal("40th", rows[1].RankText);
         }
 
         [Fact]
@@ -236,6 +236,104 @@ namespace Takoda99.View.Tests
         {
             Assert.Empty(RankingRowsBuilder.BuildAll(new RankingTable(), "s1", 1, 0));
             Assert.Empty(RankingRowsBuilder.BuildAll(null, "s1", 1, 0));
+        }
+
+        // ── RankingRowsBuilder.BuildBottom ──────────────────
+        // 仕様書: Unity/docs/.sdd/ranking-view/05-bottom-ranking-panel.md §8 テスト観点
+
+        [Fact]
+        public void BuildBottom_生存99で70から99位の30行()
+        {
+            var rows = RankingRowsBuilder.BuildBottom(Table99(), "store-50", 50, 50, aliveCount: 99, count: 30);
+
+            Assert.Equal(30, rows.Count);
+            Assert.Equal("70th", rows[0].RankText);
+            Assert.Equal("99th", rows[29].RankText);
+        }
+
+        [Fact]
+        public void BuildBottom_生存55で26から55位の30行()
+        {
+            var rows = RankingRowsBuilder.BuildBottom(Table99(), "store-50", 50, 50, aliveCount: 55, count: 30);
+
+            Assert.Equal(30, rows.Count);
+            Assert.Equal("26th", rows[0].RankText);
+            Assert.Equal("55th", rows[29].RankText);
+        }
+
+        [Fact]
+        public void BuildBottom_生存35で6から35位の30行_境界()
+        {
+            var rows = RankingRowsBuilder.BuildBottom(Table99(), "store-50", 50, 50, aliveCount: 35, count: 30);
+
+            Assert.Equal(30, rows.Count);
+            Assert.Equal("6th", rows[0].RankText);
+            Assert.Equal("35th", rows[29].RankText);
+        }
+
+        [Fact]
+        public void BuildBottom_生存20で1から30位_生存20と脱落10()
+        {
+            var rows = RankingRowsBuilder.BuildBottom(Table99(), "store-50", 50, 50, aliveCount: 20, count: 30);
+
+            Assert.Equal(30, rows.Count);
+            Assert.Equal("1st", rows[0].RankText);
+            Assert.Equal("30th", rows[29].RankText);
+        }
+
+        [Fact]
+        public void BuildBottom_生存10で1から30位_生存10と脱落20()
+        {
+            var rows = RankingRowsBuilder.BuildBottom(Table99(), "store-50", 50, 50, aliveCount: 10, count: 30);
+
+            Assert.Equal(30, rows.Count);
+            Assert.Equal("1st", rows[0].RankText);
+            Assert.Equal("30th", rows[29].RankText);
+        }
+
+        [Fact]
+        public void BuildBottom_生存0でも例外が出ない()
+        {
+            var rows = RankingRowsBuilder.BuildBottom(Table99(), "store-50", 50, 50, aliveCount: 0, count: 30);
+
+            Assert.Equal(30, rows.Count);
+            Assert.Equal("1st", rows[0].RankText);
+        }
+
+        [Fact]
+        public void BuildBottom_Rowsが30件未満でも例外が出ずあるだけ返る()
+        {
+            var table = new RankingTable
+            {
+                Rows = new List<RankingRow>
+                {
+                    Row("s1", 1),
+                    Row("s2", 2),
+                },
+            };
+
+            var rows = RankingRowsBuilder.BuildBottom(table, "s1", 1, 0, aliveCount: 2, count: 30);
+
+            Assert.Equal(2, rows.Count);
+        }
+
+        [Fact]
+        public void BuildBottom_並びがRank昇順のまま()
+        {
+            var rows = RankingRowsBuilder.BuildBottom(Table99(), "store-50", 50, 50, aliveCount: 99, count: 30);
+
+            var ranks = rows.Select(r => int.Parse(new string(r.RankText.TakeWhile(char.IsDigit).ToArray()))).ToList();
+            var sorted = new List<int>(ranks);
+            sorted.Sort();
+
+            Assert.Equal(sorted, ranks);
+        }
+
+        [Fact]
+        public void BuildBottom_空のRankingTableなら空リストになる()
+        {
+            Assert.Empty(RankingRowsBuilder.BuildBottom(new RankingTable(), "s1", 1, 0, aliveCount: 0, count: 30));
+            Assert.Empty(RankingRowsBuilder.BuildBottom(null, "s1", 1, 0, aliveCount: 0, count: 30));
         }
     }
 }

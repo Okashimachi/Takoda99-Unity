@@ -76,7 +76,7 @@ namespace Takoda99.View.ValueObjects
             var id = storeId ?? string.Empty;
             return new RankingRowViewState(
                 id,
-                rank >= 1 ? rank.ToString() : UnknownRankText,
+                RankOrdinal.Of(rank),
                 string.IsNullOrEmpty(displayName) ? id : displayName,
                 score.ToString(),
                 isSelf,
@@ -238,6 +238,39 @@ namespace Takoda99.View.ValueObjects
             var rows = ranking.Rows;
             var result = new List<RankingRowViewState>(rows.Count);
             for (var i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                result.Add(IsSelf(row.StoreId, selfStoreId)
+                    ? RankingRowViewState.FromSelf(row, authoritativeRank, authoritativeScore)
+                    : RankingRowViewState.From(row, false));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// 下位 count 件（ranking-view/05 §5.1）。生存者が count 人を切ったら、
+        /// 確定順位を持つ脱落済みの店で埋める。start = Max(0, aliveCount - count)。再ソートしない。
+        /// </summary>
+        public static IReadOnlyList<RankingRowViewState> BuildBottom(
+            RankingTable ranking,
+            string selfStoreId,
+            int authoritativeRank,
+            int authoritativeScore,
+            int aliveCount,
+            int count)
+        {
+            if (ranking == null || ranking.Rows.Count == 0 || count <= 0)
+            {
+                return Array.Empty<RankingRowViewState>();
+            }
+
+            var rows = ranking.Rows;
+            var start = Math.Max(0, aliveCount - count);
+            var end = Math.Min(rows.Count, start + count);
+
+            var result = new List<RankingRowViewState>(Math.Max(0, end - start));
+            for (var i = start; i < end; i++)
             {
                 var row = rows[i];
                 result.Add(IsSelf(row.StoreId, selfStoreId)
