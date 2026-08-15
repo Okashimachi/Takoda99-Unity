@@ -7,6 +7,7 @@
 | 01 | [01-score-and-self-rank.md](./01-score-and-self-rank.md) | `MatchStart` / `EvaluationUpdate` | 自店のスコア・順位・生存数・表示名キャッシュ |
 | 02 | [02-ranking-store.md](./02-ranking-store.md) | `RankingSnapshot` / `RankingDelta` | 全99店のランキング表 |
 | 03 | [03-cull-warning.md](./03-cull-warning.md) | `ForcedEliminationWarning` / `StoreEliminatedBatch` | 足切りの秒読みと一斉脱落 |
+| 04 | [04-unresolved-store-id.md](./04-unresolved-store-id.md) | 上記すべて（storeId を運ぶ受信） | 表示名キャッシュで解決できない storeId の検知（状態は持たない） |
 
 ## 既存仕様書との関係（★実装者へ）
 
