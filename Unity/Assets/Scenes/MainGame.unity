@@ -1568,25 +1568,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.MainStoreView
   noren: {fileID: 535156629}
-  norenLife1: {fileID: -4461509465781592990, guid: 4d7449215977f174082c387d012b6378, type: 3}
-  norenLife2: {fileID: 3182578120116566698, guid: fff1b4c689b2ef049a95f80745a5d399, type: 3}
-  norenLife3: {fileID: -9131249852297961929, guid: 8555b3b8959c6894a8f665527543f297, type: 3}
   stand: {fileID: 2128537971}
-  standLife0: {fileID: -1351954326911418188, guid: a955195e3a0e035448309697cb645428, type: 3}
-  standLife1: {fileID: -473885338998027205, guid: 9926c27eb106f944a9b777e9f2f78138, type: 3}
-  standLife2: {fileID: -2791788260032625120, guid: 99125c4e372847a45b6a3c0bc65033e6, type: 3}
-  standLife3: {fileID: 3428227490999678362, guid: 0f68f96ce46e1e748bdbc89dbdb90ac2, type: 3}
-  lanterns:
-  - {fileID: 4142350064945242338}
-  - {fileID: 439409217}
-  - {fileID: 785836145}
-  lanternOn: {fileID: 8066521740082038948, guid: 057370953a2069d4097469fe3af652f9, type: 3}
-  lanternOff: {fileID: -4319831604554168870, guid: 0d051a9a5b940e34dac9eb5490524b21, type: 3}
-  griddle: {fileID: 2066693300}
-  griddleNormal: {fileID: 7394339780157680296, guid: 5a80c609e40ca81409a9b2c69be85270, type: 3}
-  griddleHot: {fileID: -4017534065207954642, guid: fd6b39ddced07a94aadf905599334417, type: 3}
   wordHiragana: {fileID: 176352977}
   wordRoma: {fileID: 1833503924}
+  wordLargeMaxLength: 3
+  wordMediumMaxLength: 6
+  wordFontSizeLarge: 140
+  wordFontSizeMedium: 100
+  wordFontSizeSmall: 72
+  romaFontScale: 0.45
   typedAlpha: 0.35
   orderNumeratorText: {fileID: 789756507}
   orderDenominatorText: {fileID: 1831607082}
@@ -2848,17 +2838,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1439423696686487814, guid: b8f4369910a80544d88b59dc095df801, type: 3}
   m_PrefabInstance: {fileID: 439409215}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &439409217 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2815578804602224844, guid: b8f4369910a80544d88b59dc095df801, type: 3}
-  m_PrefabInstance: {fileID: 439409215}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!1 &452908432
 GameObject:
   m_ObjectHideFlags: 0
@@ -4237,7 +4216,6 @@ MonoBehaviour:
   _autoArrive: 1
   _arriveIntervalSeconds: 1.5
   _autoServeSeconds: 3
-  _patienceMaxMs: 12000
   _orderingSeconds: 0.8
   _attributeCycle: 
   _showOverlay: 1
@@ -4720,17 +4698,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1439423696686487814, guid: b8f4369910a80544d88b59dc095df801, type: 3}
   m_PrefabInstance: {fileID: 785836143}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &785836145 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2815578804602224844, guid: b8f4369910a80544d88b59dc095df801, type: 3}
-  m_PrefabInstance: {fileID: 785836143}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!1 &789756505
 GameObject:
   m_ObjectHideFlags: 0
@@ -6016,7 +5983,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1093600143
 RectTransform:
   m_ObjectHideFlags: 0
@@ -10662,14 +10629,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Renderer
   mainStore: {fileID: 201384383}
-  subStoreBoard: {fileID: 1781543613}
-  patienceTimer: {fileID: 957739886}
   resultView: {fileID: 193663050}
-  rankBar: {fileID: 186412821}
   customerQueue: {fileID: 1747988713}
   orderBubble: {fileID: 187409416}
-  starRating: {fileID: 129391243}
   gameBefore: {fileID: 963801346}
+  selfRank: {fileID: 0}
+  rankingPanel: {fileID: 0}
+  cullPanel: {fileID: 0}
+  massElim: {fileID: 0}
 --- !u!4 &1753422876
 Transform:
   m_ObjectHideFlags: 0
@@ -13382,17 +13349,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Sample.MainGameViewSampleDriver
   mainStore: {fileID: 201384383}
   takoyakiStand: {fileID: 1234039567}
-  subStoreBoard: {fileID: 1781543613}
-  creditLife: 3
-  evalNormalized: 0.5
-  alive: 1
+  selfRank: {fileID: 0}
+  rankingPanel: {fileID: 0}
+  cullPanel: {fileID: 0}
+  spectatorRanking: {fileID: 0}
+  massElim: {fileID: 0}
   sampleHiragana: "\u305F\u3053\u3084\u304D"
   sampleRoma: takoyaki
   typedHiraganaLength: 0
   typedRomaLength: 0
   typedWordCount: 0
+  orderCount: 6
   selfStoreId: 50
-  eliminateStoreCount: 0
+  selfRankValue: 50
+  selfScore: 1200
+  aliveCount: 99
+  stageIndex: 1
+  stageTotal: 6
+  untilMs: 20000
+  cutLineRank: 51
+  selfAtRisk: 0
+  shuffleStress: 0
 --- !u!1001 &1516726618833444181
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13614,17 +13591,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1439423696686487814, guid: b8f4369910a80544d88b59dc095df801, type: 3}
   m_PrefabInstance: {fileID: 4142350064945242336}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &4142350064945242338 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2815578804602224844, guid: b8f4369910a80544d88b59dc095df801, type: 3}
-  m_PrefabInstance: {fileID: 4142350064945242336}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!1001 &4493518088014470698
 PrefabInstance:
   m_ObjectHideFlags: 0
