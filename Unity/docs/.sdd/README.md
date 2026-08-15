@@ -71,6 +71,23 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | 11 | [hud/02-order-word-emphasis.md](./hud/02-order-word-emphasis.md) | 4 | ✅ |
 | — | [cleanup/01-removed-views.md](./cleanup/01-removed-views.md) | 各PRに内包 | ✅ |
 
+**第2陣（ランキング表示の作り込み・★次に実装するのはここ）**
+
+企画変更で「上位は順位に応じて豪華に」「下位は足切りを事前警告」が入ったことに伴う差分。
+**1〜11 を置き換えるものではなく、その上に積む。**
+
+| # | 仕様書 | 依存先 | 実装 |
+|---|---|---|---|
+| 12 | [value-objects/11-rank-ordinal.md](./value-objects/11-rank-ordinal.md) | なし | ⬜ |
+| 13 | [value-objects/12-ranking-row-style.md](./value-objects/12-ranking-row-style.md) | なし | ⬜ |
+| 14 | [ranking-view/04-top-ranking-slots.md](./ranking-view/04-top-ranking-slots.md) | 12, 13, 5 | ⬜ |
+| 15 | [ranking-view/05-bottom-ranking-panel.md](./ranking-view/05-bottom-ranking-panel.md) | 12, 13, 5 | ⬜ |
+| 16 | [ranking-view/06-rank-swap-animation.md](./ranking-view/06-rank-swap-animation.md) | 14, 15 | ⬜ |
+
+> **12・13 から着手する。** どちらも EditMode テストだけで完結し、
+> ここが固まると 14〜16 は「値を描くだけ」になる（1〜3 と同じ進め方）。
+> 14 と 15 は互いに独立しているので並行できる。16 は両方が終わってから。
+
 > **「実装」列の ✅ はスクリプトの実装が済んだことを指す。** 4〜11 は
 > **シーン・Prefab への配置と Inspector 配線が別途必要**（Unity エディタを開いて行う作業であり、
 > スクリプトだけでは画面に出ない）。残作業は [cleanup/01-removed-views.md](./cleanup/01-removed-views.md) §4 と
