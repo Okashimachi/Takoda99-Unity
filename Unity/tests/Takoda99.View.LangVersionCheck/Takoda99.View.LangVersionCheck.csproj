@@ -38,8 +38,18 @@
       UnityEngine に依存するコード（MonoBehaviour 等）が Assets/ に増えても、
       このプロジェクトのリンク対象は ValueObjects に限り続けること
       （UnityEngine の参照を持たないため、含めるとコンパイルできない）。
+
+      RankingRowStyle.cs は value-objects/12-ranking-row-style.md §3 のとおり
+      UnityEngine.Vector2 に依存する唯一の ValueObjects であるため除外する
+      （Takoda99.View.Tests.csproj も同じ理由で除外している）。
+
+      ⚠ 除外したぶん、このファイルだけは C# 9 互換性の機械検査が効かない。
+      編集するときは record struct / init / with / target-typed new を書かないこと
+      （Unity のコンパイラが受け付けない）。検査は Unity エディタでの
+      コンパイルが最初の砦になる。
     -->
-    <Compile Include="../../Assets/Scripts/View/ValueObjects/*.cs">
+    <Compile Include="../../Assets/Scripts/View/ValueObjects/*.cs"
+             Exclude="../../Assets/Scripts/View/ValueObjects/RankingRowStyle.cs">
       <Link>ValueObjects/%(Filename).cs</Link>
     </Compile>
   </ItemGroup>
