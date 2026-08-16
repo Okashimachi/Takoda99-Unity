@@ -109,6 +109,20 @@ namespace Takoda99.View.ValueObjects
                 tone);
         }
 
+        /// <summary>
+        /// オーディエンスパネル（ranking-view/07 §5.3）の1セル用。61×44 相当の正方形に近い箱へ縦積みする。
+        /// 3つのテキストは中央 (0.5, 0.5) アンカーが前提（LostRanker.prefab 側で揃えてある）。
+        /// </summary>
+        public static RankingRowStyle ForAudienceCell(Vector2 cellSize, RankingRowTone tone)
+        {
+            return new RankingRowStyle(
+                cellSize, 11f, 10f, 10f,
+                new Vector2(0f, 14f), new Vector2(58f, 14f),
+                new Vector2(0f, 0f), new Vector2(58f, 14f),
+                new Vector2(0f, -14f), new Vector2(58f, 14f),
+                tone);
+        }
+
         /// <summary>同じ寸法・フォントサイズ・テキスト配置のまま Tone だけ差し替える。</summary>
         public RankingRowStyle WithTone(RankingRowTone tone)
         {

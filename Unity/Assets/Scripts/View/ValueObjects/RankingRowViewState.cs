@@ -312,6 +312,39 @@ namespace Takoda99.View.ValueObjects
             return false;
         }
 
+        /// <summary>
+        /// 先頭 skipCount 件を飛ばして count 件（ranking-view/07 §4）。並びは Rank 昇順のまま再ソートしない。
+        /// 足りなければあるだけ返す（例外を出さない）。
+        /// </summary>
+        public static IReadOnlyList<RankingRowViewState> BuildRange(
+            RankingTable ranking,
+            string selfStoreId,
+            int authoritativeRank,
+            int authoritativeScore,
+            int skipCount,
+            int count)
+        {
+            if (ranking == null || ranking.Rows.Count == 0 || count <= 0)
+            {
+                return Array.Empty<RankingRowViewState>();
+            }
+
+            var rows = ranking.Rows;
+            var start = Math.Max(0, skipCount);
+            var end = Math.Min(rows.Count, start + count);
+
+            var result = new List<RankingRowViewState>(Math.Max(0, end - start));
+            for (var i = start; i < end; i++)
+            {
+                var row = rows[i];
+                result.Add(IsSelf(row.StoreId, selfStoreId)
+                    ? RankingRowViewState.FromSelf(row, authoritativeRank, authoritativeScore)
+                    : RankingRowViewState.From(row, false));
+            }
+
+            return result;
+        }
+
         private static bool IsSelf(string storeId, string selfStoreId)
             => !string.IsNullOrEmpty(selfStoreId) && string.Equals(storeId, selfStoreId, StringComparison.Ordinal);
     }
