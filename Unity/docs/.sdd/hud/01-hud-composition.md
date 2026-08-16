@@ -170,10 +170,34 @@ if (state.MatchEnded && resultView != null)
 // Assets/Scripts/View/SelfRankView.cs
 public sealed class SelfRankView : MonoBehaviour
 {
-    /// <summary>順位・スコア・生存数をまとめて反映する。値が変わらないフレームは ToString ごと省く。</summary>
-    public void SetState(SelfRankViewState state);
+    [SerializeField] private RankingRowPalette palette;      // ランキング行と同じアセットを割り当てる
+    [SerializeField] private int bottomRangeCount = 30;      // 下位パネルの visibleCount と揃える
+
+    /// <summary>state から表示値と順位の色を作って反映する（Renderer はこれを呼ぶ）。</summary>
+    public void Apply(ClientState state);
+
+    /// <summary>順位・スコア・生存数と順位テキストの色を反映する。値が変わらないフレームは ToString ごと省く。</summary>
+    public void SetState(SelfRankViewState state, RankingRowTone tone);
 }
 ```
+
+### 5.1 順位テキストの色
+
+**順位が主役なので、順位に色を持たせる。** 色は `RankingRowPalette`（ScriptableObject）から引き、
+**ランキング行と同じアセットを割り当てる**——金銀銅も警告色も、HUDと一覧で別々に持たない。
+
+| 順位・状態 | `Tone` | 既定色 |
+|---|---|---|
+| 1位 / 2位 / 3位 | `Gold` / `Silver` / `Bronze` | 金 / 銀 / 銅 |
+| 脱落済み（4位以下） | `Dead` | 灰 |
+| `CutStoreIds` に自店が含まれる | `Doomed` | 赤 |
+| 下位パネルの表示範囲に入っている | `AtRisk` | 橙 |
+| 4〜10位 | `Upper` | （既定は白） |
+| 11位以下・順位未確定 | `Normal` | （既定は白） |
+
+判定順と根拠は [../value-objects/12 §4.2.1](../value-objects/12-ranking-row-style.md)。
+**順位と `CutLineRank` を比較しない**（危険の根拠は `CutStoreIds` と下位パネルの表示範囲だけ）。
+色を変えるのは**順位テキストだけ**で、スコア・生存数は据え置く（色の意味を1か所に集約する）。
 
 `SelfRankViewState` は [value-objects/08-ranking-row-view-state.md](../value-objects/08-ranking-row-view-state.md) に併記する。
 
@@ -181,7 +205,7 @@ public sealed class SelfRankView : MonoBehaviour
 |---|---|
 | 順位 | `Rank <= 0` は「順位未確定」として `--` を出す（0位は存在しない） |
 | スコア | 負値をそのまま出す（`-30` 等）。0でクランプしない |
-| 生存数 | `AliveCount` をそのまま。「残り◯店」 |
+| 生存数 | `AliveCount` を**数字だけ**（`55`）。「残り」「店」はシーン側の固定テキストで添える（[../value-objects/08](../value-objects/08-ranking-row-view-state.md)） |
 
 **Canvas の分離**：`MainStoreCanvas` は打鍵1回ごとにお題・注文カウンタが再描画される。`SelfRankView` は更新頻度が低い（2〜4Hz）ため、**入れ子Canvasで切り離す**（既存 `match-view/07-match-hud.md` §1 で星評価に対して行ったのと同じ理由）。ランキングパネル・秒読みパネルも同様に分ける。
 
@@ -197,6 +221,8 @@ Unity の EditMode テスト（`Unity/tests/Takoda99.View.Tests/`）で検証で
 | # | 観点 | 方法 |
 |---|---|---|
 | 1 | `Rank <= 0` で `--` が出る | `SelfRankViewState` のテスト |
+| 1b | 1〜3位で金銀銅、淘汰確定で赤、下位範囲で橙、脱落で灰になる | 手動（`MainGameViewSampleDriver` の 1 / 2 / 3 キー） |
+| 1c | 優勝（1位で試合終了）しても順位が灰色にならない | 手動（§5.1 の優先順位） |
 | 2 | 負のスコアがそのまま文字列になる | 同上 |
 | 3 | 撤去した参照が残っていない | `Assets/Scripts` を `CreditLife` `StarRating` `PatienceMaxMs` `Normalized` `StormThresholdPct` で grep して0件 |
 | 4 | `MatchEnd` 受信でモーダルが出る（`PersonalResult` 未受信でも） | `MainGameViewSampleDriver` にケースを追加して手動確認 |

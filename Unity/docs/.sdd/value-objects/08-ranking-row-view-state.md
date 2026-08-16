@@ -57,7 +57,7 @@ public readonly struct SelfRankViewState : System.IEquatable<SelfRankViewState>
 {
     public string RankText { get; }        // "12" / "--"
     public string ScoreText { get; }       // "1200" / "-30"
-    public string AliveCountText { get; }  // "残り 55 店"
+    public string AliveCountText { get; }  // "55"（数字だけ。単位はシーン側の固定テキスト）
 
     public static SelfRankViewState From(int rank, int score, int aliveCount);
     public bool Equals(SelfRankViewState other);
@@ -68,6 +68,7 @@ public readonly struct SelfRankViewState : System.IEquatable<SelfRankViewState>
 |---|---|
 | `rank <= 0` | `RankText = "--"` |
 | `aliveCount <= 0` | `AliveCountText = ""`（0店は表示しない） |
+| `aliveCount >= 1` | `AliveCountText = "55"`。**数字だけを入れる。**「残り」「店」を文字列に混ぜない（レイアウト・文言の変更でVOを触らないため。単位はシーンの固定テキストで添える） |
 | `score` | そのまま。負値可 |
 
 ## 4. 表示行の組み立て（純関数）

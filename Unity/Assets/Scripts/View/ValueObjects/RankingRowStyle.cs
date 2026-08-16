@@ -64,14 +64,29 @@ namespace Takoda99.View.ValueObjects
             Tone = tone;
         }
 
-        /// <summary>上位パネル用。順位だけで決まる（value-objects/12 §3.2・§4.1）。</summary>
+        /// <summary>
+        /// フォントを「一回り」小さくする係数。**「一回り小さく」＝1回、「二回り」＝2回掛ける。**
+        ///
+        /// <para>
+        /// 段ごとの比（1位が大きく7位が小さい／上段:下段 = 2:3）を崩さずに全体だけ縮めるため、
+        /// 各値を個別に書き換えるのではなく**係数を1つ**にしている。
+        /// もう一回り縮める指示が来たら、掛ける回数を増やすだけで比は保たれる。
+        /// </para>
+        /// </summary>
+        private const float FontStepDown = 0.9f;
+
+        /// <summary>
+        /// 上位パネル用。順位だけで決まる（value-objects/12 §3.2・§4.1）。
+        /// フォントサイズは Prefab 採寸の基準値へ <see cref="FontStepDown"/> を1回掛けた値
+        /// （＝一回り小さい）。
+        /// </summary>
         public static RankingRowStyle ForTopRank(int rank)
         {
             if (rank == 1 || rank == 2 || rank == 3)
             {
                 var tone = rank == 1 ? RankingRowTone.Gold : rank == 2 ? RankingRowTone.Silver : RankingRowTone.Bronze;
                 return new RankingRowStyle(
-                    new Vector2(230f, 44f), 20f, 24f, 20f,
+                    new Vector2(230f, 44f), 20f * FontStepDown, 24f * FontStepDown, 20f * FontStepDown,
                     new Vector2(35f, 0f), new Vector2(60f, 40f),
                     new Vector2(-5f, 0f), new Vector2(130f, 40f),
                     new Vector2(-35f, 0f), new Vector2(60f, 40f),
@@ -82,7 +97,7 @@ namespace Takoda99.View.ValueObjects
             {
                 // シーン参照 Slot04〜06 採寸：箱が縦長(130x66)になるぶん、Rank/Score を上下に振り分ける。
                 return new RankingRowStyle(
-                    new Vector2(130f, 66f), 16f, 20f, 14f,
+                    new Vector2(130f, 66f), 16f * FontStepDown, 20f * FontStepDown, 14f * FontStepDown,
                     new Vector2(35f, 10f), new Vector2(60f, 40f),
                     new Vector2(0f, 0f), new Vector2(110f, 40f),
                     new Vector2(-35f, -10f), new Vector2(60f, 40f),
@@ -91,7 +106,7 @@ namespace Takoda99.View.ValueObjects
 
             // 7〜10位、11位以上、0位以下（不明）はすべて同じ見た目（§4.1）。シーン参照 Slot07〜10 採寸。
             return new RankingRowStyle(
-                new Vector2(100f, 50f), 12f, 16f, 12f,
+                new Vector2(100f, 50f), 12f * FontStepDown, 16f * FontStepDown, 12f * FontStepDown,
                 new Vector2(35f, 3.5f), new Vector2(60f, 40f),
                 new Vector2(0f, 0f), new Vector2(110f, 40f),
                 new Vector2(-35f, -3.5f), new Vector2(60f, 40f),
@@ -109,17 +124,56 @@ namespace Takoda99.View.ValueObjects
                 tone);
         }
 
+        /// <summary>セルの左右に空ける余白（px）。文字が枠線に触らないための最小限。</summary>
+        private const float AudienceCellPadding = 2f;
+
         /// <summary>
-        /// オーディエンスパネル（ranking-view/07 §5.3）の1セル用。61×44 相当の正方形に近い箱へ縦積みする。
-        /// 3つのテキストは中央 (0.5, 0.5) アンカーが前提（LostRanker.prefab 側で揃えてある）。
+        /// セルの高さのうち上段（順位＋スコア）が取る比率。下段（屋号）は残り。
+        /// **2:3（上段0.4・下段0.6）が要件**（ranking-view/07 §5.3）。屋号を大きく見せるための配分。
+        /// </summary>
+        private const float AudienceTopRowRatio = 0.4f;
+
+        /// <summary>
+        /// 各段の高さに対するフォントサイズの割合。段の比率がそのままフォントの比率になる。
+        /// 基準 0.7 に <see cref="FontStepDown"/> を**2回**掛けた値（＝二回り小さい）。
+        /// </summary>
+        private const float AudienceFontFillRatio = 0.7f * FontStepDown * FontStepDown;
+
+        /// <summary>
+        /// オーディエンスパネル（ranking-view/07 §5.3）の1セル用。**上段に順位とスコアを並べ、その下に屋号**の2段。
+        ///
+        /// <para>
+        /// すべて <paramref name="cellSize"/> からの比率で出す。**固定値を持たない**ので、
+        /// `AudiencePanel` の寸法が変わってもセルの中身がそのまま追従する（07 §5.2）。
+        /// </para>
+        /// <para>
+        /// 3つのテキストは中央 (0.5, 0.5) アンカーが前提（`LostRanker.prefab` 側で揃えてある）。
+        /// 上段の左右振り分けは Prefab 側の水平アラインメント（順位=左・スコア=右）に任せ、
+        /// ここでは幅を半分ずつ与えるだけにする。
+        /// </para>
         /// </summary>
         public static RankingRowStyle ForAudienceCell(Vector2 cellSize, RankingRowTone tone)
         {
+            var innerWidth = Mathf.Max(1f, cellSize.x - AudienceCellPadding * 2f);
+            var topHeight = cellSize.y * AudienceTopRowRatio;
+            var nameHeight = cellSize.y - topHeight;
+
+            // 上段は箱の上辺に、下段は下辺に寄せる（中心からの offset で置く）。
+            var topY = cellSize.y * 0.5f - topHeight * 0.5f;
+            var nameY = nameHeight * 0.5f - cellSize.y * 0.5f;
+
+            // 上段は順位とスコアで半分ずつ。中央から左右へ 1/4 幅ずつずらすと隙間なく二分割になる。
+            var halfWidth = innerWidth * 0.5f;
+            var halfOffset = innerWidth * 0.25f;
+
             return new RankingRowStyle(
-                cellSize, 11f, 10f, 10f,
-                new Vector2(0f, 14f), new Vector2(58f, 14f),
-                new Vector2(0f, 0f), new Vector2(58f, 14f),
-                new Vector2(0f, -14f), new Vector2(58f, 14f),
+                cellSize,
+                topHeight * AudienceFontFillRatio,
+                nameHeight * AudienceFontFillRatio,
+                topHeight * AudienceFontFillRatio,
+                new Vector2(-halfOffset, topY), new Vector2(halfWidth, topHeight),
+                new Vector2(0f, nameY), new Vector2(innerWidth, nameHeight),
+                new Vector2(halfOffset, topY), new Vector2(halfWidth, topHeight),
                 tone);
         }
 
@@ -169,6 +223,73 @@ namespace Takoda99.View.ValueObjects
             }
 
             return RankingRowTone.Normal;
+        }
+
+        /// <summary>
+        /// 自店HUD（<c>SelfRankView</c> の順位テキスト）の配色区分。
+        /// 色そのものは持たない（<c>RankingRowPalette</c> から引く。§3.1）。
+        ///
+        /// <para>
+        /// **一覧の行（§4.2）とは優先順位が1点だけ違う。** メダル順位（1〜3位）を生死より先に見る。
+        /// 一覧では「脱落した金色の行」が並ぶと生存者と見分けが付かないため <c>Dead</c> を最優先にしているが、
+        /// 自店HUDは1つしかなく、**順位そのものが主役**（hud/01 §5）。
+        /// 3位で脱落したら銅色が残るほうが確定順位の表現として正しく、
+        /// 優勝者の順位が灰色になる事故も避けられる。
+        /// </para>
+        /// <para>
+        /// 順位と <c>CutLineRank</c> の比較はここでも行わない。危険の根拠は
+        /// <paramref name="isCutTarget"/>（サーバーの <c>CutStoreIds</c>）と
+        /// <paramref name="isInBottomRange"/>（下位パネルの表示範囲）だけ（§4.2）。
+        /// </para>
+        /// </summary>
+        /// <param name="rank">自店の順位（サーバー権威）。0 以下は未確定。</param>
+        /// <param name="alive">自店が生存中か。</param>
+        /// <param name="isCutTarget"><c>ForcedEliminationWarning.CutStoreIds</c> に自店が含まれるか。</param>
+        /// <param name="isInBottomRange">下位パネルの表示範囲に自店が入っているか。</param>
+        public static RankingRowTone ResolveSelfRankTone(
+            int rank, bool alive, bool isCutTarget, bool isInBottomRange)
+        {
+            // 順位未確定（試合前・未受信）。色を付けない。
+            if (rank <= 0)
+            {
+                return RankingRowTone.Normal;
+            }
+
+            // メダル順位は生死を問わず残す（上の注記）。
+            if (rank == 1)
+            {
+                return RankingRowTone.Gold;
+            }
+
+            if (rank == 2)
+            {
+                return RankingRowTone.Silver;
+            }
+
+            if (rank == 3)
+            {
+                return RankingRowTone.Bronze;
+            }
+
+            // ここから §4.2 と同じ優先順位。
+            if (!alive)
+            {
+                return RankingRowTone.Dead;
+            }
+
+            if (isCutTarget)
+            {
+                return RankingRowTone.Doomed;
+            }
+
+            if (isInBottomRange)
+            {
+                return RankingRowTone.AtRisk;
+            }
+
+            // 4〜10位は上位扱い、11位以下は帯なし。
+            // ★ForTopRank(rank).Tone を流用しない（あちらは 11 位以上も Upper を返すため）。
+            return rank <= 10 ? RankingRowTone.Upper : RankingRowTone.Normal;
         }
 
         public bool Equals(RankingRowStyle other)

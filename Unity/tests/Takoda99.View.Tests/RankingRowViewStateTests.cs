@@ -103,7 +103,8 @@ namespace Takoda99.View.Tests
         [Fact]
         public void 自店HUDの生存数は0以下なら表示しない()
         {
-            Assert.Equal("残り 55 店", SelfRankViewState.From(12, 1200, 55).AliveCountText);
+            // 数字だけを出す（「残り」「店」はシーン側の固定テキスト）。
+            Assert.Equal("55", SelfRankViewState.From(12, 1200, 55).AliveCountText);
             Assert.Equal(string.Empty, SelfRankViewState.From(12, 1200, 0).AliveCountText);
         }
 
