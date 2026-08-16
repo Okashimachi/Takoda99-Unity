@@ -31,63 +31,103 @@ namespace Takoda99.View.ValueObjects
 
         public float ScoreFontSize { get; }
 
+        // RankText/NameText/ScoreText 各自の RectTransform.anchoredPosition / sizeDelta。
+        // パネルの Size だけ変えてもテキストの位置・幅は追従しないため、順位段階ごとに個別に持つ
+        // （もともとシーンの非アクティブな参照パネル Slots/Slot04〜10 に採寸されていた値）。
+        public Vector2 RankOffset { get; }
+        public Vector2 RankSize { get; }
+        public Vector2 NameOffset { get; }
+        public Vector2 NameSize { get; }
+        public Vector2 ScoreOffset { get; }
+        public Vector2 ScoreSize { get; }
+
         public RankingRowTone Tone { get; }
 
-        private RankingRowStyle(Vector2 size, float rankFontSize, float nameFontSize, float scoreFontSize, RankingRowTone tone)
+        private RankingRowStyle(
+            Vector2 size,
+            float rankFontSize, float nameFontSize, float scoreFontSize,
+            Vector2 rankOffset, Vector2 rankSize,
+            Vector2 nameOffset, Vector2 nameSize,
+            Vector2 scoreOffset, Vector2 scoreSize,
+            RankingRowTone tone)
         {
             Size = size;
             RankFontSize = rankFontSize;
             NameFontSize = nameFontSize;
             ScoreFontSize = scoreFontSize;
+            RankOffset = rankOffset;
+            RankSize = rankSize;
+            NameOffset = nameOffset;
+            NameSize = nameSize;
+            ScoreOffset = scoreOffset;
+            ScoreSize = scoreSize;
             Tone = tone;
         }
 
         /// <summary>上位パネル用。順位だけで決まる（value-objects/12 §3.2・§4.1）。</summary>
         public static RankingRowStyle ForTopRank(int rank)
         {
-            if (rank == 1)
+            if (rank == 1 || rank == 2 || rank == 3)
             {
-                return new RankingRowStyle(new Vector2(230f, 44f), 20f, 24f, 20f, RankingRowTone.Gold);
-            }
-
-            if (rank == 2)
-            {
-                return new RankingRowStyle(new Vector2(230f, 44f), 20f, 24f, 20f, RankingRowTone.Silver);
-            }
-
-            if (rank == 3)
-            {
-                return new RankingRowStyle(new Vector2(230f, 44f), 20f, 24f, 20f, RankingRowTone.Bronze);
+                var tone = rank == 1 ? RankingRowTone.Gold : rank == 2 ? RankingRowTone.Silver : RankingRowTone.Bronze;
+                return new RankingRowStyle(
+                    new Vector2(230f, 44f), 20f, 24f, 20f,
+                    new Vector2(35f, 0f), new Vector2(60f, 40f),
+                    new Vector2(-5f, 0f), new Vector2(130f, 40f),
+                    new Vector2(-35f, 0f), new Vector2(60f, 40f),
+                    tone);
             }
 
             if (rank >= 4 && rank <= 6)
             {
-                return new RankingRowStyle(new Vector2(130f, 66f), 16f, 20f, 14f, RankingRowTone.Upper);
+                // シーン参照 Slot04〜06 採寸：箱が縦長(130x66)になるぶん、Rank/Score を上下に振り分ける。
+                return new RankingRowStyle(
+                    new Vector2(130f, 66f), 16f, 20f, 14f,
+                    new Vector2(35f, 10f), new Vector2(60f, 40f),
+                    new Vector2(0f, 0f), new Vector2(110f, 40f),
+                    new Vector2(-35f, -10f), new Vector2(60f, 40f),
+                    RankingRowTone.Upper);
             }
 
-            // 7〜10位、11位以上、0位以下（不明）はすべて同じ見た目（§4.1）。
-            return new RankingRowStyle(new Vector2(100f, 50f), 12f, 16f, 12f, RankingRowTone.Upper);
+            // 7〜10位、11位以上、0位以下（不明）はすべて同じ見た目（§4.1）。シーン参照 Slot07〜10 採寸。
+            return new RankingRowStyle(
+                new Vector2(100f, 50f), 12f, 16f, 12f,
+                new Vector2(35f, 3.5f), new Vector2(60f, 40f),
+                new Vector2(0f, 0f), new Vector2(110f, 40f),
+                new Vector2(-35f, -3.5f), new Vector2(60f, 40f),
+                RankingRowTone.Upper);
         }
 
-        /// <summary>下位パネル用。寸法は固定で、色だけが帯で変わる。フォントサイズは BottomRanker.prefab の authored 値(12/12)と一致させる。</summary>
+        /// <summary>下位パネル用。寸法は固定で、色だけが帯で変わる。テキストの位置・寸法は BottomRanker.prefab の authored 値と一致させる。</summary>
         public static RankingRowStyle ForBottomBand(RankingRowTone tone)
         {
-            return new RankingRowStyle(new Vector2(120f, 29f), 12f, 12f, 0f, tone);
+            return new RankingRowStyle(
+                new Vector2(120f, 29f), 12f, 12f, 0f,
+                new Vector2(33.5f, 0f), new Vector2(60f, 29f),
+                new Vector2(-44f, 0f), new Vector2(80f, 29f),
+                new Vector2(-35f, -3.5f), new Vector2(60f, 40f),
+                tone);
         }
 
-        /// <summary>同じ寸法・フォントサイズのまま Tone だけ差し替える。</summary>
+        /// <summary>同じ寸法・フォントサイズ・テキスト配置のまま Tone だけ差し替える。</summary>
         public RankingRowStyle WithTone(RankingRowTone tone)
         {
-            return new RankingRowStyle(Size, RankFontSize, NameFontSize, ScoreFontSize, tone);
+            return new RankingRowStyle(
+                Size, RankFontSize, NameFontSize, ScoreFontSize,
+                RankOffset, RankSize, NameOffset, NameSize, ScoreOffset, ScoreSize,
+                tone);
         }
 
         /// <summary>
         /// 寸法だけシーンのスロットの値で差し替える（§3.2 の注記・ranking-view/04 §5.2.1）。
-        /// フォントサイズと Tone は表の値のまま残す。
+        /// フォントサイズ・テキスト配置・Tone は表の値のまま残す。
         /// </summary>
         public RankingRowStyle WithSize(Vector2 size)
         {
-            return new RankingRowStyle(size, RankFontSize, NameFontSize, ScoreFontSize, Tone);
+            return new RankingRowStyle(
+                size, RankFontSize, NameFontSize, ScoreFontSize,
+                RankOffset, RankSize, NameOffset, NameSize, ScoreOffset, ScoreSize,
+                Tone);
         }
 
         /// <summary>
@@ -123,6 +163,12 @@ namespace Takoda99.View.ValueObjects
                 && RankFontSize.Equals(other.RankFontSize)
                 && NameFontSize.Equals(other.NameFontSize)
                 && ScoreFontSize.Equals(other.ScoreFontSize)
+                && RankOffset == other.RankOffset
+                && RankSize == other.RankSize
+                && NameOffset == other.NameOffset
+                && NameSize == other.NameSize
+                && ScoreOffset == other.ScoreOffset
+                && ScoreSize == other.ScoreSize
                 && Tone == other.Tone;
         }
 
@@ -136,6 +182,12 @@ namespace Takoda99.View.ValueObjects
                 hash = (hash * 397) ^ RankFontSize.GetHashCode();
                 hash = (hash * 397) ^ NameFontSize.GetHashCode();
                 hash = (hash * 397) ^ ScoreFontSize.GetHashCode();
+                hash = (hash * 397) ^ RankOffset.GetHashCode();
+                hash = (hash * 397) ^ RankSize.GetHashCode();
+                hash = (hash * 397) ^ NameOffset.GetHashCode();
+                hash = (hash * 397) ^ NameSize.GetHashCode();
+                hash = (hash * 397) ^ ScoreOffset.GetHashCode();
+                hash = (hash * 397) ^ ScoreSize.GetHashCode();
                 hash = (hash * 397) ^ (int)Tone;
                 return hash;
             }

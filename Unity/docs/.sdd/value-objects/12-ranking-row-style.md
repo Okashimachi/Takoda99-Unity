@@ -125,6 +125,20 @@ public sealed class RankingRowPalette : ScriptableObject
 | 7〜10 | (100, 50) | 12 | 16 | 12 | `Upper` | `TopRanker7-10` |
 | 11以上・不明 | (100, 50) | 12 | 16 | 12 | `Upper` | （7〜10 と同じ。上位パネルに出ることは通常ない） |
 
+> **★テキストの位置・幅も段階で変わる。** `Size` だけ変えても RankText/NameText/ScoreText 自身の
+> `anchoredPosition` / `sizeDelta` は追従しないため、`RankOffset`/`RankSize`/`NameOffset`/`NameSize`/
+> `ScoreOffset`/`ScoreSize` として個別に持つ。値はシーンの `Slots`（既定で非アクティブ。座標のみの参照用
+> パネル、`Slot01`〜`Slot10`）から採寸した。1〜3位は横並び（Rank/Name/Score が横に並ぶ）だが、
+> 4位以降は箱が縦長になるぶん Rank を上、Score を下に振り分ける。
+>
+> | 順位 | RankOffset | NameOffset/Size | ScoreOffset |
+> |---|---|---|---|
+> | 1〜3 | (35, 0) | (-5, 0) / (130, 40) | (-35, 0) |
+> | 4〜6 | (35, 10) | (0, 0) / (110, 40) | (-35, -10) |
+> | 7以上・不明 | (35, 3.5) | (0, 0) / (110, 40) | (-35, -3.5) |
+>
+> RankSize/ScoreSize はどの段階でも (60, 40) で固定。
+
 下位パネル（[../ranking-view/05-bottom-ranking-panel.md](../ranking-view/05-bottom-ranking-panel.md)）は**順位で寸法を変えない**。
 
 | 用途 | `Size` | RankText | NameText | ScoreText | 由来 Prefab |

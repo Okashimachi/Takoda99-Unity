@@ -210,6 +210,10 @@ namespace Takoda99.View.Ranking
                 ApplyFontSizeImmediate(rankText, style.RankFontSize);
                 ApplyFontSizeImmediate(nameText, style.NameFontSize);
                 ApplyFontSizeImmediate(scoreText, style.ScoreFontSize);
+
+                ApplyTextLayoutImmediate(rankText, style.RankOffset, style.RankSize);
+                ApplyTextLayoutImmediate(nameText, style.NameOffset, style.NameSize);
+                ApplyTextLayoutImmediate(scoreText, style.ScoreOffset, style.ScoreSize);
                 return;
             }
 
@@ -228,6 +232,37 @@ namespace Takoda99.View.Ranking
             TweenFontSize(rankText, style.RankFontSize, duration);
             TweenFontSize(nameText, style.NameFontSize, duration);
             TweenFontSize(scoreText, style.ScoreFontSize, duration);
+
+            // パネルの Size だけでなく、各テキストの位置・幅も順位段階に合わせて動かす。
+            TweenTextLayout(rankText, style.RankOffset, style.RankSize, duration);
+            TweenTextLayout(nameText, style.NameOffset, style.NameSize, duration);
+            TweenTextLayout(scoreText, style.ScoreOffset, style.ScoreSize, duration);
+        }
+
+        private static void ApplyTextLayoutImmediate(TMP_Text text, Vector2 offset, Vector2 size)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            var rect = text.rectTransform;
+            rect.DOKill();
+            rect.anchoredPosition = offset;
+            rect.sizeDelta = size;
+        }
+
+        private static void TweenTextLayout(TMP_Text text, Vector2 offset, Vector2 size, float duration)
+        {
+            if (text == null)
+            {
+                return;
+            }
+
+            var rect = text.rectTransform;
+            rect.DOKill();
+            rect.DOAnchorPos(offset, duration).SetEase(Ease.OutCubic);
+            rect.DOSizeDelta(size, duration).SetEase(Ease.OutCubic);
         }
 
         private static void ApplyFontSizeImmediate(TMP_Text text, float size)
@@ -285,6 +320,12 @@ namespace Takoda99.View.Ranking
             rankText?.DOKill();
             nameText?.DOKill();
             scoreText?.DOKill();
+
+            // ApplyTextLayoutImmediate/TweenTextLayout は TMP_Text ではなく rectTransform を target にするため、
+            // 上の DOKill(text) だけでは殺せない。放置すると使い回した行が前の入れ替え中の位置から動き出す。
+            rankText?.rectTransform.DOKill();
+            nameText?.rectTransform.DOKill();
+            scoreText?.rectTransform.DOKill();
 
             // 強調の途中で戻された行が、次に使い回されたとき拡大したまま出てこないようにする。
             if (rect != null)
