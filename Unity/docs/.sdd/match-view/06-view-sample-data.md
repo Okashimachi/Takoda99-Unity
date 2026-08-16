@@ -53,14 +53,19 @@ namespace Takoda99.View.Sample
   - 自店のサンプル値を全 View へ一度流す
 - `Update`：キーボード（Input System）で以下を操作する
 
+本選（Proto v0.8.0）でHUDを差し替えたのに伴い、割り当ても本選のものへ変えている（[cleanup/01 §6](../cleanup/01-removed-views.md)）。
+
 | キー | 動作 |
 |---|---|
-| `1` / `2` | `creditLife` を −1 / +1 |
-| `3` / `4` | `evalNormalized` を −0.1 / +0.1 |
+| `1` / `2` | 自分の順位を 5 上げる / 下げる（スコアも ±500 連動） |
+| `3` | `selfAtRisk` を切り替える（淘汰アラートの確認） |
+| `4` | 次のステージへ進める（秒読みがリセットされることの確認） |
 | `5` / `6` | `typedWordCount` を −1 / +1 |
 | `7` / `8` | `typedRomaLength` を −1 / +1（`typedHiraganaLength` は比率で連動させる） |
-| `9` | 他店を1つ脱落させる（`StoreId` の小さい順） |
-| `0` | 全サンプル値を初期状態に戻す |
+| `9` | 24件の一斉脱落（`MassEliminationEffect` が1回だけ再生されることの確認） |
+| `0` | 自店を含む10件の一斉脱落 → 脱落モーダル → 観戦の全員順位 |
+| `S` | 淘汰の段階を1つ進める（99→75→55→35→20→10。下位パネルの連続的な変化） |
+| `C` | 秒読みを残り5秒へ縮める（中央カウントダウン。[../ranking-view/02](../ranking-view/02-cull-countdown-panel.md) §6。`3` と併用して Danger / Caution を見る） |
 
 - `OnValidate` でも同じ反映処理を呼び、Play中にInspectorのスライダーを動かして確認できるようにする
 

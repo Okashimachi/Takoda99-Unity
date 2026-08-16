@@ -187,6 +187,16 @@ namespace Takoda99.View.Sample
                 // 連続的に変わることを見る（ranking-view/05 §5.1・§6）。
                 AdvanceCullStage();
             }
+
+            if (keyboard.cKey.wasPressedThisFrame)
+            {
+                // 秒読みを残り5秒へ縮める。中央カウントダウン（ranking-view/02 §6）の確認。
+                // 3キーで selfAtRisk を切り替えると Danger / Caution の出し分けも見られる。
+                untilMs = ValueObjects.CullFinalCountdownState.DefaultWindowMs;
+                ApplyCull();
+
+                Debug.Log($"{nameof(MainGameViewSampleDriver)}: 秒読みを残り5秒に縮めました（selfAtRisk={selfAtRisk}）。");
+            }
         }
 
         /// <summary>
@@ -313,7 +323,12 @@ namespace Takoda99.View.Sample
                 StageTotal = stageTotal,
                 CutLineRank = cutLineRank,
                 SelfAtRisk = selfAtRisk,
-                CutStoreIds = new[] { "store-097", "store-098", "store-099" },
+
+                // サーバーは淘汰圏内の店を CutStoreIds にも入れて送る。自店が圏内のときは
+                // 自店IDを混ぜておかないと、自店の色（Doomed）を確認できない。
+                CutStoreIds = selfAtRisk
+                    ? new[] { selfStoreId, "store-097", "store-098", "store-099" }
+                    : new[] { "store-097", "store-098", "store-099" },
             };
 
             var state = BuildState();
@@ -337,7 +352,8 @@ namespace Takoda99.View.Sample
             }
 
             var state = BuildState();
-            selfRank?.SetState(ValueObjects.SelfRankViewState.From(selfRankValue, selfScore, aliveCount));
+            // 順位テキストの色もサンプル state から決まる（1キーで1〜3位＝金銀銅、3キーで淘汰確定＝赤）。
+            selfRank?.Apply(state);
             rankingPanel?.Apply(state);
             bottomRankingPanel?.Apply(state);
             spectatorRanking?.Apply(state);
