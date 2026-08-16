@@ -10,6 +10,7 @@
 | 04 | [04-top-ranking-slots.md](./04-top-ranking-slots.md) | 上位10行のスロット化と `TopRanker` 系3 Prefab の統合（★次に実装） |
 | 05 | [05-bottom-ranking-panel.md](./05-bottom-ranking-panel.md) | 下位30行の常時表示と足切りの帯（脱落確定／警告／通常） |
 | 06 | [06-rank-swap-animation.md](./06-rank-swap-animation.md) | 順位入れ替えの演出（動いた行だけを強調する） |
+| 07 | [07-audience-panel.md](./07-audience-panel.md) | 脱落時に11〜99位の89店を 9列×10行 で一覧するグリッド（★次に実装） |
 
 > **04〜06 は 01 を置き換えない。** 01 が定めた表示行の組み立て（§3）・表示件数の下限（§4）・
 > プール方針（§5 A1〜A5）はそのまま生き、04〜06 はその上に「見た目が順位に従属する」層を積む。
