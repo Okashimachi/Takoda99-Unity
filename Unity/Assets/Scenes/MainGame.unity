@@ -1462,6 +1462,9 @@ MonoBehaviour:
   palette: {fileID: 11400000, guid: c3c57c9f5dffeb041982f58b6bc9997d, type: 2}
   visibleCount: 30
   rowHeight: 29
+  columnCount: 2
+  rowsPerColumn: 15
+  columnSpacing: 125
   rowMoveDuration: 0.25
 --- !u!1 &141287199
 GameObject:
