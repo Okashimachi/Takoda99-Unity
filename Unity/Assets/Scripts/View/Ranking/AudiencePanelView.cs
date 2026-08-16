@@ -31,11 +31,25 @@ namespace Takoda99.View.Ranking
         [SerializeField] private int columnCount = 9;
         [SerializeField] private int rowsPerColumn = 10;
 
-        /// <summary>グリッド全体の寸法。ここから1マスの寸法を割り出す（既定は AudiencePanel と同じ 550×440）。</summary>
-        [SerializeField] private Vector2 gridSize = new Vector2(550f, 440f);
+        /// <summary>
+        /// グリッド全体の寸法。ここから1マスの寸法を割り出す。
+        /// <see cref="fitGridToPanel"/> が true のときは <see cref="panelRoot"/> の実寸で上書きされるため、
+        /// **こちらはフォールバック値**（panelRoot 未配線・寸法0のとき）になる。
+        /// </summary>
+        [SerializeField] private Vector2 gridSize = new Vector2(550f, 400f);
+
+        /// <summary>
+        /// パネルの実寸へグリッドを合わせる（07 §5.2）。
+        /// **既定で true。** シーンで AudiencePanel の大きさを変えたときに Inspector 値の直し漏れで
+        /// グリッドがはみ出す・余るのを防ぐ。
+        /// </summary>
+        [SerializeField] private bool fitGridToPanel = true;
 
         private RankingRowPool pool;
         private IRankingSlotSource slotSource;
+
+        /// <summary>いまグリッドを組んである寸法。変わったフレームだけ組み直す。</summary>
+        private Vector2 appliedGridSize;
         private readonly HashSet<string> visibleIds = new HashSet<string>();
         private readonly List<RankingRowStyle> styleBuffer = new List<RankingRowStyle>();
 
@@ -45,11 +59,7 @@ namespace Takoda99.View.Ranking
         private void Awake()
         {
             pool = new RankingRowPool(rowPrefab, rowsRoot);
-
-            // §5.1: 列優先（index = rowsPerColumn * col + row）。GridSlotSource の割り当てと一致する。
-            var cellWidth = gridSize.x / columnCount;
-            var cellHeight = gridSize.y / rowsPerColumn;
-            slotSource = new GridSlotSource(columnCount, rowsPerColumn, cellHeight, cellWidth);
+            EnsureGrid();
 
             swapSettings = new RankingSwapSettings
             {
@@ -82,8 +92,49 @@ namespace Takoda99.View.Ranking
             }
 
             SetPanelVisible(true);
+            EnsureGrid();
             BuildStyles(rows);
             RankingRowLayout.Apply(pool, rows, styleBuffer, visibleIds, slotSource, palette, swapSettings);
+        }
+
+        /// <summary>
+        /// グリッドをパネルの実寸へ合わせる（§5.2）。寸法が変わったフレームだけ組み直す。
+        /// **パネルを縮めたら 1マスも同じ比率で縮む**（セルの中身も比率で追従する。value-objects/12 §3.2）。
+        /// </summary>
+        private void EnsureGrid()
+        {
+            var size = ResolveGridSize();
+            if (slotSource != null && size == appliedGridSize)
+            {
+                return;
+            }
+
+            appliedGridSize = size;
+
+            // §5.1: 列優先（index = rowsPerColumn * col + row）。GridSlotSource の割り当てと一致する。
+            var cellWidth = size.x / columnCount;
+            var cellHeight = size.y / rowsPerColumn;
+            slotSource = new GridSlotSource(columnCount, rowsPerColumn, cellHeight, cellWidth);
+        }
+
+        /// <summary>
+        /// パネルの実寸を採る。取れなければ Inspector の <see cref="gridSize"/> を使う
+        /// （寸法0のグリッドを組んで全行を1点に重ねるより、既定値で描くほうが軽症）。
+        /// </summary>
+        private Vector2 ResolveGridSize()
+        {
+            if (!fitGridToPanel || panelRoot == null)
+            {
+                return gridSize;
+            }
+
+            if (!(panelRoot.transform is RectTransform panelRect))
+            {
+                return gridSize;
+            }
+
+            var size = panelRect.rect.size;
+            return size.x > 0f && size.y > 0f ? size : gridSize;
         }
 
         /// <summary>
@@ -92,7 +143,7 @@ namespace Takoda99.View.Ranking
         private void BuildStyles(IReadOnlyList<RankingRowViewState> rows)
         {
             styleBuffer.Clear();
-            var cellSize = new Vector2(gridSize.x / columnCount, gridSize.y / rowsPerColumn);
+            var cellSize = new Vector2(appliedGridSize.x / columnCount, appliedGridSize.y / rowsPerColumn);
 
             for (var i = 0; i < rows.Count; i++)
             {

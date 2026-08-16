@@ -36,7 +36,7 @@
 MainGame/ResultCanvas
 ├─ BG                                 [Image]      … 現在 非アクティブ
 ├─ Result           300×440 @ x=0                  … 現在 非アクティブ。自分の順位＋上位10＋次へ
-└─ AudiencePanel    550×440 @ x=+125  ★このファイルの対象
+└─ AudiencePanel    550×400 @ x=+125, y=-17.5  ★このファイルの対象
    ├─ Panel         [Image] 全面ストレッチ          … 背景
    └─ RowsRoot                                     … 実行時に LostRanker が89個生成される
 ```
@@ -61,17 +61,22 @@ MainGame/ResultCanvas
 中身は `TopRanker` と同じ構成で、`RankingRowView` が付いている。
 
 ```
-LostRanker  [RankingRowView] 230×44
+LostRanker  [RankingRowView] 61.11×40
 ├─ HighLight  [Image]  … 自分の行だけ点く
 ├─ Panel      [Image]
-├─ RankText   [TMP] fs16  anchor(0, 0.5)    ← 左端
-├─ NameText   [TMP] fs20  anchor(0.5, 0.5)  ← 中央
-└─ ScoreText  [TMP] fs16  anchor(1, 0.5)    ← 右端
+├─ RankText   [TMP] fs11.2  anchor(0.5, 0.5)  水平=左寄せ・垂直=中央   ← 上段の左半分
+├─ NameText   [TMP] fs16.8  anchor(0.5, 0.5)  水平=中央・垂直=中央     ← 下段（大きく出す）
+└─ ScoreText  [TMP] fs11.2  anchor(0.5, 0.5)  水平=右寄せ・垂直=中央   ← 上段の右半分
 ```
 
-> **★このままでは入らない。** Prefab は 230×44 の**横長**で、3つのテキストが横一列に並んでいる。
-> セルは 61×44 の**ほぼ正方形**（§5.2）なので、横並びのままでは3つとも溢れて重なる。
-> §5.3 のとおり**縦積みへ組み替える**。
+> **★元の Prefab（230×44 の横長・3テキスト横一列）では入らない。**
+> セルは 61×40 の**ほぼ正方形**（§5.2）なので、横並びのままでは3つとも溢れて重なる。
+> §5.3 のとおり**2段へ組み替えた**。
+>
+> Prefab 側で直したもの：3テキストのアンカーを中央 (0.5, 0.5) へ揃える／`ScoreText` の垂直アラインメントを
+> Bottom → **Middle**（順位と同じ行に載せるため）／3つとも**折り返し禁止**（1段しかない箱で折り返すと見切れる）。
+> authored の位置・寸法・フォントサイズも実行時の値に合わせてあるが、**実行時は `SetStyle` が必ず上書きする**
+> （Prefab の編集画面で見た目が実機とずれないようにするための同期でしかない）。
 
 ## 4. 公開インターフェース
 
@@ -95,8 +100,11 @@ namespace Takoda99.View.Ranking
         [SerializeField] private int columnCount = 9;
         [SerializeField] private int rowsPerColumn = 10;
 
-        /// <summary>グリッド全体の寸法。ここから1マスの寸法を割り出す（既定は AudiencePanel と同じ 550×440）。</summary>
-        [SerializeField] private Vector2 gridSize = new Vector2(550f, 440f);
+        /// <summary>グリッド全体の寸法。fitGridToPanel が true のときは panelRoot の実寸で上書きされる（§5.2）。</summary>
+        [SerializeField] private Vector2 gridSize = new Vector2(550f, 400f);
+
+        /// <summary>パネルの実寸へグリッドを合わせる（既定 true）。</summary>
+        [SerializeField] private bool fitGridToPanel = true;
 
         public void Apply(ClientState state);
 
@@ -167,53 +175,71 @@ rank  = 11 + index = 11 + 10 * col + row
 
 ```
 cellWidth  = gridSize.x / columnCount   = 550 / 9  = 61.11
-cellHeight = gridSize.y / rowsPerColumn = 440 / 10 = 44
+cellHeight = gridSize.y / rowsPerColumn = 400 / 10 = 40
 ```
+
+### 5.2.1 ★グリッドはパネルの実寸に合わせる（Inspector 値を正典にしない）
+
+`gridSize` は**フォールバック**で、既定では `panelRoot`（`AudiencePanel` 自身）の `rect.size` を採る。
+
+**理由：シーンでパネルの大きさを変えたとき、Inspector の直し漏れでグリッドがはみ出す／余るのを防ぐ。**
+寸法が変わったフレームだけ `GridSlotSource` を組み直す（毎フレームは作らない）。
+セルの中身も比率で決まる（[../value-objects/12](../value-objects/12-ranking-row-style.md) §3.2）ので、
+**パネルを縮めれば1マスも文字も同じ比率で縮む**。
+
+`panelRoot` が未配線・寸法が0のときだけ `gridSize` を使う（寸法0のグリッドで89行を1点に重ねるより軽症）。
 
 座標は `RowsRoot` の中心を原点として：
 
 ```
 x = (col - (columnCount   - 1) / 2) * cellWidth    // col 0 → -244.4、col 8 → +244.4
-y = ((rowsPerColumn - 1) / 2 - row) * cellHeight   // row 0 → +198、 row 9 → -198
+y = ((rowsPerColumn - 1) / 2 - row) * cellHeight   // row 0 → +180、 row 9 → -180
 ```
 
 この式でグリッドは `AudiencePanel` にちょうど収まる（左端 -244.4 - 30.6 = **-275** ＝ パネル左端、
-上端 198 + 22 = **220** ＝ パネル上端）。
+上端 180 + 20 = **200** ＝ パネル上端）。
 
-> **高さ 44 は `LostRanker` の元の高さと一致する。** 詰めるのは幅だけ（230 → 61.11）。
-> 「パネルの大きさに合うように縦横比を変更する」とは、具体的には**横方向に約 0.27 倍へ潰す**こと。
-> `RankingRowStyle.Size` を `(61.11, 44)` にすれば `RankingRowView.SetStyle` が `sizeDelta` を合わせる。
+> 元の `LostRanker` は 230×44 の横長。**幅を約 0.27 倍・高さを約 0.9 倍へ潰す**ことになる。
+> `RankingRowStyle.Size` を `(61.11, 40)` にすれば `RankingRowView.SetStyle` が `sizeDelta` を合わせる。
 
-### 5.3 セルの中身（★暫定。実機を見てから詰める）
+### 5.3 セルの中身（★2段：上段に順位＋スコア、下段に屋号）
 
-61×44 に横並びは入らないので**縦積み**にする。
+61×40 に横並びは入らない。**上段に順位とスコアを同じ行で並べ、その下に屋号**を置く。
 
 ```
-┌───────────┐
-│   11th.   │  RankText   fs11
-│  たこ屋    │  NameText   fs10
-│   9999    │  ScoreText  fs10
-└───────────┘
-   61 × 44
+┌─────────────┐
+│ 11th.  9999 │  RankText（左寄せ）／ScoreText（右寄せ）  高さ 16 = セルの 2/5
+│   たこ屋     │  NameText（中央）                        高さ 24 = セルの 3/5
+└─────────────┘
+    61 × 40
 ```
 
-| 要素 | offset | size | fontSize |
-|---|---|---|---|
-| `RankText` | (0, +14) | (58, 14) | 11 |
-| `NameText` | (0, 0) | (58, 14) | 10 |
-| `ScoreText` | (0, -14) | (58, 14) | 10 |
+フォントサイズは各段の高さから比率で出すため、**2:3 の比は縮めても保たれる**。
 
-`RankingRowStyle.ForAudienceCell(cellSize, tone)` を追加して返す
-（[../value-objects/12](../value-objects/12-ranking-row-style.md) §3.2 の表に1行足す）。
-寸法・フォントサイズ・テキスト配置の適用は `RankingRowView.SetStyle` が既に行う。
+**上段と下段の比は 2:3。** 屋号を大きく見せるための配分であり、要件として固定する。
+フォントサイズも各段の高さに同じ係数（0.7）を掛けるので、**フォントの比も自然に 2:3** になる（11.2 : 16.8）。
 
-> **★`LostRanker.prefab` 側で直すこと：** `SetStyle` は `anchoredPosition` と `sizeDelta` は動かすが、
-> **アンカーは動かさない**。現在3つのテキストは左・中央・右とバラバラのアンカーを持つため、
-> 縦積みにするには**3つとも中央 (0.5, 0.5) へ揃える**必要がある。
+| 要素 | offset | size | fontSize | 由来 |
+|---|---|---|---|---|
+| `RankText` | (-14.28, +12) | (28.56, 16) | 9.07 | 上段の左半分 |
+| `ScoreText` | (+14.28, +12) | (28.56, 16) | 9.07 | 上段の右半分 |
+| `NameText` | (0, -8) | (57.11, 24) | 13.61 | 下段いっぱい（左右に 2px の余白） |
 
-> **スコアを出すかは未確定（§8）。** 幅58pxで屋号は5文字程度しか入らない。
-> スコアを捨てて2段にすれば屋号に8文字ほど使える。**実機で並べてから決める。**
-> どちらでも切り替えられるよう、スコアの表示可否は Inspector の bool にしておく。
+> フォントサイズは**上位パネルより二回り小さい**（各段の高さ × 0.567。
+> [../value-objects/12 §3.2.1](../value-objects/12-ranking-row-style.md)）。89セルを一望する画面なので、
+> 1セルの文字は読める最小限に寄せる。
+
+**値はすべてセル寸法からの比率で出す**（[../value-objects/12](../value-objects/12-ranking-row-style.md) §3.2）。
+`RankingRowStyle.ForAudienceCell(cellSize, tone)` が返し、適用は `RankingRowView.SetStyle` が行う。
+
+> **左右の振り分けはアラインメントに任せる。** `SetStyle` は `anchoredPosition` と `sizeDelta` は動かすが
+> **アラインメントは触らない**。順位=左寄せ・スコア=右寄せは Prefab 側の authored 値であり、
+> VO は上段の幅を半分ずつ与えるだけ。
+>
+> **アンカーも `SetStyle` は動かさない。** 3テキストとも中央 (0.5, 0.5) である必要がある（§3.3）。
+
+屋号が下段の幅（57px）に収まらない場合は**折り返さずに見切れる**（`TextWrappingMode = 0`）。
+2段構成では折り返す余地がないため、見切れるほうを選ぶ。実機で読めるかは §7 の観点11。
 
 ### 5.4 入れ替えアニメーションを持たない
 
@@ -272,13 +298,18 @@ y = ((rowsPerColumn - 1) / 2 - row) * cellHeight   // row 0 → +198、 row 9 �
 | 8 | 座標式：col0 の左端がパネル左端、row0 の上端がパネル上端に一致する | EditMode |
 | 9 | 11位が左上、91位が右上、99位が右下の1つ上に出る | 手動 |
 | 10 | 右下角が空いていて「次へ」ボタンが収まる | 手動 |
-| 11 | 屋号がセル幅で見切れず読める（§5.3 の暫定値の妥当性） | 手動 |
+| 11 | 屋号がセル幅で見切れず読める（§5.3 の比率の妥当性） | 手動 |
 | 12 | 自分の行の `HighLight` が点く | 手動 |
+| 13 | 上段に順位とスコアが同じ行で並び、その下に屋号が出る（2:3） | 手動 |
+| 14 | `AudiencePanel` の `sizeDelta` を変えるとグリッドとセルの中身が追従する（§5.2.1） | 手動 |
 
 ## 8. 未確定事項
 
-- **スコアを出すか**（§5.3）。幅58pxで屋号5文字 vs スコアを捨てて屋号8文字。実機で並べてから決める
-- セルのフォントサイズ（fs10〜11 は暫定。`LostRanker` の元値 16/20/16 からは大幅に落とす必要がある）
+- ~~**スコアを出すか**（§5.3）。幅58pxで屋号5文字 vs スコアを捨てて屋号8文字~~
+  → **出す。** 順位とスコアを上段に同じ行で並べ、屋号は下段を丸ごと使う 2段構成にした（§5.3）。
+  屋号の高さがセルの 3/5 を取れるため、3段だったときより屋号を大きく出せる
+- セルのフォントサイズ（上段 9.07・下段 13.61。セル高さ×0.567 という比率で出しているので、
+  パネル寸法を変えれば自動で変わる。**係数 0.567 自体が実機未確認**）
 - 脱落時点でグリッドを**凍結するか**、観戦中も更新し続けるか（§5.6）。更新し続けると、読んでいる最中に順位が動く
 - 空白マスを右下角に固定してよいか（「次へ」ボタンの最終的な置き場所が変わったら §5.1 の並び順ごと見直しになる）
 - 帯（`RankingRowTone`）を付けるか。リザルトでは全員脱落済みなので、全行 `Dead` にすると全部暗くなる。`Normal` 固定でよいか
