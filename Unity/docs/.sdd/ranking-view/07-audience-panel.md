@@ -55,13 +55,7 @@ MainGame/ResultCanvas
 `AudiencePanel` は上位ランキングパネルの右端（-145）のすぐ手前から始まり、中央と右をすべて覆う。
 **上位10位だけが左に残り、その右隣に11位以降が広がる**という画になる。
 
-### 3.3 ★`RowsRoot` は中央へ直すこと
-
-現在 `RowsRoot` は `anchoredPosition = (145, 0)` に置かれている。
-§5.1 の座標式は `RowsRoot` の中心を基準にするため、**`(0, 0)` へ直す**（`sizeDelta` は使わないので何でもよい）。
-直さないとグリッド全体が右へ145pxずれて画面外へはみ出す。
-
-### 3.4 行 Prefab
+### 3.3 行 Prefab
 
 `Assets/Prefabs/MainGame/LostRanker.prefab`（guid `8aef811940d15584194f363fdb9c046c`）を使う。
 中身は `TopRanker` と同じ構成で、`RankingRowView` が付いている。

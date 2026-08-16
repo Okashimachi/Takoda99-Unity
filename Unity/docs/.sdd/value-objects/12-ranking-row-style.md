@@ -148,6 +148,15 @@ public sealed class RankingRowPalette : ScriptableObject
 > NameText は当初 18 だったが、`BottomRanker.prefab` の authored 値（12）より大きく、
 > 狭い行（120×29）で文字が大きすぎたため 12 に修正した（`BottomRanker.prefab` の値と一致させる）。
 
+オーディエンスパネル（[../ranking-view/07-audience-panel.md](../ranking-view/07-audience-panel.md)）は横並びが入らないため縦積み。3テキストとも中央 (0.5, 0.5) アンカー前提。
+
+| 用途 | `Size` | RankText | NameText | ScoreText | 由来 Prefab |
+|---|---|---|---|---|---|
+| 11〜99位（1セル） | セル寸法（可変。既定 61.11×44） | 11 | 10 | 10 | `LostRanker`（アンカーを中央へ修正） |
+
+> RankOffset (0, +14)／NameOffset (0, 0)／ScoreOffset (0, -14)。RankSize/NameSize/ScoreSize はいずれも (58, 14)。
+> `Tone` は§8未確定のため当面 `Normal` 固定（[07 §8](../ranking-view/07-audience-panel.md)）。
+
 > ~~1〜3位の寸法が同じで色だけ違うのは意図通り。**金銀銅は「大きさ」ではなく「色」で差を付ける**。~~
 > ~~大きさまで3段にすると1位だけが極端になり、2位・3位が4〜6位と見分けにくくなる。~~
 >
