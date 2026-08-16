@@ -23,8 +23,20 @@ namespace Takoda99.View.Ranking
 
         [Header("脱落予定の店")]
         [SerializeField] private RankingRowView rowPrefab;   // 01 と同じ行Prefabを再利用
+
+        /// <summary>
+        /// 行を生成する親。**このパネル専用の空の親を割り当てること**（02 §4.1）。
+        /// <para>
+        /// ★他のパネルの `RowsRoot` を指すと、そちらのパネルの中に行が湧いて出る。
+        /// 未割り当て（null）なら行リストを出さない＝脱落確定は下位パネルの帯（`Doomed`）だけで表す。
+        /// </para>
+        /// </summary>
         [SerializeField] private RectTransform rowsRoot;
+
         [SerializeField] private int maxCutRows = 5;
+
+        /// <summary>行を縦に積む間隔(px)。行Prefabの高さと揃える。</summary>
+        [SerializeField] private float cutRowHeight = 29f;
 
         /// <summary>「ぎりぎり圏外」の判定に使う下位の件数。下位パネルの visibleCount と揃える。</summary>
         [SerializeField] private int bottomRangeCount = 30;
@@ -37,6 +49,9 @@ namespace Takoda99.View.Ranking
 
         /// <summary>alertOverlay の Image。中央を丸く空けたビネットを流し込む先。</summary>
         [SerializeField] private Image alertOverlayImage;
+
+        /// <summary>残り5秒の中央カウントダウン（02 §6）。同じ時計をここから押し込む。</summary>
+        [SerializeField] private CullFinalCountdownView finalCountdown;
 
         [SerializeField] private AudioSource alertSe;
         [SerializeField] private AudioClip atRiskClip;
@@ -101,6 +116,7 @@ namespace Takoda99.View.Ranking
         private void Awake()
         {
             pool = new RankingRowPool(rowPrefab, rowsRoot);
+            WarnIfRowsRootShared();
             SetPanelVisible(false);
 
             shownColor = cautionColor;
@@ -108,6 +124,22 @@ namespace Takoda99.View.Ranking
             if (alertOverlay != null)
             {
                 alertOverlay.alpha = 0f;
+            }
+        }
+
+        /// <summary>
+        /// ★一度これで事故った。`rowsRoot` に**下位パネルの `RowsRoot`** が割り当てられていて、
+        /// 脱落予定の行が下位パネルの中央に湧いて出た（行Prefabの authored 位置のまま重なるので、
+        /// 5行が1行に見える）。専用の親は編集時には空であるはずなので、子がいたら疑う。
+        /// </summary>
+        private void WarnIfRowsRootShared()
+        {
+            if (rowsRoot != null && rowsRoot.childCount > 0)
+            {
+                Debug.LogWarning(
+                    $"{nameof(CullCountdownPanelView)}: rowsRoot（{rowsRoot.name}）に既に子が {rowsRoot.childCount} 件あります。" +
+                    "他のパネルの RowsRoot を共有していないか確認してください（脱落予定の行がそちらへ湧きます）。",
+                    this);
             }
         }
 
@@ -201,13 +233,21 @@ namespace Takoda99.View.Ranking
         /// </summary>
         private void UpdateAlert()
         {
+            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
+            var alert = CullAlertState.From(warning, nowMs, selfAlive, selfInBottomRange);
+
+            // 中央カウントダウンはビネットと同じ段階・同じ時計で駆動する（02 §6）。
+            // ビネットが未割り当てでもここは通す（別のGameObjectに載っているため）。
+            if (finalCountdown != null)
+            {
+                var remainingMs = warning != null ? warning.RemainingMsAt(nowMs) : 0L;
+                finalCountdown.SetState(alert.Tier, remainingMs);
+            }
+
             if (alertOverlay == null)
             {
                 return;
             }
-
-            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
-            var alert = CullAlertState.From(warning, nowMs, selfAlive, selfInBottomRange);
 
             var targetColor = alert.Tier == CullAlertTier.Danger ? dangerColor : cautionColor;
             var targetAlpha = 0f;
@@ -380,6 +420,13 @@ namespace Takoda99.View.Ranking
 
                 row.SetNameOnly(storeId, ResolveName(storeId));
                 row.transform.SetSiblingIndex(i);
+
+                // ★位置を自分で決める。SetSiblingIndex だけでは LayoutGroup が無い親で
+                // 全行が Prefab の authored 位置（＝親の中央）に重なる。
+                if (row.transform is RectTransform rect)
+                {
+                    rect.anchoredPosition = new Vector2(0f, -i * cutRowHeight);
+                }
             }
 
             // サーバーの送信件数が maxCutRows より多い可能性がある。多い分は件数で添える。
