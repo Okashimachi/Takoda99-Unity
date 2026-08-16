@@ -16,9 +16,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\Scripts\View\ValueObjects\*.cs">
+    <!--
+      RankingRowStyle.cs は value-objects/12-ranking-row-style.md §3 のとおり UnityEngine.Vector2 に
+      依存する唯一の ValueObjects（他の全ファイルは UnityEngine 非依存）。このプロジェクトは
+      UnityEngine を参照していないため、glob から明示的に除外する。ForTopRank / ResolveTone の
+      EditMode テストは Unity Test Runner（NUnit・実 Editor 内）側で行う。
+    -->
+    <Compile Include="..\..\Assets\Scripts\View\ValueObjects\*.cs" Exclude="..\..\Assets\Scripts\View\ValueObjects\RankingRowStyle.cs">
       <Link>ValueObjects\%(Filename).cs</Link>
     </Compile>
+  </ItemGroup>
+
+  <!--
+    本選(v0.8.0)の値オブジェクトは pureC# の状態型（RankingRow / RankingTable / CullWarning）を
+    引数に取るため、Takoda99.Client を参照する。Unity 側は DLL 参照だが、
+    このテストプロジェクトはソースからビルドされたものを直接参照してよい（同一ソース）。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\pureC#\src\Takoda99.Client\Takoda99.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>

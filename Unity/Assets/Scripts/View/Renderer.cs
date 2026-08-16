@@ -1,49 +1,53 @@
-// 仕様書: Unity/docs/.sdd/match-view/01-renderer.md
+// 仕様書: Unity/docs/.sdd/hud/01-hud-composition.md（本選 v0.8.0）
+//         Unity/docs/.sdd/match-view/01-renderer.md（予選版。矛盾したら hud/01 が優先）
 // IRenderer の Unity 実体。MatchClientController からの離散イベントと IStore の連続的な状態変化を
-// 既存の下位View（MainStoreView / SubStoreBoardView / PatienceTimer）へ振り分ける。
+// 下位View（MainStoreView / SelfRankView / RankingPanelView / CullCountdownPanelView 等）へ振り分ける。
+//
+// 値の決定・推定はしない（受信値を描くだけ）。スコアから順位を計算しない（state.Rank が権威）。
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using Takoda99.Client.Lifecycle;
 using Takoda99.Client.State;
 using Takoda99.Client.Typing;
 using Takoda99.Proto;
-using Takoda99.Timer;
 using Takoda99.View.ValueObjects;
 using UnityEngine;
 
 namespace Takoda99.View
 {
-    /// <summary><see cref="IRenderer"/> の Unity 実体（01-renderer.md）。</summary>
+    /// <summary><see cref="IRenderer"/> の Unity 実体（hud/01-hud-composition.md §4）。</summary>
     public sealed class Renderer : MonoBehaviour, IRenderer
     {
         [SerializeField] private MainStoreView mainStore;
-        [SerializeField] private SubStoreBoardView subStoreBoard;
-        [SerializeField] private PatienceTimer patienceTimer;
         [SerializeField] private EliminationResultView resultView;
-        [SerializeField] private RankBarView rankBar;
         [SerializeField] private Customers.CustomerQueueView customerQueue;
         [SerializeField] private Customers.CustomerOrderBubbleView orderBubble;
-        [SerializeField] private StarRatingView starRating;
         [SerializeField] private GameBeforeView gameBefore;
+
+        [Header("本選 HUD")]
+        [SerializeField] private SelfRankView selfRank;                        // 順位の大表示＋スコア＋生存数
+        [SerializeField] private Ranking.RankingPanelView rankingPanel;        // ranking-view/01
+        [SerializeField] private Ranking.BottomRankingPanelView bottomRankingPanel; // ranking-view/05
+        [SerializeField] private Ranking.CullCountdownPanelView cullPanel;     // ranking-view/02
+        [SerializeField] private Elimination.MassEliminationEffect massElim;   // elimination/01
+        [SerializeField] private Ranking.AudiencePanelView audiencePanel;      // ranking-view/07
 
         private IStore store;
         private ITypingJudge typingJudge;
         private IDisposable subscription;
         private string servingCustomerId;
-        private bool subStoreBoardBound;
 
         /// <summary>自店が脱落済みか。以降は観戦なので行列を描かない。</summary>
         private bool selfEliminated;
 
-        /// <summary>IStore / ITypingJudge を注入する（01-renderer.md §3）。通常は OnEnable が自動で呼ぶ。</summary>
+        /// <summary>IStore / ITypingJudge を注入する。通常は OnEnable が自動で呼ぶ。</summary>
         public void Bind(IStore boundStore, ITypingJudge boundTypingJudge)
         {
             subscription?.Dispose();
 
             store = boundStore;
             typingJudge = boundTypingJudge;
-            subStoreBoardBound = false;
             selfEliminated = false;
 
             if (gameBefore != null)
@@ -72,13 +76,15 @@ namespace Takoda99.View
             // 未割り当ての参照は「その機能だけが黙って動かない」形で表面化する。
             // 画面が出ない原因を探すより、起動時に名指しで知らせるほうが早い。
             WarnIfMissing(mainStore, nameof(mainStore));
-            WarnIfMissing(subStoreBoard, nameof(subStoreBoard));
-            WarnIfMissing(patienceTimer, nameof(patienceTimer));
-            WarnIfMissing(rankBar, nameof(rankBar));
             WarnIfMissing(customerQueue, nameof(customerQueue));
             WarnIfMissing(orderBubble, nameof(orderBubble));
-            WarnIfMissing(starRating, nameof(starRating));
             WarnIfMissing(gameBefore, nameof(gameBefore));
+            WarnIfMissing(selfRank, nameof(selfRank));
+            WarnIfMissing(rankingPanel, nameof(rankingPanel));
+            WarnIfMissing(bottomRankingPanel, nameof(bottomRankingPanel));
+            WarnIfMissing(cullPanel, nameof(cullPanel));
+            WarnIfMissing(massElim, nameof(massElim));
+            WarnIfMissing(audiencePanel, nameof(audiencePanel));
 
             // 試合終了後の Result シーンへの遷移は、このモーダルの NextButton だけが担う
             // （GameBootstrapper は MainGame にいる間は自動遷移しない）。未割り当てだと
@@ -130,30 +136,22 @@ namespace Takoda99.View
             // store のリスナー（Store.Notify はリスナー単位の例外処理を持たない）のどれか1つが
             // 例外を投げると OnActionApplied ごと落ち、OnMatchEnd が永久に呼ばれない。
             // それをモーダル表示の唯一の契機にしていたのが「優勝してもモーダルが出ない」の原因。
-            // しかも自動シーン遷移も止めたため、その場合 MainGame から出られなくなる。
             //
-            // state.Result は MatchEnd でしか入らない（Reducer）ので、条件としてはこれで十分。
-            // 描画処理より前に置くことで、後続で何が起きてもモーダルだけは必ず出る。
-            //
-            // 1位（優勝）にも MatchEnd は届く。中身は Dispatcher → MatchEndAction → Reducer と
-            // 欠けずに state.Result へ入る（FinalRank・Stats のほか、終わり方を表す Reason を持ち、
-            // 優勝＝最後まで残った場合は空文字）。
-            // 自店が最後まで残ると StoreEliminated（自店宛）は来ないため、優勝時にモーダルを出せる
-            // 根拠はこの MatchEnd 由来の state.Result だけになる。ここを唯一の契機として扱う。
-            if (state.Phase == ClientPhase.Result && state.Result != null && resultView != null)
+            // v0.8.0 では MatchEnd が空ペイロードになり state.Result が消えたため、条件を
+            // state.MatchEnded へ差し替える。順位は PersonalResult から取る。
+            // PersonalResult が未受信でも rank=0 でモーダルを出す：
+            // **試合が終わったのに画面から出られない状態を作らない**ことが、この一線の目的。
+            if (state.MatchEnded && resultView != null)
             {
-                var result = state.Result;
+                var rank = state.PersonalResult != null ? state.PersonalResult.FinalRank : 0;
 
                 // Result フェーズ中は state 変化のたびここへ来る。ログは実際に出す瞬間だけに絞る。
                 if (!resultView.IsShown)
                 {
-                    var won = string.IsNullOrEmpty(result.Reason);
-                    Debug.Log(
-                        $"{nameof(Renderer)}: MatchEnd 受信 rank={result.FinalRank} reason=\"{result.Reason}\" 優勝={won}。リザルトモーダルを表示します。",
-                        this);
+                    Debug.Log($"{nameof(Renderer)}: MatchEnd 受信 rank={rank}。リザルトモーダルを表示します。", this);
                 }
 
-                resultView.ShowIfHidden(result.FinalRank);
+                resultView.ShowIfHidden(rank);
             }
 
             // 試合開始の合図はサーバー（MatchStart ＝ InMatch 到達）。カウントダウンが
@@ -169,9 +167,7 @@ namespace Takoda99.View
 
             if (mainStore != null)
             {
-                mainStore.SetCreditLife(state.CreditLife);
-                mainStore.SetEvaluation(state.Normalized, state.Alive);
-                mainStore.SetPlayerName(FindSelfDisplayName(state));
+                mainStore.SetPlayerName(ResolveSelfDisplayName(state));
 
                 if (holding)
                 {
@@ -185,43 +181,68 @@ namespace Takoda99.View
                 }
             }
 
-            if (starRating != null)
+            // 自店の順位・スコア・生存数。**順位が本選の画面の主役**。
+            // 順位テキストの色（金銀銅・警告・脱落）も state から決まる（hud/01 §5.1）。
+            selfRank?.Apply(state);
+
+            // ランキング（上位N＋自分）。待機中は描かない。
+            if (rankingPanel != null)
             {
-                // 星は受信値そのまま（EvaluationUpdate.starRating）。ここで再計算しない。
-                starRating.SetRating(state.StarRating);
-            }
-
-            if (subStoreBoard != null)
-            {
-                subStoreBoard.SetAliveCount(state.AliveCount);
-
-                var others = state.Stores.Where(s => s.StoreId != state.SelfStoreId).ToList();
-
-                if (!subStoreBoardBound && others.Count > 0)
+                if (holding)
                 {
-                    subStoreBoard.Bind(others.Select(s => s.StoreId).ToList());
-                    subStoreBoardBound = true;
+                    rankingPanel.SetPanelVisible(false);
                 }
-
-                foreach (var summary in others)
+                else
                 {
-                    subStoreBoard.SetSummary(summary.StoreId, summary.CreditLife, summary.Alive);
-                    subStoreBoard.SetDisplayName(summary.StoreId, summary.DisplayName);
-                    if (summary.FinalRank.HasValue)
-                    {
-                        subStoreBoard.SetRank(summary.StoreId, summary.FinalRank.Value);
-                    }
+                    rankingPanel.Apply(state);
                 }
             }
 
-            if (rankBar != null)
+            // 下位30行の足切り警告パネル（ranking-view/05）。待機中は描かない。
+            if (bottomRankingPanel != null)
             {
-                rankBar.SetState(RankBarViewState.From(state.Rank, state.AliveCount, state.Params.MaxStores, state.Params.StormThresholdPct));
+                if (holding)
+                {
+                    bottomRankingPanel.SetPanelVisible(false);
+                }
+                else
+                {
+                    bottomRankingPanel.Apply(state);
+                }
+            }
+
+            // 11〜99位の一覧（ranking-view/07 §5.6）。**リザルトが出ている間だけ描く。**
+            // ResultCanvas はシーン上で常時アクティブ（非アクティブなのは子の BG / Result だけ）なので、
+            // 他のパネルと同じく holding だけで判定すると、試合中ずっと89行が画面中央〜右を覆ってしまう。
+            // 「自店が脱落したか」の権威は resultView.IsShown（Show / ShowIfHidden の両方で立つ）。
+            if (audiencePanel != null)
+            {
+                if (resultView != null && resultView.IsShown)
+                {
+                    audiencePanel.Apply(state);
+                }
+                else
+                {
+                    audiencePanel.SetPanelVisible(false);
+                }
+            }
+
+            // 足切り予告。秒読みの毎フレーム更新はパネル側の Update が行う。
+            // ここは受信値の差し替えのみ（ClientState に経過時間を書き戻さない）。
+            if (cullPanel != null)
+            {
+                if (holding)
+                {
+                    cullPanel.SetPanelVisible(false);
+                }
+                else
+                {
+                    cullPanel.SetWarning(state.Cull, state);
+                }
             }
 
             // 行列の描画。ここを呼ばないと、サーバー由来の客が state.Queue に溜まるだけで
-            // 画面に一切出ない（この結線漏れが「客がテストドライバ由来になっていた」原因）。
-            // 自店が脱落した後は観戦なので、state.Queue に何が残っていても行列は描かない。
+            // 画面に一切出ない。自店が脱落した後は観戦なので行列は描かない。
             if (customerQueue != null && !selfEliminated && !holding)
             {
                 customerQueue.Apply(state);
@@ -253,7 +274,6 @@ namespace Takoda99.View
         /// <remarks>
         /// 分母は「行列の先頭の客」から引く。<c>CurrentOrder</c> だけを見ると、前の客が帰ってから
         /// 次の客の打鍵が始まるまでの間だけ 0/0 に落ち、注文数の表示が客の入れ替わりから遅れて見える。
-        /// 先頭が入れ替わった瞬間に新しい注文数へ切り替わるようにする。
         /// </remarks>
         private void ApplyOrderCounter(ClientState state)
         {
@@ -273,20 +293,17 @@ namespace Takoda99.View
             mainStore.SetOrderProgress(prepared, front.View.OrderCount);
         }
 
-        /// <summary>自店の表示名。StoreListUpdate が届くまでは空になる（受信値をそのまま使う）。</summary>
-        private static string FindSelfDisplayName(ClientState state)
-        {
-            foreach (var summary in state.Stores)
-            {
-                if (summary.StoreId == state.SelfStoreId)
-                {
-                    return summary.DisplayName;
-                }
-            }
+        /// <summary>
+        /// 自店の表示名。MatchStart のキャッシュから引く（表示名を配るのは MatchStart だけで、
+        /// StoreListUpdate は v0.8.0 で廃止された）。
+        /// </summary>
+        private static string ResolveSelfDisplayName(ClientState state)
+            => state.DisplayNames.TryGetValue(state.SelfStoreId, out var name) ? name : string.Empty;
 
-            return string.Empty;
-        }
-
+        /// <summary>
+        /// 先頭客が入れ替わったら注文吹き出しを出し直す。
+        /// 我慢ゲージが廃止されたため、ここは吹き出しの出し入れだけになる。
+        /// </summary>
         private void ApplyServingCustomer(ClientState state)
         {
             var front = state.Queue.Count > 0 ? state.Queue[0] : null;
@@ -301,17 +318,9 @@ namespace Takoda99.View
 
             if (front is null)
             {
-                patienceTimer?.Stop();
                 orderBubble?.Hide();
                 return;
             }
-
-            // 我慢は「先頭に来て注文した瞬間」から減り始める。行列に並び始めた時刻（ArrivedAtLocalMs）を
-            // 起点にすると、待たされていた客ほど先頭に来た時点で既にゲージが減っており、
-            // 前の客に提供し終えた直後からゲージが尽きたままライフだけが減る。
-            var nowMs = (long)(Time.realtimeSinceStartupAsDouble * 1000d);
-            patienceTimer?.Stop();
-            patienceTimer?.Begin(nowMs, front.View.PatienceMaxMs);
 
             // 先頭に来た瞬間に注文文句を出す。文面は契約に無いため個数から組み立てる
             // （サーバーが文面を配信するようになったら第3引数に渡すだけでよい）。
@@ -322,19 +331,7 @@ namespace Takoda99.View
 
         public void OnCustomerArrived(CustomerView customer)
         {
-            // 対応中客の検知は HandleStateChanged 側で行う（01-renderer.md §4.2）。
-        }
-
-        public void OnCustomerLeft(string customerId, LeaveReason reason)
-        {
-            // 「怒り → 退店」で帰す。行列から消えた事実は state 側で分かるが、
-            // 提供済みか我慢切れかはこの通知でしか判別できない。
-            customerQueue?.MarkLeft(customerId);
-
-            if (patienceTimer != null && customerId == servingCustomerId)
-            {
-                patienceTimer.Stop();
-            }
+            // 対応中客の検知は HandleStateChanged 側で行う。
         }
 
         public void OnKeyFeedback(KeyResult result)
@@ -343,7 +340,7 @@ namespace Takoda99.View
 
         public void OnOrderServed(string customerId)
         {
-            // 「喜び → 退店」で帰す。
+            // 「喜び → 退店」で帰す。本選では客が減る契機はこれだけ（離脱は廃止）。
             customerQueue?.MarkServed(customerId);
         }
 
@@ -351,54 +348,81 @@ namespace Takoda99.View
         {
         }
 
-        public void OnForcedEliminationWarning(int untilTick, double thresholdPct)
+        /// <summary>
+        /// 足切りの予告。値の描画は state 駆動側（<see cref="HandleStateChanged"/>）が行うため、
+        /// ここは**受信の瞬間だけ必要な演出**（自分が対象圏に入った瞬間のアラート等）に使う。
+        /// </summary>
+        public void OnCullWarning(CullWarning warning)
         {
+            cullPanel?.OnWarningReceived(warning);
         }
 
-        public void OnStoreEliminated(string storeId, EliminationReason reason, int finalRank)
+        public void OnStoreEliminatedBatch(int stageIndex, IReadOnlyList<StoreEliminated> entries, bool includesSelf)
         {
-            resultView?.RecordElimination(storeId, finalRank);
-
-            if (store != null && storeId == store.State.SelfStoreId)
+            if (entries.Count == 0)
             {
-                // 自店が脱落したら行列を畳む。以降は観戦なので自店に客は来ない。
-                selfEliminated = true;
-                customerQueue?.ClearAll();
-                patienceTimer?.Stop();
-                orderBubble?.Hide();
-                resultView?.Show(finalRank);
+                return;
             }
+
+            // ★entries を1件ずつループして演出を呼ばない。件数だけを渡す。
+            // 個々の storeId が要るのはランキング表示側であり、そちらは state 経由で更新済み。
+            massElim?.Play(stageIndex, entries.Count, includesSelf);
+
+            if (!includesSelf)
+            {
+                return;
+            }
+
+            // 自店の脱落。この時点ではリザルトへ行かない（120秒の MatchEnd を待つ）。
+            selfEliminated = true;
+            customerQueue?.ClearAll();
+            orderBubble?.Hide();
+
+            // 最終ステージ（120秒）では直後に MatchEnd が来る。その場合は脱落モーダルではなく
+            // リザルトへ進むため、ここでは出さない。判定を state だけで閉じる。
+            if (store != null && store.State.MatchEnded)
+            {
+                return;
+            }
+
+            var selfFinalRank = FindSelfFinalRank(entries, store?.State.SelfStoreId);
+
+            // ★優勝者に脱落モーダルを出さない。
+            // 本選は120秒で1位も含む全店に StoreEliminatedBatch が飛ぶ（優勝＝最後まで残ったことの
+            // 表現であって、脱落イベント自体は全員に来る）。MatchEnd の到着を待って抑止する作りだと、
+            // batch → MatchEnd の順に届く間だけ優勝者に「脱落」が一瞬見える。順序に依存せず、
+            // finalRank だけで閉じる（リザルト演出の分岐基準 ResultTierRule と同じ考え方）。
+            if (selfFinalRank == 1)
+            {
+                return;
+            }
+
+            resultView?.Show(selfFinalRank);
         }
 
-        public void OnMatchEnd(int finalRank, MatchStats stats)
+        /// <summary>個人成績の保持は Store の責務。画面に出すのは個人成績シーン。</summary>
+        public void OnPersonalResult(PersonalResultState result)
+        {
+        }
+
+        public void OnMatchEnd()
         {
             // MatchEnd が届いたこと自体を必ず1回残す。1試合に1回しか来ないためログとしても静か。
             // このログが出ない＝MatchEnd がクライアントまで届いていない（もしくは Dispatcher の
             // OnActionApplied が手前で落ちている）と切り分けられる。
-            var served = stats != null ? stats.ServedCount : 0;
-            Debug.Log(
-                $"{nameof(Renderer)}.{nameof(OnMatchEnd)}: MatchEnd 受信 rank={finalRank} 提供数={served}",
-                this);
+            var rank = store?.State.PersonalResult?.FinalRank ?? 0;
+            Debug.Log($"{nameof(Renderer)}.{nameof(OnMatchEnd)}: MatchEnd 受信 rank={rank}", this);
 
+            selfEliminated = true;
             customerQueue?.ClearAll();
             orderBubble?.Hide();
-            patienceTimer?.Stop();
-
-            // 最後まで生き残った店（1位）には OnStoreEliminated が来ない。そのため
-            // 自店を順位一覧（上位10店）へ載せられるのはここだけになる。
-            if (!selfEliminated)
-            {
-                selfEliminated = true;
-                var selfStoreId = store?.State.SelfStoreId;
-                if (!string.IsNullOrEmpty(selfStoreId))
-                {
-                    resultView?.RecordElimination(selfStoreId, finalRank);
-                }
-            }
+            rankingPanel?.SetPanelVisible(false);
+            bottomRankingPanel?.SetPanelVisible(false);
+            cullPanel?.SetPanelVisible(false);
 
             // モーダル自体は HandleStateChanged（state 駆動）が先に出していることもある。
             // ShowIfHidden は冪等なので、どちらが先でも順位を上書きせず二重表示にもならない。
-            resultView?.ShowIfHidden(finalRank);
+            resultView?.ShowIfHidden(rank);
         }
 
         public void OnLifecycleChanged(ClientPhase from, ClientPhase to)
@@ -408,6 +432,24 @@ namespace Takoda99.View
         public void OnConnectionTrouble(string kind)
         {
             Debug.LogWarning($"{nameof(Renderer)}: connection trouble ({kind})", this);
+        }
+
+        private static int FindSelfFinalRank(IReadOnlyList<StoreEliminated> entries, string selfStoreId)
+        {
+            if (string.IsNullOrEmpty(selfStoreId))
+            {
+                return 0;
+            }
+
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (entries[i].StoreId == selfStoreId)
+                {
+                    return entries[i].FinalRank;
+                }
+            }
+
+            return 0;
         }
     }
 }

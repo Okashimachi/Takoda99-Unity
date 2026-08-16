@@ -45,16 +45,17 @@ namespace Takoda99.Client.Tests.State
             Assert.Equal(3, state.HeatLevel);
         }
 
+        /// <summary>
+        /// 本選では生存数の供給源が EvaluationUpdate だけになった
+        /// （StoreListUpdate は廃止。Ranking の alive を数えることもしない）。
+        /// </summary>
         [Fact]
-        public void AliveCountはEvaluationUpdateとStoreListUpdateの双方から更新され後着が勝つ()
+        public void AliveCountはEvaluationUpdateから更新され後着が勝つ()
         {
             var state = MatchState.FromMatchStart(TestMessages.MatchStart(), 0);
 
             state = state.Apply(new EvaluationUpdate { AliveCount = 42 });
             Assert.Equal(42, state.AliveCount);
-
-            state = state.Apply(new StoreListUpdate { AliveCount = 40 });
-            Assert.Equal(40, state.AliveCount);
 
             state = state.Apply(new EvaluationUpdate { AliveCount = 39 });
             Assert.Equal(39, state.AliveCount);
@@ -76,12 +77,10 @@ namespace Takoda99.Client.Tests.State
         {
             var state = MatchState.FromMatchStart(
                 TestMessages.MatchStart(
-                    stormThresholdPct: 0.2,
                     finalStageAliveThreshold: 12,
                     finalRushAliveThreshold: 4),
                 0);
 
-            Assert.Equal(0.2, state.StormThresholdPct);
             Assert.Equal(12, state.FinalStageAliveThreshold);
             Assert.Equal(4, state.FinalRushAliveThreshold);
         }

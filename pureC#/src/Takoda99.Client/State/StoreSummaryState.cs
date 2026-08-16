@@ -1,5 +1,6 @@
 // 仕様書: pureC#/docs/.sdd/value-objects/02-store-state.md
-// 99店ミニ盤面用の全店サマリー。他店の評価・信用は StoreListUpdate のフルスナップからのみ得られる（SV-01）。
+// 99店ミニ盤面用の全店サマリー。他店の状況は MatchStart.stores の初期スナップからのみ得られる
+// （v0.8.0 以降の試合中の配信は RankingSnapshot / RankingDelta が担う）。
 
 using System.Collections.Generic;
 using Takoda99.Proto;
@@ -10,9 +11,8 @@ namespace Takoda99.Client.State
     public readonly record struct StoreSummaryState(
         string StoreId,
         string DisplayName,
-        double EvalNormalized,
+        int Score, // 順位を決める累積値（v0.8.0・本選）
         int Rank,
-        int CreditLife,
         bool Alive,
         int? FinalRank // 脱落済みの店のみ。null は「まだ脱落していない」（Proto v0.3.0）
     )
@@ -22,15 +22,14 @@ namespace Takoda99.Client.State
             return new StoreSummaryState(
                 StoreId: summary.StoreId,
                 DisplayName: summary.DisplayName,
-                EvalNormalized: summary.EvalNormalized,
+                Score: summary.Score,
                 Rank: summary.Rank,
-                CreditLife: summary.CreditLife,
                 Alive: summary.Alive,
                 FinalRank: summary.FinalRank);
         }
 
         /// <summary>
-        /// <c>MatchStart.stores</c> / <c>StoreListUpdate.stores</c> のフルスナップから全店ぶんを生成する。
+        /// <c>MatchStart.stores</c> のフルスナップから全店ぶんを生成する。
         /// 件数が <c>params.maxStores</c> と一致しない（欠員あり）場合でも、そのまま受信件数を保持する。
         /// </summary>
         public static IReadOnlyList<StoreSummaryState> FromAll(List<StoreSummary> stores)

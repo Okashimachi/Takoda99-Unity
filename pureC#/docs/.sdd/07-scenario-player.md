@@ -46,8 +46,8 @@ JSON。`pureC#/testdata/scenarios/*.json` に置く。
 
 ```jsonc
 {
-  "name": "claimer-drops-evaluation",
-  "description": "クレーマー客の対応が遅れ、評価が下がって赤帯に落ちる",
+  "name": "score-progresses",
+  "description": "EvaluationUpdate で score が積み上がり順位が上がる",
   "steps": [
     { "atMs": 0,    "kind": "connection", "state": "Connected" },
     { "atMs": 0,    "kind": "receive", "type": "MatchStart", "payload": { } },
@@ -173,7 +173,7 @@ pureC#/
   testdata/
     scenarios/
       minimal-match.json
-      claimer-drops-evaluation.json
+      ranking-snapshot-and-delta.json
       ...
 ```
 
@@ -193,19 +193,25 @@ pureC#/
 
 | シナリオ | 確認する分岐 |
 |---|---|
+> **本選（Proto v0.8.0）で一覧を差し替えた。** 我慢ゲージ・信用・相対評価を確認していた4本
+> （`customer-leaves-while-typing` / `patience-expires-but-no-leave` / `credit-decreases` /
+> `evaluation-bands` / `claimer-drops-evaluation` / `store-list-snapshot`）は、確認対象の機能ごと
+> 廃止されたため削除し、本選の分岐を確認する4本に置き換えている（[cleanup/01-removed-features.md](./cleanup/01-removed-features.md)）。
+
+| シナリオ | 確認する分岐 |
+|---|---|
 | `minimal-match` | `MatchStart` → 客1人来店 → 全単語打鍵 → `OrderServed` 送信。最短の正常系 |
 | `order-progress-variants` | `orderCount` が 4/6/8/12 のとき、たこ焼き台の `Batter`/`Cooked`/`Empty` の数が正しいか |
-| `customer-leaves-while-typing` | **打鍵の途中で `CustomerLeft` が届く。** 進行中の注文が破棄され、次客へ繰り上がるか（幽霊注文が残らないか） |
-| `patience-expires-but-no-leave` | 我慢ゲージの推定値が0になっても `CustomerLeft` が来ない。**客が行列に残り続けるか**（サーバー権威の確認） |
+| `elimination-batch-while-typing` | **打鍵の途中で自店を含む `StoreEliminatedBatch` が届く。** 本選に残る唯一の中断経路。以後の入力が無効になり幽霊注文が残らないか |
 | `queue-accumulates` | 複数 `CustomerArrived` → 行列の並び順と先頭の繰り上がり |
-| `evaluation-bands` | `normalized` を 0.9 / 0.5 / 0.1 と流し、評価3段階（緑/黄/赤）が切り替わるか |
-| `credit-decreases` | `CreditUpdate` で `life` が 3→2→1→0。提灯の点灯数が追従し、**`delta` の加算で値を作っていないか** |
-| `store-list-snapshot` | `StoreListUpdate` のフルスナップで全店が置換され、**自店の `StoreState` が巻き戻らないか** |
-| `self-eliminated` | 自店の `StoreEliminated` → リザルト遷移、以後の入力が無効になるか |
-| `other-store-eliminated` | 他店の `StoreEliminated` → ミニ盤面のみ更新、自店は無影響 |
+| `score-progresses` | `EvaluationUpdate` の `score` を −40 → 1240 と流し、**負値がクランプされず・差分が累積されない**か |
+| `ranking-snapshot-and-delta` | 全量で表が置き換わり、差分では `score`/`alive` だけが上書きされるか。**空の全量で表が消えないか** |
+| `cull-countdown` | `ForcedEliminationWarning` が常時届く。受信時刻起点のローカル補間で秒読みが滑らかか。`cutStoreIds` が `null` でも落ちないか |
+| `self-eliminated` | 自店を含む `StoreEliminatedBatch` → `Spectating`、直後の `PersonalResult` を保持、120秒の `MatchEnd` で `Result` へ |
+| `other-store-eliminated` | 自店を含まない `StoreEliminatedBatch` → ランキング表のみ更新、自店は無影響 |
 | `phase-and-heat` | `PhaseChange` / `DifficultyUpdate`。**`DifficultyUpdate` 未受信の間 `heatLevel` が 0 のままか** |
 | `unknown-message-type` | 未知typeを流しても落ちず、後続のメッセージが正常に処理されるか（前方互換） |
-| `few-players-match` | `maxStores` に満たない人数（例20店）で開始。ミニ盤面が破綻しないか |
+| `few-players-match` | `maxStores` に満たない人数（例3店）で開始。ランキング表が破綻しないか |
 
 ## 8. 依存関係
 

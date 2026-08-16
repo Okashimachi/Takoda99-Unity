@@ -23,21 +23,22 @@ namespace Takoda99.Client.Tests.State
             Assert.Equal(new[] { "c1", "c2" }, store.StoreQueue);
         }
 
+        /// <summary>
+        /// 本選（v0.8.0）では客が逃げない。行列から客が減る契機は**提供完了だけ**であり、
+        /// どれだけ時間が経っても勝手に消えない（一度出たお題は必ず打ち切られる）。
+        /// </summary>
         [Fact]
-        public void 残量推定が0になってもCustomerLeftを受信するまで行列に残り続ける()
+        public void 時間が経っても客は行列から消えず提供完了でのみ取り除かれる()
         {
             var store = StoreState.FromMatchStart(TestMessages.MatchStart(selfStoreId: "store-01"))
                 .WithCustomerEnqueued("c1");
-            var customer = CustomerState.FromCustomerView(
-                TestMessages.CustomerView("c1", patienceMaxMs: 5_000), arrivedAtElapsedMs: 0);
+            var customer = CustomerState.FromCustomerView(TestMessages.CustomerView("c1"), arrivedAtElapsedMs: 0);
+            var match = MatchState.FromMatchStart(TestMessages.MatchStart(), 0).Tick(600_000);
 
-            // 我慢ゲージの推定残量が尽きた時刻でも、離脱はサーバー権威（CustomerLeft）でしか確定しない
-            var estimatedLeftMs = customer.PatienceMaxMs - (10_000 - customer.ArrivedAtElapsedMs);
-            Assert.True(estimatedLeftMs <= 0);
+            Assert.True(match.ElapsedMs - customer.ArrivedAtElapsedMs > 0);
             Assert.Equal(new[] { "c1" }, store.StoreQueue);
 
-            store = store.WithCustomerDequeued(new CustomerLeft { CustomerId = "c1", Reason = LeaveReason.Timeout }
-                .CustomerId);
+            store = store.WithCustomerDequeued("c1");
 
             Assert.Empty(store.StoreQueue);
         }
@@ -73,27 +74,15 @@ namespace Takoda99.Client.Tests.State
         [Fact]
         public void 受信値がそのまま保持される()
         {
-            var view = TestMessages.CustomerView("c9", orderCount: 6, patienceMaxMs: 18_000,
-                attribute: CustomerAttribute.Buzz);
+            var view = TestMessages.CustomerView("c9", orderCount: 6, attribute: CustomerAttribute.Buzz);
 
             var customer = CustomerState.FromCustomerView(view, 500);
 
             Assert.Equal("c9", customer.CustomerId);
+            // v0.8.0 では属性は見た目の出し分け専用（スコアに影響しない）が、値は保持する。
             Assert.Equal(CustomerAttribute.Buzz, customer.Attribute);
             Assert.Equal(6, customer.OrderCount);
-            Assert.Equal(18_000, customer.PatienceMaxMs);
-        }
-
-        [Fact]
-        public void PatienceStartedAtServerMsは受信値のまま我慢ゲージの起点として保持される()
-        {
-            var view = TestMessages.CustomerView("c9", patienceStartedAtServerMs: 4_200);
-
-            var customer = CustomerState.FromCustomerView(view, arrivedAtElapsedMs: 5_000);
-
-            Assert.Equal(4_200, customer.PatienceStartedAtServerMs);
-            // ArrivedAtElapsedMs はサーバー時刻とのドリフト検知用で、起点には使わない
-            Assert.Equal(5_000, customer.ArrivedAtElapsedMs);
+            Assert.Equal(500, customer.ArrivedAtElapsedMs);
         }
     }
 }
