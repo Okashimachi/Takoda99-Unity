@@ -33,7 +33,15 @@ namespace Takoda99.View.ValueObjects
         /// <summary>自店が対象圏内か（サーバー値そのまま。クライアントで rank と比較しない）。</summary>
         public bool SelfAtRisk { get; }
 
-        /// <summary>警告の強さ 0..1。SelfAtRisk かつ残りが少ないほど 1 に近づく。</summary>
+        /// <summary>
+        /// 警告の強さ 0..1。SelfAtRisk かつ残りが少ないほど 1 に近づく。
+        /// <para>
+        /// ★これは画面端アラートには**使わない**。アラートの段階・強さは
+        /// <see cref="CullAlertState"/> が持つ（ranking-view/02 §5・value-objects/13）。
+        /// 「ぎりぎり圏外」の Caution 段階と脱落後の停止を、この値は表現できないため。
+        /// 秒読みの数字だけを扱うこの VO に強度を持たせた名残であり、新しい参照を増やさないこと。
+        /// </para>
+        /// </summary>
         public float AlertIntensity { get; }
 
         /// <summary>warning が null なら false。パネルの表示可否（0秒と区別する）。</summary>

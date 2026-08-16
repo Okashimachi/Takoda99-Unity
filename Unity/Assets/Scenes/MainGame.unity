@@ -10553,10 +10553,19 @@ MonoBehaviour:
   rowPrefab: {fileID: 5422705557350619077, guid: bdfe9140f35c3eb4cb5f494d35521c4b, type: 3}
   rowsRoot: {fileID: 705940073}
   maxCutRows: 5
+  bottomRangeCount: 30
   overflowText: {fileID: 821741653}
   alertOverlay: {fileID: 1629167052}
+  alertOverlayImage: {fileID: 1629167053}
   alertSe: {fileID: 0}
   atRiskClip: {fileID: 0}
+  cautionColor: {r: 1, g: 0.72, b: 0.28, a: 1}
+  dangerColor: {r: 0.95, g: 0.15, b: 0.1, a: 1}
+  cautionMaxAlpha: 0.3
+  dangerMaxAlpha: 0.75
+  pulseHz: 0.33
+  clearRadius: 0.62
+  edgeRadius: 1.15
 --- !u!1 &1234039565
 GameObject:
   m_ObjectHideFlags: 0
@@ -14363,7 +14372,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.9, g: 0.05, b: 0.05, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:

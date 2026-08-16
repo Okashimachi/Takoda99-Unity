@@ -38,6 +38,7 @@ Unity側 View用派生状態（本ディレクトリの対象）
 | 10 | [10-result-tier.md](./10-result-tier.md) | `ResultTier`（1位／2〜3位／4〜10位／11位以下） | リザルトの順位別演出分岐 |
 | 11 | [11-rank-ordinal.md](./11-rank-ordinal.md) | `RankOrdinal`（順位 → `1st` / `22nd` / `--`） | ランキング行の順位表記 |
 | 12 | [12-ranking-row-style.md](./12-ranking-row-style.md) | `RankingRowStyle` / `RankingRowTone`（寸法・フォント・配色） | 上位の金銀銅と段階的な大きさ、下位の足切り帯 |
+| 13 | [13-cull-alert-state.md](./13-cull-alert-state.md) | `CullAlertState` / `CullAlertTier`（出さない／軽く／強く） | 画面端の淘汰アラート |
 
 > **01・04〜07 は予選版で、本選では使われない**（信用ライフ・我慢ゲージ・相対評価の廃止に伴う）。
 > 撤去状況は [../cleanup/01-removed-views.md](../cleanup/01-removed-views.md) を参照。
