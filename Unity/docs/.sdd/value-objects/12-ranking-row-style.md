@@ -129,7 +129,10 @@ public sealed class RankingRowPalette : ScriptableObject
 
 | 用途 | `Size` | RankText | NameText | ScoreText | 由来 Prefab |
 |---|---|---|---|---|---|
-| 下位30行すべて | (120, 29) | 12 | 18 | 非表示 | `BottomRanker` |
+| 下位30行すべて | (120, 29) | 12 | 12 | 非表示 | `BottomRanker` |
+
+> NameText は当初 18 だったが、`BottomRanker.prefab` の authored 値（12）より大きく、
+> 狭い行（120×29）で文字が大きすぎたため 12 に修正した（`BottomRanker.prefab` の値と一致させる）。
 
 > ~~1〜3位の寸法が同じで色だけ違うのは意図通り。**金銀銅は「大きさ」ではなく「色」で差を付ける**。~~
 > ~~大きさまで3段にすると1位だけが極端になり、2位・3位が4〜6位と見分けにくくなる。~~

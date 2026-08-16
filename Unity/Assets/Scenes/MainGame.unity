@@ -2506,10 +2506,10 @@ MonoBehaviour:
   wordRoma: {fileID: 1833503924}
   wordLargeMaxLength: 3
   wordMediumMaxLength: 6
-  wordFontSizeLarge: 140
-  wordFontSizeMedium: 100
-  wordFontSizeSmall: 72
-  romaFontScale: 0.45
+  wordFontSizeLarge: 50
+  wordFontSizeMedium: 36
+  wordFontSizeSmall: 26
+  romaFontScale: 0.5
   typedAlpha: 0.35
   orderNumeratorText: {fileID: 789756507}
   orderDenominatorText: {fileID: 1831607082}

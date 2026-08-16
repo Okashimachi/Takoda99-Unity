@@ -69,10 +69,10 @@ namespace Takoda99.View.ValueObjects
             return new RankingRowStyle(new Vector2(100f, 50f), 12f, 16f, 12f, RankingRowTone.Upper);
         }
 
-        /// <summary>下位パネル用。寸法は固定で、色だけが帯で変わる。</summary>
+        /// <summary>下位パネル用。寸法は固定で、色だけが帯で変わる。フォントサイズは BottomRanker.prefab の authored 値(12/12)と一致させる。</summary>
         public static RankingRowStyle ForBottomBand(RankingRowTone tone)
         {
-            return new RankingRowStyle(new Vector2(120f, 29f), 12f, 18f, 0f, tone);
+            return new RankingRowStyle(new Vector2(120f, 29f), 12f, 12f, 0f, tone);
         }
 
         /// <summary>同じ寸法・フォントサイズのまま Tone だけ差し替える。</summary>

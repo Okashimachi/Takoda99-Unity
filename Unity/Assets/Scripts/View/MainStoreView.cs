@@ -33,12 +33,15 @@ namespace Takoda99.View
         [Tooltip("この文字数までが中サイズ（M）。これを超えると小サイズ（S）。")]
         [SerializeField] private int wordMediumMaxLength = OrderWordSizeRule.DefaultMediumMaxLength;
 
-        [SerializeField] private float wordFontSizeLarge = 140f;
-        [SerializeField] private float wordFontSizeMedium = 100f;
-        [SerializeField] private float wordFontSizeSmall = 72f;
+        // Medium は WordPanel/Hiragana Prefab の authored fontSize(36) に合わせる。
+        // Large/Small は元の比率（140:100:72）を保ったまま Medium 基準で再計算した値。
+        [SerializeField] private float wordFontSizeLarge = 50f;
+        [SerializeField] private float wordFontSizeMedium = 36f;
+        [SerializeField] private float wordFontSizeSmall = 26f;
 
+        // WordPanel/Roma Prefab の authored fontSize(18) / Hiragana(36) = 0.5。
         [Tooltip("ローマ字行はかな行に対するこの倍率で描く。")]
-        [SerializeField] private float romaFontScale = 0.45f;
+        [SerializeField] private float romaFontScale = 0.5f;
         [SerializeField, Range(0f, 1f)] private float typedAlpha = 0.35f;
 
         // ---- 注文カウンタ（OrderCounter） ----
