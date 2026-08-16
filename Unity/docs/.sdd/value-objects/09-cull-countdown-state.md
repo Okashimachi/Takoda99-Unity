@@ -57,6 +57,11 @@ namespace Takoda99.View.ValueObjects
 | C6 | `CutLineText`：`CutLineRank <= 0` なら空文字。それ以外は `$"{CutLineRank}位以下が脱落"` |
 | C7 | `AlertIntensity`：`SelfAtRisk == false` なら 0。true なら `1 - clamp01(残りms / alertWindowMs)`（`alertWindowMs` は既定 10000） |
 
+> **★`AlertIntensity` は画面端アラートには使わない（役目を終えた値）。**
+> アラートの段階と強さは [13-cull-alert-state.md](./13-cull-alert-state.md) の `CullAlertState` が持つ。
+> この値では「ぎりぎり圏外（`Caution`）」と「脱落後は全部止める」を表現できないため。
+> 秒読みの数字を扱うこの VO に強度を同居させた名残であり、**新しい参照を増やさないこと。**
+
 ### 3.1 最終ステージについて
 
 最終ステージでは `CutLineRank == 2` が届く（Proto コメント。処理上は1位も脱落するが、表示は「1位以外が脱落対象」とするのが企画意図）。

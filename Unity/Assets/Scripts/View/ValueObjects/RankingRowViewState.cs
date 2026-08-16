@@ -281,6 +281,70 @@ namespace Takoda99.View.ValueObjects
             return result;
         }
 
+        /// <summary>
+        /// <see cref="BuildBottom"/> と同じ範囲に指定の店が入っているかだけを返す（行を作らない）。
+        /// 淘汰アラートが「ぎりぎり圏外」を判定するのに毎回リストを組み立てないための軽量版。
+        /// 範囲の式は BuildBottom と同一（ranking-view/05 §5.1）。**片方だけ直さないこと。**
+        /// </summary>
+        public static bool IsInBottomRange(
+            RankingTable ranking,
+            string storeId,
+            int aliveCount,
+            int count)
+        {
+            if (ranking == null || ranking.Rows.Count == 0 || count <= 0 || string.IsNullOrEmpty(storeId))
+            {
+                return false;
+            }
+
+            var rows = ranking.Rows;
+            var start = Math.Max(0, aliveCount - count);
+            var end = Math.Min(rows.Count, start + count);
+
+            for (var i = start; i < end; i++)
+            {
+                if (string.Equals(rows[i].StoreId, storeId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 先頭 skipCount 件を飛ばして count 件（ranking-view/07 §4）。並びは Rank 昇順のまま再ソートしない。
+        /// 足りなければあるだけ返す（例外を出さない）。
+        /// </summary>
+        public static IReadOnlyList<RankingRowViewState> BuildRange(
+            RankingTable ranking,
+            string selfStoreId,
+            int authoritativeRank,
+            int authoritativeScore,
+            int skipCount,
+            int count)
+        {
+            if (ranking == null || ranking.Rows.Count == 0 || count <= 0)
+            {
+                return Array.Empty<RankingRowViewState>();
+            }
+
+            var rows = ranking.Rows;
+            var start = Math.Max(0, skipCount);
+            var end = Math.Min(rows.Count, start + count);
+
+            var result = new List<RankingRowViewState>(Math.Max(0, end - start));
+            for (var i = start; i < end; i++)
+            {
+                var row = rows[i];
+                result.Add(IsSelf(row.StoreId, selfStoreId)
+                    ? RankingRowViewState.FromSelf(row, authoritativeRank, authoritativeScore)
+                    : RankingRowViewState.From(row, false));
+            }
+
+            return result;
+        }
+
         private static bool IsSelf(string storeId, string selfStoreId)
             => !string.IsNullOrEmpty(selfStoreId) && string.Equals(storeId, selfStoreId, StringComparison.Ordinal);
     }

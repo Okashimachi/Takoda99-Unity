@@ -92,6 +92,15 @@ namespace Takoda99.View.Ranking
         /// <summary>1行の高さ(px)。BottomRanker.prefab の高さと一致させる。</summary>
         [SerializeField] private float rowHeight = 29f;
 
+        /// <summary>横の列数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 2）。</summary>
+        [SerializeField] private int columnCount = 2;
+
+        /// <summary>1列あたりの行数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 15）。</summary>
+        [SerializeField] private int rowsPerColumn = 15;
+
+        /// <summary>列と列の中心間の距離(px)。BottomRanker.prefab の幅より広くする（既定 125）。</summary>
+        [SerializeField] private float columnSpacing = 125f;
+
         [SerializeField] private float rowMoveDuration = 0.25f;
 
         public void Apply(ClientState state);
@@ -165,15 +174,23 @@ start = Max(0, aliveCount - count)
 
 ### 5.3 行の配置
 
-上位と違いスロットは使わない。すべて同じ高さなので等間隔でよい。
+上位と違いスロットは使わない。すべて同じ高さなので数式で並べる。
+
+**縦一列（30行）ではなく、横2列×縦15行のグリッドに並べる。**
+1列30行だと画面外まで溢れるため（[c28ae36]の初期配置の反省）、パネル内に収まる2列に分割する。
+`index` は列優先で埋める（0列目を上から15件埋めたのち、1列目へ移る＝1〜15位が左列、16〜30位が右列）。
 
 ```
-target = new Vector2(rect.anchoredPosition.x, -rowHeight * i)
+column = index / rowsPerColumn          // rowsPerColumn = 15
+row    = index % rowsPerColumn
+x = (column - (columnCount - 1) / 2) * columnSpacing
+y = ((rowsPerColumn - 1) / 2 - row) * rowHeight
 ```
 
-既存の `RankingRowLayout.Apply` がこの計算をそのまま持っているので、**再利用する**
+`GridSlotSource`（`RankingSwapSettings.cs`）がこの計算を持つ。
+既存の `RankingRowLayout.Apply` は `IRankingSlotSource` を介して座標を受け取るだけなので変更不要。
 （`RankingPanelView` は [04](./04-top-ranking-slots.md) でスロット版へ移るため、
-等間隔版はこのパネルが引き取る形になる）。
+数式配置はこのパネルが引き取る形になる）。
 
 行のプールは既存の `RankingRowPool` をそのまま使う（storeId キー）。
 表示範囲から出た店は `ReleaseAllExcept` でプールへ戻る。

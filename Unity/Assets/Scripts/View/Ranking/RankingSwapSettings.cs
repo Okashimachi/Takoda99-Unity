@@ -74,4 +74,44 @@ namespace Takoda99.View.Ranking
             return false;
         }
     }
+
+    /// <summary>
+    /// 横 columnCount × 縦 rowCount のグリッド用 <see cref="IRankingSlotSource"/>（下位パネルの2列表示）。
+    /// index は列優先で埋める（0列目を上から rowCount 件埋めたのち、1列目へ移る）。
+    /// 縦は rowCount 件を中央揃えで積み、横は columnCount 列を columnSpacing 間隔で中央揃えする。
+    /// </summary>
+    internal sealed class GridSlotSource : IRankingSlotSource
+    {
+        private readonly int columnCount;
+        private readonly int rowCount;
+        private readonly float rowHeight;
+        private readonly float columnSpacing;
+
+        public GridSlotSource(int columnCount, int rowCount, float rowHeight, float columnSpacing)
+        {
+            this.columnCount = columnCount;
+            this.rowCount = rowCount;
+            this.rowHeight = rowHeight;
+            this.columnSpacing = columnSpacing;
+        }
+
+        public int Count => columnCount * rowCount;
+
+        public Vector2 PositionOf(int index)
+        {
+            var column = index / rowCount;
+            var row = index % rowCount;
+
+            var x = (column - (columnCount - 1) / 2f) * columnSpacing;
+            var y = ((rowCount - 1) / 2f - row) * rowHeight;
+            return new Vector2(x, y);
+        }
+
+        /// <summary>グリッドも等間隔と同じく寸法を持たない。</summary>
+        public bool TryGetSize(int index, out Vector2 size)
+        {
+            size = Vector2.zero;
+            return false;
+        }
+    }
 }

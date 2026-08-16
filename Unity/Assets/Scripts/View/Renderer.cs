@@ -31,6 +31,7 @@ namespace Takoda99.View
         [SerializeField] private Ranking.BottomRankingPanelView bottomRankingPanel; // ranking-view/05
         [SerializeField] private Ranking.CullCountdownPanelView cullPanel;     // ranking-view/02
         [SerializeField] private Elimination.MassEliminationEffect massElim;   // elimination/01
+        [SerializeField] private Ranking.AudiencePanelView audiencePanel;      // ranking-view/07
 
         private IStore store;
         private ITypingJudge typingJudge;
@@ -83,6 +84,7 @@ namespace Takoda99.View
             WarnIfMissing(bottomRankingPanel, nameof(bottomRankingPanel));
             WarnIfMissing(cullPanel, nameof(cullPanel));
             WarnIfMissing(massElim, nameof(massElim));
+            WarnIfMissing(audiencePanel, nameof(audiencePanel));
 
             // 試合終了後の Result シーンへの遷移は、このモーダルの NextButton だけが担う
             // （GameBootstrapper は MainGame にいる間は自動遷移しない）。未割り当てだと
@@ -205,6 +207,22 @@ namespace Takoda99.View
                 else
                 {
                     bottomRankingPanel.Apply(state);
+                }
+            }
+
+            // 11〜99位の一覧（ranking-view/07 §5.6）。**リザルトが出ている間だけ描く。**
+            // ResultCanvas はシーン上で常時アクティブ（非アクティブなのは子の BG / Result だけ）なので、
+            // 他のパネルと同じく holding だけで判定すると、試合中ずっと89行が画面中央〜右を覆ってしまう。
+            // 「自店が脱落したか」の権威は resultView.IsShown（Show / ShowIfHidden の両方で立つ）。
+            if (audiencePanel != null)
+            {
+                if (resultView != null && resultView.IsShown)
+                {
+                    audiencePanel.Apply(state);
+                }
+                else
+                {
+                    audiencePanel.SetPanelVisible(false);
                 }
             }
 

@@ -335,5 +335,75 @@ namespace Takoda99.View.Tests
             Assert.Empty(RankingRowsBuilder.BuildBottom(new RankingTable(), "s1", 1, 0, aliveCount: 0, count: 30));
             Assert.Empty(RankingRowsBuilder.BuildBottom(null, "s1", 1, 0, aliveCount: 0, count: 30));
         }
+
+        // ── RankingRowsBuilder.BuildRange ───────────────────
+        // 仕様書: Unity/docs/.sdd/ranking-view/07-audience-panel.md §7 テスト観点
+
+        [Fact]
+        public void BuildRange_先頭10件を飛ばして11から99位の89件が返る()
+        {
+            var rows = RankingRowsBuilder.BuildRange(Table99(), "store-50", 50, 50, skipCount: 10, count: 89);
+
+            Assert.Equal(89, rows.Count);
+            Assert.Equal("11th", rows[0].RankText);
+            Assert.Equal("99th", rows[88].RankText);
+        }
+
+        [Fact]
+        public void BuildRange_先頭10件_1から10位が含まれない()
+        {
+            var rows = RankingRowsBuilder.BuildRange(Table99(), "store-50", 50, 50, skipCount: 10, count: 89);
+
+            Assert.DoesNotContain(rows, r => r.StoreId == "store-01" || r.StoreId == "store-10");
+        }
+
+        [Fact]
+        public void BuildRange_並びがRank昇順のまま()
+        {
+            var rows = RankingRowsBuilder.BuildRange(Table99(), "store-50", 50, 50, skipCount: 10, count: 89);
+
+            var ranks = rows.Select(r => int.Parse(new string(r.RankText.TakeWhile(char.IsDigit).ToArray()))).ToList();
+            var sorted = new List<int>(ranks);
+            sorted.Sort();
+
+            Assert.Equal(sorted, ranks);
+        }
+
+        [Fact]
+        public void BuildRange_Rowsが不足していても例外が出ずあるだけ返る()
+        {
+            var table = new RankingTable
+            {
+                Rows = new List<RankingRow>
+                {
+                    Row("s1", 1),
+                    Row("s2", 2),
+                    Row("s3", 3),
+                },
+            };
+
+            var rows = RankingRowsBuilder.BuildRange(table, "s1", 1, 0, skipCount: 1, count: 89);
+
+            Assert.Equal(2, rows.Count);
+            Assert.Equal("2nd", rows[0].RankText);
+        }
+
+        [Fact]
+        public void BuildRange_空のRankingTableなら空リストになる()
+        {
+            Assert.Empty(RankingRowsBuilder.BuildRange(new RankingTable(), "s1", 1, 0, skipCount: 10, count: 89));
+            Assert.Empty(RankingRowsBuilder.BuildRange(null, "s1", 1, 0, skipCount: 10, count: 89));
+        }
+
+        [Fact]
+        public void BuildRange_自分が範囲に入ると権威値で上書きされる()
+        {
+            var rows = RankingRowsBuilder.BuildRange(Table99(), "store-50", 7, 888, skipCount: 10, count: 89);
+
+            var self = rows.Single(r => r.IsSelf);
+            Assert.Equal("store-50", self.StoreId);
+            Assert.Equal("7th", self.RankText);
+            Assert.Equal("888", self.ScoreText);
+        }
     }
 }
