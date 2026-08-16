@@ -121,7 +121,8 @@ namespace Takoda99.View.ValueObjects
 
         public string ScoreText { get; }       // "1200" / "-30"
 
-        public string AliveCountText { get; }  // "残り 55 店"
+        /// <summary>生存店数。**数字だけ**（"55"）。単位や「残り」はシーン側の固定テキストで添える。</summary>
+        public string AliveCountText { get; }  // "55"
 
         private SelfRankViewState(string rankText, string scoreText, string aliveCountText)
         {
@@ -136,7 +137,7 @@ namespace Takoda99.View.ValueObjects
                 rank >= 1 ? rank.ToString() : RankingRowViewState.UnknownRankText,
                 score.ToString(),
                 // 0店は表示しない（試合前・未受信と区別がつかないため）。
-                aliveCount >= 1 ? "残り " + aliveCount + " 店" : string.Empty);
+                aliveCount >= 1 ? aliveCount.ToString() : string.Empty);
         }
 
         public bool Equals(SelfRankViewState other)
