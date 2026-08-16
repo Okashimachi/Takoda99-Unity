@@ -110,9 +110,21 @@ namespace Takoda99.View.Ranking
             var state = CullCountdownState.From(warning, nowMs);
 
             // AlertIntensity は毎フレーム変わるので Equals の外側で適用する。
+            // 02 §5「残り秒が少ないほど強くする」を、単純フェードではなく明滅（パルス）で表現する。
+            // intensity が上がるほど明滅を速く・深くし、「もっと激しく」に応える。
             if (alertOverlay != null)
             {
-                alertOverlay.alpha = state.AlertIntensity;
+                var intensity = state.AlertIntensity;
+                if (intensity > 0f)
+                {
+                    var pulseHz = Mathf.Lerp(1.5f, 6f, intensity);
+                    var pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * pulseHz * Mathf.PI * 2f);
+                    alertOverlay.alpha = intensity * Mathf.Lerp(0.55f, 1f, pulse);
+                }
+                else
+                {
+                    alertOverlay.alpha = 0f;
+                }
             }
 
             // C2: 表示秒が変わったフレームだけ TMP.text に代入する。

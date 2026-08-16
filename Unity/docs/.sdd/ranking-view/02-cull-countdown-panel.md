@@ -93,9 +93,17 @@ private string ResolveName(ClientState state, string storeId)
 | 状態 | 演出 |
 |---|---|
 | `SelfAtRisk == false` | 通常表示（パネルは出ているが静か） |
-| `SelfAtRisk == true` | **画面全体に届く警告**（画面端の赤いパルス等）。残り秒が少ないほど強くする |
+| `SelfAtRisk == true` | **画面全体に届く警告**（画面全体を覆う赤いオーバーレイの明滅）。残り秒が少ないほど強くする |
 | `false → true` に変わった瞬間 | `OnWarningReceived` を契機に一度だけ強い演出＋SE |
 | `true → false` に変わった瞬間 | 警告を解除（「逃げ切った」ことが分かる） |
+
+> **★実装の注意（一度ハマった）：** `AtRiskOverlay` の `Image.color` の alpha を 0 のまま置くと、
+> `CanvasGroup.alpha` をいくら上げても掛け算で常に 0 になり、**警告が画面に一切出ない**。
+> `Image.color` は不透明（alpha=1, 色は赤）で固定し、可視・不可視は必ず `CanvasGroup.alpha` 側で制御する。
+>
+> `AlertIntensity`（0..1）は単純フェードではなく**明滅（パルス）**で表現する。
+> `intensity` が高いほど明滅を速く・深くする（`CullCountdownPanelView.Update` 内、`Time.unscaledTime` 基準。
+> タイムスケールに影響されないが `ClientState` は触らないため C1 に反しない）。
 
 | 禁止 | 理由 |
 |---|---|
