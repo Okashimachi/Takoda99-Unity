@@ -182,7 +182,8 @@ namespace Takoda99.View
             }
 
             // 自店の順位・スコア・生存数。**順位が本選の画面の主役**。
-            selfRank?.SetState(SelfRankViewState.From(state.Rank, state.Score, state.AliveCount));
+            // 順位テキストの色（金銀銅・警告・脱落）も state から決まる（hud/01 §5.1）。
+            selfRank?.Apply(state);
 
             // ランキング（上位N＋自分）。待機中は描かない。
             if (rankingPanel != null)

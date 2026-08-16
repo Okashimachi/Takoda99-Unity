@@ -115,6 +115,7 @@ public sealed class RankingRowPalette : ScriptableObject
 > `Tone` は**スロットでは上書きされず、常にこの表が決める**。
 
 **現行3 Prefab から採寸した確定値。** 統合後の1 Prefab はこの表を再現できればよい。
+**フォントサイズは下の基準値へ `FontStepDown` を掛けた値が実際に出る**（§3.2.1）。
 
 | 順位 | `Size` | RankText | NameText | ScoreText | `Tone` | 由来 Prefab |
 |---|---|---|---|---|---|---|
@@ -124,6 +125,21 @@ public sealed class RankingRowPalette : ScriptableObject
 | 4〜6 | (130, 66) | 16 | 20 | 14 | `Upper` | `TopRanker4-6` |
 | 7〜10 | (100, 50) | 12 | 16 | 12 | `Upper` | `TopRanker7-10` |
 | 11以上・不明 | (100, 50) | 12 | 16 | 12 | `Upper` | （7〜10 と同じ。上位パネルに出ることは通常ない） |
+
+#### 3.2.1 「一回り小さく」は係数1つで表す
+
+```csharp
+private const float FontStepDown = 0.9f;   // 一回り＝1回、二回り＝2回掛ける
+```
+
+| 用途 | 掛ける回数 | 実際のフォントサイズ |
+|---|---|---|
+| 上位パネル（`ForTopRank`） | **1回**（一回り小さい） | 1〜3位 18 / 21.6 / 18、4〜6位 14.4 / 18 / 12.6、7位以下 10.8 / 14.4 / 10.8 |
+| オーディエンスパネル（`ForAudienceCell`） | **2回**（二回り小さい） | `AudienceFontFillRatio = 0.7 × 0.9²` = 0.567 |
+| 下位パネル（`ForBottomBand`） | 0回 | 12 / 12（`BottomRanker.prefab` の authored 値に合わせるため触らない） |
+
+**値を個別に書き換えず係数にしている理由：** 段ごとの比（1位が大きく7位が小さい／オーディエンスの上段:下段 = 2:3）を
+崩さずに全体だけ縮められる。「もう一回り」と言われたら掛ける回数を増やすだけで済む。
 
 > **★テキストの位置・幅も段階で変わる。** `Size` だけ変えても RankText/NameText/ScoreText 自身の
 > `anchoredPosition` / `sizeDelta` は追従しないため、`RankOffset`/`RankSize`/`NameOffset`/`NameSize`/
@@ -148,13 +164,34 @@ public sealed class RankingRowPalette : ScriptableObject
 > NameText は当初 18 だったが、`BottomRanker.prefab` の authored 値（12）より大きく、
 > 狭い行（120×29）で文字が大きすぎたため 12 に修正した（`BottomRanker.prefab` の値と一致させる）。
 
-オーディエンスパネル（[../ranking-view/07-audience-panel.md](../ranking-view/07-audience-panel.md)）は横並びが入らないため縦積み。3テキストとも中央 (0.5, 0.5) アンカー前提。
+オーディエンスパネル（[../ranking-view/07-audience-panel.md](../ranking-view/07-audience-panel.md)）は横並びが入らないため**2段**。
+上段に順位とスコアを並べ、その下に屋号を置く。3テキストとも中央 (0.5, 0.5) アンカー前提。
+
+> **★この段だけは固定値を持たない。** すべて `cellSize` からの比率で出す
+> （`ForAudienceCell(cellSize, tone)`）。`AudiencePanel` の寸法が変わってもセルの中身がそのまま追従する。
 
 | 用途 | `Size` | RankText | NameText | ScoreText | 由来 Prefab |
 |---|---|---|---|---|---|
-| 11〜99位（1セル） | セル寸法（可変。既定 61.11×44） | 11 | 10 | 10 | `LostRanker`（アンカーを中央へ修正） |
+| 11〜99位（1セル） | セル寸法（可変。既定 61.11×40） | 上段高さ×0.567 | 下段高さ×0.567 | 上段高さ×0.567 | `LostRanker`（アンカーを中央へ修正） |
 
-> RankOffset (0, +14)／NameOffset (0, 0)／ScoreOffset (0, -14)。RankSize/NameSize/ScoreSize はいずれも (58, 14)。
+| 比率 | 値 | 意味 |
+|---|---|---|
+| `AudienceTopRowRatio` | **0.4** | 上段（順位＋スコア）が取る高さ。下段（屋号）は残り 0.6。**2:3 は要件** |
+| `AudienceFontFillRatio` | **0.567**（= 0.7 × `FontStepDown`²） | 各段の高さに対するフォントサイズ。両段で同じ値なので**フォントサイズの比も 2:3 になる**。二回り小さくした値（§3.2.1） |
+| `AudienceCellPadding` | 2px | 左右の余白（文字が枠線に触らない最小限） |
+
+セル 61.11×40 での実値：
+
+| 要素 | offset | size | fontSize |
+|---|---|---|---|
+| `RankText` | (-14.28, +12) | (28.56, 16) | 9.07 |
+| `ScoreText` | (+14.28, +12) | (28.56, 16) | 9.07 |
+| `NameText` | (0, -8) | (57.11, 24) | 13.61 |
+
+> **上段の左右振り分けは Prefab 側の水平アラインメントに任せる**（順位=左寄せ・スコア=右寄せ）。
+> VO は幅を半分ずつ与えるだけで、`RankingRowView.SetStyle` はアラインメントを触らない。
+> `ScoreText` の垂直アラインメントは Bottom から **Middle** へ直した（順位と同じ行に載せるため）。
+>
 > `Tone` は§8未確定のため当面 `Normal` 固定（[07 §8](../ranking-view/07-audience-panel.md)）。
 
 > ~~1〜3位の寸法が同じで色だけ違うのは意図通り。**金銀銅は「大きさ」ではなく「色」で差を付ける**。~~
@@ -205,6 +242,38 @@ public sealed class RankingRowPalette : ScriptableObject
 
 自店だけは `ForcedEliminationWarning.SelfAtRisk` が別途来るので、
 画面全体アラート（[../ranking-view/02-cull-countdown-panel.md](../ranking-view/02-cull-countdown-panel.md)）はそちらを使う。**行の色付けには使わない**（二重表現になる）。
+
+### 4.2.1 自店HUD（`SelfRankView`）の順位テキスト
+
+`ResolveSelfRankTone(rank, alive, isCutTarget, isInBottomRange)` が返す。
+**色は行と同じ `RankingRowPalette` から引く**（HUD専用の色を別に持たない。§3.1）。
+
+判定は上から順に、最初に当たったもので確定する。
+
+| 優先 | 条件 | `Tone` |
+|---|---|---|
+| 1 | `rank <= 0`（未確定・試合前） | `Normal`（色を付けない） |
+| 2 | `rank == 1` / `2` / `3` | `Gold` / `Silver` / `Bronze` |
+| 3 | `Alive == false` | `Dead` |
+| 4 | `CutStoreIds` に自店が含まれる | `Doomed` |
+| 5 | 下位パネルの表示範囲に自店が入っている | `AtRisk` |
+| 6 | `rank <= 10` | `Upper` |
+| 7 | それ以外 | `Normal` |
+
+> **★§4.2（一覧の行）と違うのは1点だけ：メダル順位を生死より先に見る。**
+> 一覧では「脱落した金色の行」が生存者と見分けられなくなるため `Dead` が最優先だが、
+> 自店HUDは1つしかなく**順位そのものが主役**（[../hud/01-hud-composition.md](../hud/01-hud-composition.md) §5）。
+> 3位で脱落したら銅色が残るほうが確定順位の表現として正しく、
+> **優勝者の順位が灰色になる事故**（試合終了時は自店も `Alive == false` になる）も避けられる。
+
+> **危険の根拠は §4.2 と完全に同じ。** `CutStoreIds`（サーバー権威）と下位パネルの表示範囲だけで決め、
+> **順位と `CutLineRank` を比較しない。** `SelfAtRisk` は使わない（画面全体アラートの担当。二重表現にしない）。
+
+> `bottomRangeCount` は**下位パネルの `visibleCount` と揃える**。ずれると、下位パネルで警告帯が付いていないのに
+> 自分の順位だけ `AtRisk` 色になる（逆も同じ）。
+>
+> `Upper` と `Normal` は `RankingRowPalette` の既定値が**どちらも白**。4〜10位を地の順位と区別したい場合は
+> アセット側で色を分ける（コードは触らない）。
 
 ### 4.3 `Dead` と `deadAlpha` の関係
 
