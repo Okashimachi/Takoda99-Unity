@@ -20,6 +20,7 @@ namespace Takoda99.View.Sample
         [Header("本選 HUD")]
         [SerializeField] private SelfRankView selfRank;
         [SerializeField] private Ranking.RankingPanelView rankingPanel;
+        [SerializeField] private Ranking.BottomRankingPanelView bottomRankingPanel;  // ranking-view/05
         [SerializeField] private Ranking.CullCountdownPanelView cullPanel;
         [SerializeField] private Ranking.SpectatorRankingView spectatorRanking;
         [SerializeField] private Elimination.MassEliminationEffect massElim;
@@ -53,6 +54,14 @@ namespace Takoda99.View.Sample
         private readonly List<RankingRow> rows = new List<RankingRow>(99);
 
         private CullWarning cull;
+
+        /// <summary>
+        /// 淘汰の各段階を抜けた直後の生存数（ranking-view/05 §5.1 の表）。
+        /// 下位パネルの start = Max(0, aliveCount - 30) が全段階で正しいかを見るために使う。
+        /// </summary>
+        private static readonly int[] StageAliveCounts = { 99, 75, 55, 35, 20, 10 };
+
+        private int stageAliveIndex;
 
         private void Start()
         {
@@ -170,6 +179,42 @@ namespace Takoda99.View.Sample
                 EliminateBatch(10, includesSelf: true);
                 spectatorRanking?.Open(BuildState());
             }
+
+            if (keyboard.sKey.wasPressedThisFrame)
+            {
+                // 淘汰の段階を1つ進める（99→75→55→35→20→10）。
+                // 下位パネルが「生存30」→「生存20＋脱落10」→「生存10＋脱落20」へ
+                // 連続的に変わることを見る（ranking-view/05 §5.1・§6）。
+                AdvanceCullStage();
+            }
+        }
+
+        /// <summary>
+        /// 淘汰の次の段階へ進める（ranking-view/05 §8 のテスト観点11）。
+        /// 生存数を段階どおりに落とし、下位パネルの表示内容が自然に切り替わるかを見る。
+        /// </summary>
+        private void AdvanceCullStage()
+        {
+            if (stageAliveIndex >= StageAliveCounts.Length - 1)
+            {
+                Debug.Log($"{nameof(MainGameViewSampleDriver)}: 最終段階（生存{aliveCount}）に到達済みです。");
+                return;
+            }
+
+            stageAliveIndex++;
+            var target = StageAliveCounts[stageAliveIndex];
+            var toKill = Mathf.Max(0, aliveCount - target);
+
+            if (toKill > 0)
+            {
+                // EliminateBatch が aliveCount を減らし、集約演出を1回だけ再生し、Apply する。
+                EliminateBatch(toKill, includesSelf: false);
+            }
+
+            stageIndex = Mathf.Min(stageTotal, stageIndex + 1);
+            ApplyCull();
+
+            Debug.Log($"{nameof(MainGameViewSampleDriver)}: 段階 {stageIndex}/{stageTotal} → 生存 {aliveCount}");
         }
 
         /// <summary>行の生成破棄が起きないかを見るためのストレス。実試合では起こらない頻度で動かす。</summary>
@@ -294,6 +339,7 @@ namespace Takoda99.View.Sample
             var state = BuildState();
             selfRank?.SetState(ValueObjects.SelfRankViewState.From(selfRankValue, selfScore, aliveCount));
             rankingPanel?.Apply(state);
+            bottomRankingPanel?.Apply(state);
             spectatorRanking?.Apply(state);
         }
     }

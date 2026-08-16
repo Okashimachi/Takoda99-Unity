@@ -16,7 +16,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Assets\Scripts\View\ValueObjects\*.cs">
+    <!--
+      RankingRowStyle.cs は value-objects/12-ranking-row-style.md §3 のとおり UnityEngine.Vector2 に
+      依存する唯一の ValueObjects（他の全ファイルは UnityEngine 非依存）。このプロジェクトは
+      UnityEngine を参照していないため、glob から明示的に除外する。ForTopRank / ResolveTone の
+      EditMode テストは Unity Test Runner（NUnit・実 Editor 内）側で行う。
+    -->
+    <Compile Include="..\..\Assets\Scripts\View\ValueObjects\*.cs" Exclude="..\..\Assets\Scripts\View\ValueObjects\RankingRowStyle.cs">
       <Link>ValueObjects\%(Filename).cs</Link>
     </Compile>
   </ItemGroup>

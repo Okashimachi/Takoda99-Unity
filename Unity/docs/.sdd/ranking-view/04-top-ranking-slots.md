@@ -73,8 +73,20 @@ RankingCanvas
 アンカーとピボットも現行どおり `AnchorMin = AnchorMax = Pivot = (0.5, 0.5)` に揃える
 （座標の基準が行と一致していないとスロットへ飛ばせないため）。
 
-`Slots` と `RowsRoot` を分けるのは、スロットが**描画されない目印**であることを構造で示すため。
-`Slot*` に `Image` を付けない。
+**スロットの `sizeDelta` は行の寸法として実際に使われる**（§4.2）。座標と同じく、
+エディタでスロットを広げ／狭めるだけで行の大きさが変わる。
+
+`Slots` と `RowsRoot` を分けるのは、行が**スロットとは独立に生成・移動する**ことを構造で示すため。
+
+### 3.1.1 スロットを見える状態のまま残してよい
+
+`Slot*` を空の目印にせず、`Image` や TMP を持たせたまま**デバッグ用の下敷き**として残してよい。
+その場合も実行時の描画は壊れない。**`RowsRoot` を `Slots` より後ろの兄弟に置く**（＝ヒエラルキーで下）だけでよく、
+uGUI は後の兄弟を手前に描くため、行が必ずスロットの上に乗る。
+
+`RankingPanelView` は `Awake` で `rowsRoot.SetAsLastSibling()` を呼び、この順序を保証する。
+スロットを目印として隠したい場合は `Slots` を非アクティブにすればよい（`TopRankingSlots` は
+`RectTransform` の値しか読まないため、非アクティブでも座標・寸法は取得できる）。
 
 ### 3.2 移行手順（エディタ作業）
 
@@ -129,6 +141,13 @@ namespace Takoda99.View.Ranking
 
         /// <summary>index 番目のスロットの座標。</summary>
         public Vector2 PositionOf(int index);
+
+        /// <summary>
+        /// index 番目のスロットの寸法。★RankingRowStyle.Size を上書きする
+        /// （[../value-objects/12](../value-objects/12-ranking-row-style.md) §3.2）。
+        /// スロットが無い index では false を返し、呼び出し側は表の既定値を使う。
+        /// </summary>
+        public bool TryGetSize(int index, out Vector2 size);
     }
 }
 ```
@@ -189,6 +208,23 @@ public sealed class RankingRowView : MonoBehaviour
 ```
 
 `SetSiblingIndex(i)` / `DOKill()` してから張り直す規則（[01](./01-ranking-panel.md) A2・A5）は**そのまま維持**する。
+
+### 5.2.1 行の寸法もスロットから取る ★
+
+`RankingPanelView` はスタイルを組み立てる際、`RankingRowStyle.ForTopRank(rank)` が返した
+`Size` を**スロットの `sizeDelta` で上書き**する。
+
+```
+style = RankingRowStyle.ForTopRank(rank)
+if (slots.TryGetSize(i, out var size))  style = style.WithSize(size)
+```
+
+フォントサイズと `Tone` は上書きしない（[../value-objects/12](../value-objects/12-ranking-row-style.md) §3.2）。
+フォントは行の中身の可読性の問題であり、スロットの外形とは別の判断だから。
+
+下位パネル（[05](./05-bottom-ranking-panel.md)）と観戦画面（[03](./03-spectator-ranking-view.md)）は
+等間隔の座標供給元を使い、`TryGetSize` が常に false を返す。よって
+`ForBottomBand` / Prefab 既定値がそのまま効き、**この節の影響を受けない**。
 
 ### 5.3 見た目の適用タイミング ★
 
