@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using TMPro;
 using Takoda99.Client.State;
+using Takoda99.Sound;
 using Takoda99.View.Ranking;
 using Takoda99.View.ValueObjects;
 using UnityEngine;
@@ -40,12 +41,27 @@ namespace Takoda99.View
         /// </summary>
         [SerializeField] private int bottomRangeCount = 30;
 
+        [Header("順位帯のSE（SoundLibrary の Ranking グループ）")]
+        [Tooltip("この順位までを上位圏とし、入った瞬間に「上位ランク入り」を鳴らす。")]
+        [SerializeField] private int topRankThreshold = RankSoundRule.DefaultTopRankThreshold;
+
+        [Tooltip("淘汰される件数に対する「ぎりぎり圏外」の割合。24店が切られるなら 0.25 で直前6店まで。")]
+        [SerializeField, Range(0f, 1f)]
+        private float cullMarginRatio = RankSoundRule.DefaultCullMarginRatio;
+
         private SelfRankViewState current;
         private bool hasCurrent;
 
         /// <summary>いま順位テキストへ適用しているトーン。変わらないフレームは色の代入も省く。</summary>
         private RankingRowTone currentTone;
         private bool hasTone;
+
+        /// <summary>
+        /// 直近の順位帯。**帯が変わった瞬間だけ**SEを鳴らすために持つ。
+        /// Apply は 2〜4Hz で呼ばれ続けるので、状態そのものを条件にすると鳴りっぱなしになる。
+        /// </summary>
+        private RankSoundBand lastBand = RankSoundBand.None;
+        private bool hasBand;
 
         /// <summary>state から表示値と色を作って反映する。Renderer が state 変化のたびに呼ぶ。</summary>
         public void Apply(ClientState state)
@@ -58,6 +74,62 @@ namespace Takoda99.View
             SetState(
                 SelfRankViewState.From(state.Rank, state.Score, state.AliveCount),
                 ResolveTone(state));
+
+            PlayBandSe(state);
+        }
+
+        /// <summary>
+        /// 順位帯が変わった瞬間にSEを鳴らす。
+        /// **淘汰圏内かどうかの判定はサーバー値だけを根拠にする**（CutStoreIds / SelfAtRisk）。
+        /// 順位と CutLineRank を比較しない（ranking-view/02 §1）。CutLineRank を使うのは
+        /// 「何店が切られるか」という件数を出すためだけで、そこから自店の危険は判断しない。
+        /// </summary>
+        private void PlayBandSe(ClientState state)
+        {
+            var isCutTarget = Contains(state.Cull?.CutStoreIds, state.SelfStoreId)
+                || (state.Cull != null && state.Cull.SelfAtRisk);
+
+            var bandCount = state.Cull != null
+                ? RankSoundRule.CullBandCount(state.AliveCount, state.Cull.CutLineRank, cullMarginRatio)
+                : 0;
+
+            var isInCullBand = bandCount > 0
+                && RankingRowsBuilder.IsInBottomRange(
+                    state.Ranking, state.SelfStoreId, state.AliveCount, bandCount);
+
+            var band = RankSoundRule.Resolve(state.Alive, state.Rank, topRankThreshold, isCutTarget, isInCullBand);
+
+            if (hasBand && band == lastBand)
+            {
+                return;
+            }
+
+            var wasFirst = !hasBand;
+            lastBand = band;
+            hasBand = true;
+
+            // 初回（試合開始直後の1回目の反映）では鳴らさない。まだ「入った」のではなく、
+            // 単に最初の順位が届いただけであり、全員に一斉に鳴ってしまう。
+            if (wasFirst)
+            {
+                return;
+            }
+
+            switch (band)
+            {
+                case RankSoundBand.Top:
+                    SoundPlayer.Play(SoundId.RankEnteredTop);
+                    break;
+                case RankSoundBand.CullRange:
+                    SoundPlayer.Play(SoundId.RankEnteredCullRange);
+                    break;
+                case RankSoundBand.CullMargin:
+                    SoundPlayer.Play(SoundId.RankEnteredCullMargin);
+                    break;
+                default:
+                    // 中位へ戻ったときは鳴らさない（危険を脱したこと自体は画面の色で分かる）。
+                    break;
+            }
         }
 
         /// <summary>順位・スコア・生存数と、順位テキストの色をまとめて反映する。</summary>

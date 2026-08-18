@@ -50,11 +50,20 @@ namespace Takoda99.Sound
         Eliminated = 502,
 
         // ── 順位の変動 ───────────────────────────────────────────────
-        /// <summary>自店の順位が上位圏に入った。</summary>
+        /// <summary>自店の順位が上位圏（既定10位以内）に入った。</summary>
         RankEnteredTop = 600,
 
-        /// <summary>自店の順位が下位圏に落ちた。</summary>
-        RankEnteredBottom = 601,
+        /// <summary>
+        /// 自店が次の淘汰圏内に落ちた（このままなら切られる）。
+        /// 「下位ランク入り」の強い方。ギリギリ圏外とは音量を別に振るため SoundId を分けている。
+        /// </summary>
+        RankEnteredCullRange = 601,
+
+        /// <summary>
+        /// 自店が淘汰圏のすぐ上（ギリギリ圏外）に落ちた。
+        /// 「下位ランク入り」の弱い方。
+        /// </summary>
+        RankEnteredCullMargin = 602,
 
         // ── リザルト ─────────────────────────────────────────────────
         /// <summary>リザルトのたこ焼き生成（1個ごとに1回）。</summary>

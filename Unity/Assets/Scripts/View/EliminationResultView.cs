@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Takoda99.Client.State;
+using Takoda99.Sound;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -183,6 +184,8 @@ namespace Takoda99.View
 
         private void OnNextClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
+
             var bootstrap = Bootstrap.GameBootstrapper.Instance;
             if (bootstrap == null)
             {

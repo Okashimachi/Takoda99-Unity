@@ -3,6 +3,7 @@
 // カウントダウンは表示専用で、試合の開始を決めるのはサーバー（MatchStart）である。
 
 using System;
+using Takoda99.Sound;
 using TMPro;
 using UnityEngine;
 
@@ -23,6 +24,9 @@ namespace Takoda99.View
         private float remainingSec;
         private bool matchStarted;
         private bool finished;
+
+        /// <summary>直近に秒読みSEを鳴らした秒数。数字が変わったフレームだけ鳴らすために持つ。</summary>
+        private int lastTickSecond = -1;
 
         /// <summary>まだ待機中か。true の間、お題と客の行列は出さない。</summary>
         public bool IsHolding => !finished;
@@ -47,6 +51,7 @@ namespace Takoda99.View
             remainingSec = countdownSeconds;
             matchStarted = false;
             finished = false;
+            lastTickSecond = -1;
 
             gameObject.SetActive(true);
             ApplyText();
@@ -87,6 +92,10 @@ namespace Takoda99.View
             }
 
             finished = true;
+
+            // 待機が明ける＝サーバーの試合開始が届いた瞬間。ここが開始の合図。
+            SoundPlayer.Play(SoundId.MatchStart);
+
             gameObject.SetActive(false);
             Finished?.Invoke();
         }
@@ -99,7 +108,18 @@ namespace Takoda99.View
             }
 
             // 5.0秒残っていれば「5」、0.1秒でも残っていれば「1」。0 は畳む直前の一瞬だけ。
-            countText.text = Mathf.CeilToInt(Mathf.Max(remainingSec, 0f)).ToString();
+            var second = Mathf.CeilToInt(Mathf.Max(remainingSec, 0f));
+            countText.text = second.ToString();
+
+            // 数字が変わったフレームだけ1回鳴らす。0（畳む直前の一瞬）では鳴らさない。
+            if (second != lastTickSecond)
+            {
+                lastTickSecond = second;
+                if (second > 0)
+                {
+                    SoundPlayer.Play(SoundId.MatchCountdown);
+                }
+            }
         }
     }
 }

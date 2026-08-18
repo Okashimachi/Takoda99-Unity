@@ -5,6 +5,7 @@
 // （同じ時計を2本走らせない）。誰に出すかも決めない（CullAlertTier をそのまま受ける）。
 
 using TMPro;
+using Takoda99.Sound;
 using Takoda99.View.ValueObjects;
 using UnityEngine;
 
@@ -43,6 +44,9 @@ namespace Takoda99.View.Ranking
         private bool hasCurrent;
 
         private Vector3 baseScale = Vector3.one;
+
+        /// <summary>直近に押し込まれた段階。秒読みSEを警告／通常のどちらで鳴らすかに使う。</summary>
+        private CullAlertTier currentTier = CullAlertTier.None;
 
         /// <summary>
         /// 初期化済みか。**シーンでは非アクティブに置いてあるため <c>Awake</c> が走らない。**
@@ -94,6 +98,7 @@ namespace Takoda99.View.Ranking
         public void SetState(CullAlertTier tier, long remainingMs)
         {
             EnsureInitialized();
+            currentTier = tier;
             Apply(CullFinalCountdownState.From(tier, remainingMs));
         }
 
@@ -117,9 +122,18 @@ namespace Takoda99.View.Ranking
             // 数字が変わったフレームだけ文字列を差し替える（毎フレームの TMP 再構築を避ける）。
             if (!hasCurrent || !current.Equals(state))
             {
+                var secondChanged = !hasCurrent || current.Text != state.Text;
+
                 current = state;
                 hasCurrent = true;
                 ApplyText(state.Text);
+
+                // 秒読みSEは数字が変わったときだけ。SecondProgress は毎フレーム変わるので、
+                // state の等値だけを条件にすると毎フレーム鳴ってしまう。
+                if (secondChanged)
+                {
+                    PlayTick();
+                }
             }
 
             ApplyAnimation(state.SecondProgress);
@@ -154,6 +168,17 @@ namespace Takoda99.View.Ranking
             var fadeOut = fadeOutSeconds <= 0f ? 1f : Mathf.Clamp01(remain / fadeOutSeconds);
 
             group.alpha = Mathf.SmoothStep(0f, 1f, Mathf.Min(fadeIn, fadeOut));
+        }
+
+        /// <summary>
+        /// 1秒ぶんの秒読み音。自店が淘汰圏内（Danger）なら警告側、ぎりぎり圏外（Caution）なら通常側。
+        /// どちらを出すかは <see cref="CullAlertTier"/> がすでに決めているので、ここでは選ぶだけ。
+        /// </summary>
+        private void PlayTick()
+        {
+            SoundPlayer.Play(currentTier == CullAlertTier.Danger
+                ? SoundId.CullCountdownWarningTick
+                : SoundId.CullCountdownTick);
         }
 
         private void ApplyText(string text)

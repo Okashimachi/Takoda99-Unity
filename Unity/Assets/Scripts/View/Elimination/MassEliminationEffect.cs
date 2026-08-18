@@ -4,6 +4,7 @@
 // 6回再生され、1回あたり最大24件（サーバー上限側は49件）が同時に届く。
 // **1件ずつ再生する設計は成立しない。**
 
+using Takoda99.Sound;
 using TMPro;
 using UnityEngine;
 
@@ -12,9 +13,6 @@ namespace Takoda99.View.Elimination
     /// <summary>1ステージぶんの一斉脱落をまとめて見せる。</summary>
     public sealed class MassEliminationEffect : MonoBehaviour
     {
-        [SerializeField] private AudioSource se;
-        [SerializeField] private AudioClip cullClip;
-
         [Header("「今、◯店が一斉に閉店した」")]
         [SerializeField] private GameObject effectRoot;
         [SerializeField] private TMP_Text countText;
@@ -49,10 +47,8 @@ namespace Takoda99.View.Elimination
             var intensity = Mathf.Lerp(0.5f, 1f, progress) * (includesSelf ? selfVolumeScale : 1f);
 
             // E1: SEは1回。予選の「他店脱落音（都度再生版）」をそのまま使うと24〜49回同時に鳴る。
-            if (se != null && cullClip != null)
-            {
-                se.PlayOneShot(cullClip, Mathf.Clamp01(intensity));
-            }
+            // 段階が進むほど、また自店が含まれるときほど大きく鳴らす（音量差だけで区別する）。
+            SoundPlayer.Play(SoundId.Eliminated, Mathf.Clamp01(intensity));
 
             // E4: count を演出に反映してよいが、件数に比例した数のオブジェクトを出さない（WebGL）。
             // 数字を出すのが最も確実で、LTのプレゼン中に「今20人減りました」と言える。

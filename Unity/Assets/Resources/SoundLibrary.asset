@@ -78,6 +78,9 @@ MonoBehaviour:
     - id: 601
       clip: {fileID: 8300000, guid: b320846940c4a904692c84ec4eb28d0a, type: 3}
       volume: 1
+    - id: 602
+      clip: {fileID: 8300000, guid: b320846940c4a904692c84ec4eb28d0a, type: 3}
+      volume: 0.45
   - label: "\u30EA\u30B6\u30EB\u30C8"
     category: 6
     volume: 1

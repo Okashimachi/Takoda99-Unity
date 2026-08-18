@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using Takoda99.Client.Net;
 using Takoda99.Client.State;
+using Takoda99.Sound;
 using Takoda99.View.ValueObjects;
 using TMPro;
 using UnityEngine;
@@ -59,6 +60,9 @@ namespace Takoda99.View
         /// <summary>直近に描いたパネル。Update から MatchingComplete を出し直す判断に使う。</summary>
         private MatchmakingPanel currentPanel;
 
+        /// <summary>マッチング成立のSEを鳴らしたか。ApplyCountdown は毎フレーム通るため、1試合1回に絞る。</summary>
+        private bool hasPlayedCompleteSe;
+
         private void OnEnable()
         {
             bootstrap = Bootstrap.GameBootstrapper.Instance;
@@ -72,11 +76,8 @@ namespace Takoda99.View
             {
                 nameInputField.characterLimit = DisplayNameInputLimit;
 
-                var imeBridge = nameInputField.GetComponent<WebGLNameInputImeBridge>();
-                if (imeBridge != null)
-                {
-                    imeBridge.CharacterLimit = DisplayNameInputLimit;
-                }
+                // WebGL では IME が効かないため、ブラウザの input を重ねる WebGLInput を実行時に付ける。
+                WebGLNameInputImeBridge.Attach(nameInputField);
             }
 
             if (decideButton != null)
@@ -127,6 +128,7 @@ namespace Takoda99.View
             }
 
             nameDecided = true;
+            SoundPlayer.Play(SoundId.ButtonTap);
             bootstrap.DecideDisplayName(nameInputField != null ? nameInputField.text : string.Empty);
         }
 
@@ -243,6 +245,14 @@ namespace Takoda99.View
             // 締切を過ぎてから MatchStart が届くまでの数秒だけ出す。
             // MatchStart で Panel が None になるため、ここで畳む処理は要らない。
             SetActive(matchingComplete, countdown.IsComplete);
+
+            // 成立の合図は MatchingComplete が出た瞬間の1回だけ。
+            // このメソッドは毎フレーム通るので、フラグで押さえないと鳴りっぱなしになる。
+            if (countdown.IsComplete && !hasPlayedCompleteSe)
+            {
+                hasPlayedCompleteSe = true;
+                SoundPlayer.Play(SoundId.MatchmakingComplete);
+            }
         }
 
         /// <summary>ローカル単調時刻(ms)。カウントダウンの残りを引くためだけに使う。</summary>
