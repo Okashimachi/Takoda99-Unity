@@ -3,10 +3,15 @@
 //
 // これは見た目の段階決定であって経営ロジックではない（評価・信用・順位に一切影響しない）。
 // 算出結果をサーバーへ送ることもない。
+//
+// **View/ValueObjects/ には置かない。** CookingAnimationSettings.SpeedTier（UnityEngine 依存の
+// ScriptableObject の入れ子型）を引数に取るため、UnityEngine 非依存を前提にした
+// tests/Takoda99.View.Tests・Takoda99.View.LangVersionCheck の glob 対象（ValueObjects/*.cs）に
+// 混ぜるとビルドが壊れる。
 
-using Takoda99.View.Cooking;
+using Takoda99.View.ValueObjects;
 
-namespace Takoda99.View.ValueObjects
+namespace Takoda99.View.Cooking
 {
     /// <summary>打鍵速度（KPM）→ 使う穴数。しきい値の表は CookingAnimationSettings が持つ。</summary>
     public static class TypingSpeedTierRule

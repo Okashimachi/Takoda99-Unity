@@ -33,7 +33,7 @@
 |---|---|---|---|
 | `CookingAnimationSettings` | `View/Cooking/` | 全アニメーションの尺・振れ幅・しきい値を保持する ScriptableObject | 演出そのもの |
 | `TypingSpeedMeter` | `View/Cooking/` | 直近 N 打の間隔から KPM を算出する（純クラス） | 段階の決定 |
-| `TypingSpeedTierRule` | `View/ValueObjects/` | KPM → 使用穴数への変換（純関数） | KPM の計測 |
+| `TypingSpeedTierRule` | `View/Cooking/` | KPM → 使用穴数への変換（純関数）。`CookingAnimationSettings.SpeedTier`（UnityEngine 依存）を引数に取るため、UnityEngine 非依存が前提の `View/ValueObjects/` には置かない（`tests/Takoda99.View.Tests` 等がその前提でビルドされる） | KPM の計測 |
 | `TakoyakiQualityRule` | `View/ValueObjects/` | ミス率 → 盛り付け3段階への変換（純関数） | ミスの計数 |
 | `TakoyakiSlotView` | `View/` | 穴1つの見た目。生地投入・焼き上がり・玉の取り外し | どの穴が対象かの判断 |
 | `TakoyakiStandView` | `View/` | 24穴の統括。打鍵イベントを受けて対象の穴を進める。完成玉を `FlyingTakoyakiAnimator` に渡す | 打鍵の判定・品質の計算式 |
