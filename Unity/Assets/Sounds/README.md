@@ -1,15 +1,16 @@
-# Sounds — SE素材の入手手順
+# Sounds — SE / BGM素材の入手手順
 
 このディレクトリの**音源ファイル本体（`*.mp3` / `*.wav` / `*.ogg`）はリポジトリにコミットしていない**（`.gitignore` で除外）。
 公開リポジトリに音源ファイル単体を置かないための措置で、`.meta` だけをコミットしている。
 
 ## なぜ .meta だけコミットするのか
 
-`.meta` には Unity の GUID が入っており、`SoundLibrary`（`Unity/Assets/Settings/SoundLibrary.asset`）の
-`AudioClip` 参照はこの GUID を指している。`.meta` を各自の環境で生成させると GUID がバラバラになり、
-`SoundLibrary` の参照がすべて外れる。そのため `.meta` は共有し、中身だけを各自で配置する。
+`.meta` には Unity の GUID が入っており、`SoundLibrary`（`Unity/Assets/Resources/SoundLibrary.asset`）／
+`BgmLibrary`（`Unity/Assets/Resources/BgmLibrary.asset`）の `AudioClip` 参照はこの GUID を指している。
+`.meta` を各自の環境で生成させると GUID がバラバラになり、参照がすべて外れる。そのため `.meta` は共有し、
+中身だけを各自で配置する。
 
-## 入手・配置手順
+## SE — 入手・配置手順
 
 1. [OtoLogic](https://otologic.jp/) から下記のファイルを入手する。
 2. `Unity/Assets/Sounds/SE/` 直下に、**下表のファイル名そのままで**配置する（名前が違うと `.meta` と紐づかない）。
@@ -37,6 +38,22 @@
 | `リザルトランク表示下位.mp3` | リザルト表示完了（下位20位） |
 | `リザルトランク表示通常.mp3` | リザルト表示完了（それ以外） |
 
-## ライセンス
+## ライセンス（SE）
 
 OtoLogic の利用規約に従うこと。クレジット表記が必要な場合はゲーム内クレジットに記載する。
+
+## BGM — 入手・配置手順
+
+1. 音源ファイルを入手する（入手先はチーム内で共有）。
+2. `Unity/Assets/Sounds/BGM/` 直下に、**下表のファイル名そのままで**配置する（名前が違うと `.meta` と紐づかない）。
+3. Unity エディタを開く。`.meta` が既にあるためインポート設定と GUID はそのまま復元される。
+
+### 必要なファイル
+
+| ファイル名 | 用途 |
+|---|---|
+| `通常.mp3` | Title / Matchmaking の通常BGM |
+| `試合前半1.mp3` | 試合前半BGM（現在使用中） |
+| `試合前半2.mp3` | 試合前半BGMの候補（未使用。`BgmLibrary` に未登録） |
+| `試合後半.mp3` | 試合後半BGM（前半BGM終了後に自動再生） |
+| `リザルト.mp3` | リザルトBGM |

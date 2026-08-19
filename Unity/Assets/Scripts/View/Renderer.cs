@@ -518,6 +518,9 @@ namespace Takoda99.View
 
             SoundPlayer.Play(SoundId.MatchEnd);
 
+            // 試合終了の通知が届いたら、試合BGM（前半／後半のどちらでも）を完全に止める。
+            BgmPlayer.Stop();
+
             selfEliminated = true;
             customerQueue?.ClearAll();
             orderBubble?.Hide();
