@@ -26,6 +26,10 @@ namespace Takoda99.View
         [SerializeField] private Customers.CustomerOrderBubbleView orderBubble;
         [SerializeField] private GameBeforeView gameBefore;
 
+        [Header("調理アニメーション（cooking-anim/01）")]
+        [SerializeField] private TakoyakiStandView takoyakiStand;   // 鉄板（生地・焼き・舟皿へ飛ばす）
+        [SerializeField] private Cooking.HandView hand;             // 千枚通しを持つ手
+
         [Header("打鍵SE（hud/01・SoundLibrary の Typing グループ）")]
         [Tooltip("1単語を打ち終えたときのミス率がこの値以下なら「通常」、超えたら「ミス多発」を鳴らす。0 ならノーミス以外すべてミス多発。")]
         [SerializeField, Range(0f, 1f)]
@@ -95,6 +99,8 @@ namespace Takoda99.View
             WarnIfMissing(customerQueue, nameof(customerQueue));
             WarnIfMissing(orderBubble, nameof(orderBubble));
             WarnIfMissing(gameBefore, nameof(gameBefore));
+            WarnIfMissing(takoyakiStand, nameof(takoyakiStand));
+            WarnIfMissing(hand, nameof(hand));
             WarnIfMissing(selfRank, nameof(selfRank));
             WarnIfMissing(rankingPanel, nameof(rankingPanel));
             WarnIfMissing(bottomRankingPanel, nameof(bottomRankingPanel));
@@ -340,8 +346,12 @@ namespace Takoda99.View
             if (front is null)
             {
                 orderBubble?.Hide();
+                takoyakiStand?.ClearOrder();
                 return;
             }
+
+            // 鉄板と舟皿を仕切り直す。前の客の焼きかけ・皿の中身を持ち越さない。
+            takoyakiStand?.BeginOrder(front.View.OrderCount);
 
             // 先頭に来た瞬間に注文文句を出す。文面は契約に無いため個数から組み立てる
             // （サーバーが文面を配信するようになったら第3引数に渡すだけでよい）。
@@ -365,16 +375,26 @@ namespace Takoda99.View
             {
                 case KeyResult.Correct:
                     wordCorrectCount++;
+                    hand?.PlayKeyReaction();
+                    takoyakiStand?.OnKeyTyped(false, CalculateWordProgress());
                     return;
 
                 case KeyResult.Miss:
                     wordMissCount++;
+                    // ミス反応は通常反応より優先する（企画書 3番）。同時に両方は出さない。
+                    hand?.PlayMissReaction();
+                    takoyakiStand?.OnKeyTyped(true, CalculateWordProgress());
                     return;
 
                 case KeyResult.WordCleared:
                     // 打ち切った最後の1打も正打として数える（この打鍵は Correct では届かない）。
                     wordCorrectCount++;
+                    hand?.PlayKeyReaction();
                     PlayWordOutcomeSe();
+
+                    // 玉は鉄板に残したまま、焼く穴を次へ進める。舟皿へ盛るのは注文ぶんを
+                    // 打ち終えた瞬間で、その判断は TakoyakiStandView 側が持つ（cooking-anim/01 §4.35）。
+                    takoyakiStand?.OnWordCleared();
                     return;
 
                 default:
@@ -384,6 +404,22 @@ namespace Takoda99.View
                     // 最後の1単語のSEはそちらで鳴らす（06-match-client-controller.md §101）。
                     return;
             }
+        }
+
+        /// <summary>
+        /// いま打っている単語の進捗（0..1）。焼き上がりの遷移点の判定に使う（企画書 6番）。
+        /// かなではなくローマ字の打鍵数で測る（かな1文字が2〜3打になるため、かな基準だと進みが飛ぶ）。
+        /// </summary>
+        private float CalculateWordProgress()
+        {
+            if (typingJudge is null)
+            {
+                return 0f;
+            }
+
+            var view = typingJudge.CurrentView;
+            var total = view.CurrentRoma != null ? view.CurrentRoma.Length : 0;
+            return total <= 0 ? 0f : (float)view.TypedRomaLength / total;
         }
 
         /// <summary>打ち終えた1単語の出来を判定してSEを鳴らし、次の単語のために数え直す。</summary>
@@ -413,7 +449,14 @@ namespace Takoda99.View
             // ここで鳴らさないと、注文の最後の1単語だけ打鍵SEが無音になる。
             // 打ち切った最後の1打は OnKeyFeedback に届いていないので、ここで数に足す。
             wordCorrectCount++;
+            hand?.PlayKeyReaction();
             PlayWordOutcomeSe();
+
+            // 注文の最終単語は OnKeyFeedback に来ない。ここで進めないと最後の1個が焼き上がらない。
+            // OnWordCleared が注文ぶんの打ち切りを検知して一斉盛り付けへ入る。
+            // OnOrderServed は取りこぼし（注文個数が 0 で届いた等）に備えた保険で、二重には発火しない。
+            takoyakiStand?.OnWordCleared();
+            takoyakiStand?.OnOrderServed();
 
             // 「喜び → 退店」で帰す。本選では客が減る契機はこれだけ（離脱は廃止）。
             customerQueue?.MarkServed(customerId);
