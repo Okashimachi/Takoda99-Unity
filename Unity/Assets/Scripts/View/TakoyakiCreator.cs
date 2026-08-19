@@ -2,10 +2,12 @@
 // サーバーからの「造ったたこ焼き数」の契約はまだ未定義のため、外部からの数値注入は
 // SetTakoyakiCount(int) 経由の暫定インターフェースとする（契約確定後、呼び出し元を差し替える）。
 
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using System.Threading;
+using Takoda99.Sound;
 using UnityEngine;
 
 namespace Takoda99.View
@@ -41,6 +43,12 @@ namespace Takoda99.View
         private bool hasStarted;
         private CancellationTokenSource spawnCts;
         private Tween swayTween;
+
+        /// <summary>
+        /// Rank → Others → Buttons がすべて出そろった瞬間に1度だけ発火する。
+        /// リザルトの順位表示SEはこの合図で鳴らす（ResultScreenView が購読する）。
+        /// </summary>
+        public event Action RevealCompleted;
 
         private void Start()
         {
@@ -110,6 +118,10 @@ namespace Takoda99.View
                 var takoyaki = Instantiate(takoyakiPrefab, transform.position, transform.rotation, parent);
                 spawned.Add(takoyaki);
 
+                // 1個ごとに鳴らす。終盤は 0.04 秒間隔まで詰まるため、音量は
+                // SoundLibrary 側（Result グループ / ResultTakoyakiSpawn）で低めに設定する。
+                SoundPlayer.Play(SoundId.ResultTakoyakiSpawn);
+
                 if (i < count - 1)
                 {
                     await UniTask.Delay(System.TimeSpan.FromSeconds(interval), cancellationToken: token);
@@ -131,6 +143,9 @@ namespace Takoda99.View
 
             await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
             SetActiveIfAssigned(buttons, true);
+
+            // 順位・成績・次へボタンが出そろった。ここがリザルトの「表示完了」。
+            RevealCompleted?.Invoke();
         }
 
         private static void SetActiveIfAssigned(GameObject target, bool active)

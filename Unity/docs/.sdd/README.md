@@ -52,6 +52,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | [`elimination/`](./elimination/README.md) | 一斉脱落の集約演出 | ranking-view の後 |
 | [`result-view/`](./result-view/README.md) | 個人成績画面・リザルトの順位別演出分岐 | 最後 |
 | [`cleanup/`](./cleanup/README.md) | 撤去チェックリスト（単独PRにしない） | 全部終わったあとの確認 |
+| [`sound/`](./sound/README.md) | SEの一括管理（`SoundLibrary`）とイベントへの割り当て | SEを足すとき |
 
 **実装順（1本＝1ブランチ＝1PR）**
 

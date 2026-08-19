@@ -15,6 +15,8 @@ using System;
 using System.Collections.Generic;
 using Takoda99.Client.State;
 using Takoda99.Proto;
+using Takoda99.Sound;
+using Takoda99.View.ValueObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -44,6 +46,16 @@ namespace Takoda99.View
         [Header("X 投稿")]
         [SerializeField] private Button xButton;
 
+        [Header("順位表示SE（SoundLibrary の Result グループ）")]
+        [Tooltip("この順位までを「上位」とし、全パネルが出そろった瞬間に上位用のSEを鳴らす。")]
+        [SerializeField] private int topRankCount = ResultRankSoundRule.DefaultTopCount;
+
+        [Tooltip("最下位からこの件数までを「下位」とする。")]
+        [SerializeField] private int bottomRankCount = ResultRankSoundRule.DefaultBottomCount;
+
+        [Tooltip("1試合の参加店数。下位の境目を出すのに使う。")]
+        [SerializeField] private int storeCount = ResultRankSoundRule.DefaultStoreCount;
+
         [Header("テストモード")]
         [Tooltip("ON にすると、サーバーの受信値ではなく ResultSampleData のサンプルを全要素へ注入する（たこ焼き生成を含む）。")]
         [SerializeField] private bool testMode;
@@ -57,8 +69,21 @@ namespace Takoda99.View
         private PersonalResultState latestResult;
         private string latestStoreName = "-";
 
+        /// <summary>順位表示SEを鳴らしたか。表示完了は1度きりだが、二重再生を構造で封じる。</summary>
+        private bool hasPlayedRankRevealSe;
+
         private void OnEnable()
         {
+            hasPlayedRankRevealSe = false;
+
+            // たこ焼きの生成が終わり、順位・成績・次へボタンが出そろった瞬間に鳴らす。
+            // 購読は SetTakoyakiCount より前に済ませる（生成が 0 個だとすぐ表示完了まで進むため）。
+            if (takoyakiCreator != null)
+            {
+                takoyakiCreator.RevealCompleted -= OnRevealCompleted;
+                takoyakiCreator.RevealCompleted += OnRevealCompleted;
+            }
+
             if (testMode)
             {
                 ApplySample();
@@ -85,6 +110,11 @@ namespace Takoda99.View
 
         private void OnDisable()
         {
+            if (takoyakiCreator != null)
+            {
+                takoyakiCreator.RevealCompleted -= OnRevealCompleted;
+            }
+
             subscription?.Dispose();
             subscription = null;
 
@@ -235,14 +265,47 @@ namespace Takoda99.View
             }
         }
 
+        /// <summary>
+        /// 順位・成績・次へボタンがすべて出そろった瞬間。最終順位で3種類を鳴らし分ける。
+        /// **順位はここで初めて読む**（表示完了は MatchEnd の到着より後になることがある）。
+        /// </summary>
+        private void OnRevealCompleted()
+        {
+            if (hasPlayedRankRevealSe)
+            {
+                return;
+            }
+
+            hasPlayedRankRevealSe = true;
+
+            var finalRank = latestResult?.FinalRank ?? 0;
+            var sound = ResultRankSoundRule.From(finalRank, topRankCount, bottomRankCount, storeCount);
+
+            switch (sound)
+            {
+                case ResultRankSound.Top:
+                    SoundPlayer.Play(SoundId.ResultRankRevealTop);
+                    break;
+                case ResultRankSound.Bottom:
+                    SoundPlayer.Play(SoundId.ResultRankRevealBottom);
+                    break;
+                default:
+                    SoundPlayer.Play(SoundId.ResultRankRevealNormal);
+                    break;
+            }
+        }
+
         private void OnTitleClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
             Bootstrap.GameBootstrapper.Instance.BackToTitle();
         }
 
         /// <summary>成績とハッシュタグを添えて、X の投稿画面をブラウザで開く。上位3位は専用の煽り文にする。</summary>
         private void OnXClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
+
             var stats = latestResult?.Stats ?? new MatchStats();
             var missRate = stats.TotalKeystrokes > 0
                 ? (stats.TotalMisses * 100.0 / stats.TotalKeystrokes).ToString("F1", System.Globalization.CultureInfo.InvariantCulture)

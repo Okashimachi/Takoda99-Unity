@@ -128,3 +128,10 @@ Unity/tests/**/obj/
 # Unity がクラッシュ復旧時に生成するシーンの退避先。生成物なのでコミットしない。
 /Unity/Assets/_Recovery/
 /Unity/Assets/_Recovery.meta
+
+# SE素材（OtoLogic からの取得物）。音源ファイル単体を公開リポジトリに置かないため、本体はコミットしない。
+# .meta はコミットする（GUID を固定し、SoundLibrary の AudioClip 参照が環境ごとに壊れないようにするため）。
+# 入手手順は Unity/Assets/Sounds/README.md を参照。
+/Unity/Assets/Sounds/**/*.mp3
+/Unity/Assets/Sounds/**/*.wav
+/Unity/Assets/Sounds/**/*.ogg

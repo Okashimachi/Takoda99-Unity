@@ -53,9 +53,6 @@ namespace Takoda99.View.Ranking
         /// <summary>残り5秒の中央カウントダウン（02 §6）。同じ時計をここから押し込む。</summary>
         [SerializeField] private CullFinalCountdownView finalCountdown;
 
-        [SerializeField] private AudioSource alertSe;
-        [SerializeField] private AudioClip atRiskClip;
-
         [Header("アラートの見た目")]
         [Tooltip("ぎりぎり圏外の色（淡い黄〜橙）。")]
         [SerializeField] private Color cautionColor = new Color(1f, 0.72f, 0.28f);
@@ -105,9 +102,6 @@ namespace Takoda99.View.Ranking
         private Color shownColor;
         private Sprite vignetteSprite;
         private float vignetteAspect;
-
-        /// <summary>直前の SelfAtRisk。状態が変わった瞬間だけSEを鳴らすために持つ。</summary>
-        private bool lastSelfAtRisk;
 
         private RankingRowPool pool;
         private readonly HashSet<string> visibleIds = new HashSet<string>();
@@ -182,7 +176,6 @@ namespace Takoda99.View.Ranking
             {
                 SetPanelVisible(false);
                 hasCurrent = false;
-                lastSelfAtRisk = false;
                 pool?.ReleaseAll();
                 return;
             }
@@ -195,22 +188,16 @@ namespace Takoda99.View.Ranking
             UpdateTexts();
         }
 
-        /// <summary>受信の瞬間だけ必要な演出の契機（IRenderer.OnCullWarning から）。</summary>
+        /// <summary>
+        /// 受信の瞬間だけ必要な演出の契機（IRenderer.OnCullWarning から）。
+        ///
+        /// 淘汰圏に入った瞬間のSEはここでは鳴らさない。**順位帯のSEは <see cref="SelfRankView"/> に一本化した**
+        /// （上位入り・淘汰圏入り・ぎりぎり圏外入りを1箇所で判定しないと、同じ状況で二重に鳴る）。
+        /// 秒読み1秒ごとのSEは <see cref="CullFinalCountdownView"/> の担当。
+        /// </summary>
         public void OnWarningReceived(CullWarning received)
         {
-            if (received == null)
-            {
-                return;
-            }
-
-            // SelfAtRisk は 1〜2Hz で届き続ける。**状態が変わった瞬間だけ**鳴らす。
-            // 脱落後は演出を止めるので鳴らさない（観戦中に自分向けの警告音が出ると混乱する）。
-            if (received.SelfAtRisk && !lastSelfAtRisk && selfAlive && alertSe != null && atRiskClip != null)
-            {
-                alertSe.PlayOneShot(atRiskClip);
-            }
-
-            lastSelfAtRisk = received.SelfAtRisk;
+            _ = received;
         }
 
         private void Update()
