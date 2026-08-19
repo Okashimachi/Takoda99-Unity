@@ -12,6 +12,7 @@
 // （試合が終わったのに画面から出られない状態を作らないため）。
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Takoda99.Client.State;
 using Takoda99.Proto;
@@ -281,23 +282,43 @@ namespace Takoda99.View
             var finalRank = latestResult?.FinalRank ?? 0;
             var sound = ResultRankSoundRule.From(finalRank, topRankCount, bottomRankCount, storeCount);
 
+            SoundId seId;
             switch (sound)
             {
                 case ResultRankSound.Top:
-                    SoundPlayer.Play(SoundId.ResultRankRevealTop);
+                    seId = SoundId.ResultRankRevealTop;
                     break;
                 case ResultRankSound.Bottom:
-                    SoundPlayer.Play(SoundId.ResultRankRevealBottom);
+                    seId = SoundId.ResultRankRevealBottom;
                     break;
                 default:
-                    SoundPlayer.Play(SoundId.ResultRankRevealNormal);
+                    seId = SoundId.ResultRankRevealNormal;
                     break;
             }
+
+            var seLength = SoundPlayer.Play(seId);
+
+            // リザルトBGM。パネル表示完了SEが鳴り終わってから流し始める。
+            StartCoroutine(PlayResultBgmAfter(seLength));
+        }
+
+        private IEnumerator PlayResultBgmAfter(float delaySeconds)
+        {
+            if (delaySeconds > 0f)
+            {
+                yield return new WaitForSeconds(delaySeconds);
+            }
+
+            BgmPlayer.PlayLoop(BgmId.Result);
         }
 
         private void OnTitleClicked()
         {
             SoundPlayer.Play(SoundId.ButtonTap);
+
+            // Title へ戻る＝リザルトBGMの役目が終わる瞬間。ここで完全に止める。
+            BgmPlayer.Stop();
+
             Bootstrap.GameBootstrapper.Instance.BackToTitle();
         }
 

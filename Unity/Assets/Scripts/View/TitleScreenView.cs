@@ -25,6 +25,9 @@ namespace Takoda99.View
         {
             hasAdvanced = false;
 
+            // 通常BGM。Title / Matchmaking の間はこれを流し続ける（Matchmaking 側では何もしない）。
+            BgmPlayer.PlayLoop(BgmId.Normal);
+
             if (Bootstrap.GameBootstrapper.Instance == null)
             {
                 Debug.LogError($"{nameof(TitleScreenView)}: {nameof(Bootstrap.GameBootstrapper)}.Instance が見つかりません。Boot シーンから再生してください。", this);

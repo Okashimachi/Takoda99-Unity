@@ -53,6 +53,9 @@ namespace Takoda99.View
             finished = false;
             lastTickSecond = -1;
 
+            // 試合前半BGM。カウントダウンが始まった瞬間に流す（前半→後半は BgmPlayer 側で自動でつなぐ）。
+            BgmPlayer.PlayMatchHalves();
+
             gameObject.SetActive(true);
             ApplyText();
         }
