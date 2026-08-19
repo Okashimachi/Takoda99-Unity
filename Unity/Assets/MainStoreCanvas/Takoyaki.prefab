@@ -200,8 +200,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: be2c13b11df440a7b278cfa31894eab0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.TakoyakiSlotView
-  raw: {fileID: 2469944296103242616}
-  done: {fileID: 2828690630351452983}
-  doneCleanSprite: {fileID: 0}
-  doneNormalSprite: {fileID: 0}
-  doneDirtySprite: {fileID: 0}
+  raw: {fileID: 2828690630351452983}
+  done: {fileID: 2469944296103242616}
