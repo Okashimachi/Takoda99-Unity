@@ -7417,7 +7417,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.745283, g: 0.745283, b: 0.745283, a: 0.3137255}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -11531,6 +11531,7 @@ MonoBehaviour:
   settings: {fileID: 11400000, guid: 7e593f62e2fe83e46a1061933ba04331, type: 2}
   flyingAnimator: {fileID: 1666039398}
   tray: {fileID: 1649910702}
+  hand: {fileID: 1475592129}
 --- !u!1 &1250198806
 GameObject:
   m_ObjectHideFlags: 0
@@ -13855,6 +13856,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Cooking.HandView
   settings: {fileID: 11400000, guid: 7e593f62e2fe83e46a1061933ba04331, type: 2}
   pivot: {fileID: 159883685}
+  handImage: {fileID: 784320627}
 --- !u!1 &1481915755
 GameObject:
   m_ObjectHideFlags: 0

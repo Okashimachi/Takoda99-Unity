@@ -57,12 +57,16 @@ namespace Takoda99.View.Cooking
         [Tooltip("落下開始時のスケール。1 より大きいと上から降ってきたように見える。")]
         [SerializeField] private float batterFallStartScale = 1.3f;
 
-        [Header("窪み：焼き上がり（6番）")]
-        [Tooltip("生地→焼きのクロスフェード尺（ミリ秒）。")]
+        [Header("窪み：焼き上がり（6番。単語を打ち切った瞬間に切り替える）")]
+        [Tooltip("生地→焼きのクロスフェード尺（ミリ秒）。たこ焼きの回転もこの尺に合わせる。")]
         [SerializeField] private int cookedFadeMs = 90;
 
-        [Tooltip("単語のこの割合まで打鍵したら焼き上がりへ遷移する。ローマ字の打鍵数で測る。")]
-        [SerializeField, Range(0.1f, 1f)] private float cookedProgressRatio = 0.8f;
+        [Header("手・窪み：ひっくり返し演出（タイプ完了と同時）")]
+        [Tooltip("手が対象の穴まで移動して戻ってくる尺（ミリ秒）。往復で折半する。")]
+        [SerializeField] private int handFlipDurationMs = 160;
+
+        [Tooltip("焼き上がりの切り替え中にたこ焼きが回転する角度（度）。360で1回転して元の向きに戻る。")]
+        [SerializeField] private float takoyakiFlipRotationDegrees = 360f;
 
         [Header("舟皿：盛り付けの出来（7番）")]
         [Tooltip("盛り付け済みの絵が出るときのフェードイン尺（ミリ秒）。")]
@@ -132,7 +136,8 @@ namespace Takoda99.View.Cooking
         public float BatterFallStartScale => batterFallStartScale;
 
         public int CookedFadeMs => cookedFadeMs;
-        public float CookedProgressRatio => cookedProgressRatio;
+        public int HandFlipDurationMs => handFlipDurationMs;
+        public float TakoyakiFlipRotationDegrees => takoyakiFlipRotationDegrees;
 
         public int TrayServedFadeMs => trayServedFadeMs;
         public float TrayCleanMaxMissRatio => trayCleanMaxMissRatio;

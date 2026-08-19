@@ -20,7 +20,8 @@ MonoBehaviour:
   batterSpreadMs: 40
   batterFallStartScale: 1.3
   cookedFadeMs: 90
-  cookedProgressRatio: 0.8
+  handFlipDurationMs: 160
+  takoyakiFlipRotationDegrees: 360
   trayServedFadeMs: 80
   trayCleanMaxMissRatio: 0
   trayNormalMaxMissRatio: 0.15

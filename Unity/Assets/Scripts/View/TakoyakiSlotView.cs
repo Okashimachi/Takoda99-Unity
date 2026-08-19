@@ -30,6 +30,7 @@ namespace Takoda99.View
         private CanvasGroup rawGroup;
         private CanvasGroup doneGroup;
         private RectTransform rawRect;
+        private RectTransform selfRect;
 
         /// <summary>生地の基準スケール。投入アニメで触るため、Awake 時の値を原点として覚える。</summary>
         private Vector3 rawRestScale = Vector3.one;
@@ -42,8 +43,13 @@ namespace Takoda99.View
         /// <summary>焼き上がりの矩形。飛行の開始位置・サイズに使う。</summary>
         public RectTransform CookedRect => doneImage != null ? doneImage.rectTransform : null;
 
+        /// <summary>この穴そのものの矩形。「そのたこ焼きの位置」として、手のひっくり返し演出の目印に使う。</summary>
+        public RectTransform SlotRect => selfRect;
+
         private void Awake()
         {
+            selfRect = GetComponent<RectTransform>();
+
             if (raw == null)
             {
                 Debug.LogError($"{nameof(TakoyakiSlotView)}.{nameof(raw)} が未設定です。", this);
@@ -121,7 +127,10 @@ namespace Takoda99.View
             playing = StartCoroutine(PourRoutine());
         }
 
-        /// <summary>焼き上がり（企画書 6番）。生地→焼きのクロスフェード。</summary>
+        /// <summary>
+        /// 焼き上がり（企画書 6番）。生地→焼きのクロスフェードと、ひっくり返す回転。
+        /// **単語を打ち切った瞬間にだけ呼ぶ**（TakoyakiStandView.OnWordCleared）。打鍵の途中経過では呼ばない。
+        /// </summary>
         public void Cook()
         {
             if (State == TakoyakiSlotState.Cooked)
@@ -179,19 +188,23 @@ namespace Takoda99.View
         private IEnumerator CookRoutine()
         {
             var duration = CookingAnimationSettings.ToSeconds(settings.CookedFadeMs);
+            var rotation = settings.TakoyakiFlipRotationDegrees;
 
             Show(done, doneGroup, true);
             SetAlpha(doneGroup, 0f);
 
+            // ひっくり返す動き。1回転して元の向きに戻る（回転が残ると次に並ぶ生地と傾きがずれて見える）。
             yield return Tween(duration, t =>
             {
                 SetAlpha(rawGroup, 1f - t);
                 SetAlpha(doneGroup, t);
+                SetRotation(rotation * t);
             });
 
             // 重ね表示にしない（match-view/03 §4.1）。焼きが出そろってから生地を消す。
             Show(raw, rawGroup, false);
             SetAlpha(doneGroup, 1f);
+            SetRotation(0f);
             playing = null;
         }
 
@@ -236,6 +249,15 @@ namespace Takoda99.View
             SetRawScale(rawRestScale);
             SetAlpha(rawGroup, 1f);
             SetAlpha(doneGroup, 1f);
+            SetRotation(0f);
+        }
+
+        private void SetRotation(float degrees)
+        {
+            if (selfRect != null)
+            {
+                selfRect.localRotation = Quaternion.Euler(0f, 0f, degrees);
+            }
         }
 
         private void SetRawScale(Vector3 scale)

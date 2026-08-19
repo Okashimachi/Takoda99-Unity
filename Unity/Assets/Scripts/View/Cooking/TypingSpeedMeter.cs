@@ -22,6 +22,14 @@ namespace Takoda99.View.Cooking
         /// <summary>KPM を出すのに足るだけ打鍵が溜まっているか。</summary>
         public bool HasSample => count >= 2;
 
+        /// <summary>
+        /// リングバッファが満杯か（<c>windowKeys</c> ぶん溜まったか）。
+        /// 溜まる前の KPM は、打ち始めの数打の間隔だけで計算されるため、
+        /// 偶然の連打で異常に高い値が出ることがある（穴数がいきなり跳ね上がる原因）。
+        /// 段階の判定はこれが true になってから行う（cooking-anim/01 §4.1）。
+        /// </summary>
+        public bool HasFullWindow => count >= timestamps.Length;
+
         /// <summary>1打ぶん記録する。<paramref name="nowSeconds"/> は単調増加する時刻（Time.unscaledTimeAsDouble 等）。</summary>
         public void Record(double nowSeconds)
         {

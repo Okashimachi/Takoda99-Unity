@@ -75,17 +75,17 @@ namespace Takoda99.View.Cooking
                 // ミスは単語を進めない（本番の TypingJudge も同じ。バッファは巻き戻さない）。
                 // 鉄板の見た目は変わらず、盛り付けの出来にだけ効く。
                 hand?.PlayMissReaction();
-                takoyakiStand.OnKeyTyped(true, Progress());
+                takoyakiStand.OnKeyTyped(true);
                 return;
             }
 
             keysInWord++;
-            hand?.PlayKeyReaction();
+            takoyakiStand.OnKeyTyped(false);
 
             if (keysInWord >= keysPerWord)
             {
-                takoyakiStand.OnKeyTyped(false, 1f);
                 // 注文ぶん打ち切ると TakoyakiStandView 側が一斉盛り付け→提供へ入る。
+                // 手のひっくり返し演出も OnWordCleared 側（TakoyakiStandView → HandView）が出す。
                 takoyakiStand.OnWordCleared();
                 keysInWord = 0;
                 wordsDone++;
@@ -100,9 +100,7 @@ namespace Takoda99.View.Cooking
                 return;
             }
 
-            takoyakiStand.OnKeyTyped(false, Progress());
+            hand?.PlayKeyReaction();
         }
-
-        private float Progress() => keysPerWord <= 0 ? 1f : (float)keysInWord / keysPerWord;
     }
 }
