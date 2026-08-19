@@ -1,74 +1,38 @@
-// WebGL（Unityroom等）では TMP_InputField 自前のキャレット入力はブラウザ上のHTML要素ではないため、
-// OSのIME（日本語変換）が素通りしない。Unity の WebGL 実装は TouchScreenKeyboard.Open() を呼ぶと
-// 内部で本物の HTML input/textarea を生成してそちらに入力を委譲するため、そこ経由でだけIMEが機能する。
-// TouchScreenKeyboard.isSupported はデスクトップブラウザでは false になり得るため、判定を待たず
-// 明示的に開く。エディタ/他プラットフォームでは何もせず、TMP_InputField 標準の入力に任せる。
+// WebGL（Unityroom等）では TMP_InputField はブラウザ上のHTML要素ではなく、Unity が keydown を
+// Input.inputString に流し込むだけなので、IME の変換中（composition イベント）が一切届かない。
+// = 日本語変換ができない。これは Unity WebGL 全般の既知の制限で、Unity 6 でも直っていない。
+//
+// 対策として WebGLInput（kou-yeung/WebGLInput, MIT, UPM: com.github.kou-yeung）を使う。
+// キャンバスに透明な HTML <input> を重ね、ブラウザネイティブの入力（＝IMEが効く）を
+// TMP_InputField に同期する。文字数上限は TMP_InputField.characterLimit をそのまま尊重する。
+//
+// WebGLInput はシーンに置かず、ここから実行時に付ける。シーン側へのアタッチ漏れを防ぐためで、
+// 付ける先は MatchmakingScreenView が握っている入力欄そのもの。
+// エディタ/他プラットフォームでは何もしない（TMP_InputField 標準の入力に任せる）。
 
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace Takoda99.View
 {
-    /// <summary>WebGL ビルドでだけ、TMP_InputField の入力を TouchScreenKeyboard 経由に切り替えてIMEを成立させる。</summary>
-    [RequireComponent(typeof(TMP_InputField))]
-    public sealed class WebGLNameInputImeBridge : MonoBehaviour, ISelectHandler
+    /// <summary>WebGL ビルドでだけ、名前入力欄に WebGLInput を付けて日本語入力（IME）を成立させる。</summary>
+    public static class WebGLNameInputImeBridge
     {
-        /// <summary>MatchmakingScreenView.DisplayNameInputLimit と同じ値を実行時に注入する（単一の情報源はそちら）。</summary>
-        public int CharacterLimit { get; set; } = 6;
-
-        private TMP_InputField field;
-
-        private void Awake()
+        /// <summary>入力欄に IME 対応を取り付ける。WebGL 以外・二重呼び出しでは何もしない。</summary>
+        public static void Attach(TMP_InputField field)
         {
-            field = GetComponent<TMP_InputField>();
-        }
-
-#if UNITY_WEBGL && !UNITY_EDITOR
-        private TouchScreenKeyboard keyboard;
-
-        public void OnSelect(BaseEventData eventData)
-        {
-            keyboard = TouchScreenKeyboard.Open(
-                field.text,
-                TouchScreenKeyboardType.Default,
-                autocorrection: false,
-                multiline: false,
-                secure: false,
-                alert: false,
-                textPlaceholder: "",
-                characterLimit: CharacterLimit);
-        }
-
-        private void Update()
-        {
-            if (keyboard == null)
+            if (field == null)
             {
                 return;
             }
 
-            var text = keyboard.text ?? string.Empty;
-            if (text.Length > CharacterLimit)
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // UnityEngine.WebGLInput と同名なので必ず名前空間付きで書く。
+            if (field.GetComponent<WebGLSupport.WebGLInput>() == null)
             {
-                text = text.Substring(0, CharacterLimit);
+                field.gameObject.AddComponent<WebGLSupport.WebGLInput>();
             }
-
-            if (field.text != text)
-            {
-                field.text = text;
-            }
-
-            if (keyboard.status == TouchScreenKeyboard.Status.Done
-                || keyboard.status == TouchScreenKeyboard.Status.Canceled
-                || keyboard.status == TouchScreenKeyboard.Status.LostFocus)
-            {
-                keyboard = null;
-            }
-        }
-#else
-        public void OnSelect(BaseEventData eventData)
-        {
-        }
 #endif
+        }
     }
 }
