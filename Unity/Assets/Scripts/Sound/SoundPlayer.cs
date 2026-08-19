@@ -83,27 +83,28 @@ namespace Takoda99.Sound
         /// <summary>SE を1回鳴らす。未登録・未割り当て・音量0なら何もしない。</summary>
         /// <param name="id">鳴らすSE。</param>
         /// <param name="volumeScale">その場かぎりの音量倍率（自店が含まれるときだけ大きく、など）。</param>
-        public static void Play(SoundId id, float volumeScale = 1f)
+        /// <returns>鳴らしたクリップの長さ（秒）。鳴らさなかった場合は0。呼び終わりを待ちたい呼び出し側が使う。</returns>
+        public static float Play(SoundId id, float volumeScale = 1f)
         {
-            Instance?.PlayInternal(id, volumeScale);
+            return Instance != null ? Instance.PlayInternal(id, volumeScale) : 0f;
         }
 
-        private void PlayInternal(SoundId id, float volumeScale)
+        private float PlayInternal(SoundId id, float volumeScale)
         {
             if (library == null || voices == null)
             {
-                return;
+                return 0f;
             }
 
             if (!library.TryResolve(id, out var clip, out var volume))
             {
-                return;
+                return 0f;
             }
 
             var finalVolume = Mathf.Clamp01(volume * Mathf.Max(volumeScale, 0f));
             if (finalVolume <= 0f)
             {
-                return;
+                return 0f;
             }
 
             // 使う AudioSource を順に回す。PlayOneShot は重ねられるが、同じ Source に
@@ -111,6 +112,7 @@ namespace Takoda99.Sound
             var source = voices[nextVoice];
             nextVoice = (nextVoice + 1) % voices.Length;
             source.PlayOneShot(clip, finalVolume);
+            return clip.length;
         }
     }
 }
