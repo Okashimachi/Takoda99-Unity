@@ -39,6 +39,7 @@ namespace Takoda99.View
         [SerializeField] private SelfRankView selfRank;                        // 順位の大表示＋スコア＋生存数
         [SerializeField] private Ranking.RankingPanelView rankingPanel;        // ranking-view/01
         [SerializeField] private Ranking.BottomRankingPanelView bottomRankingPanel; // ranking-view/05
+        [SerializeField] private Ranking.SelfRankNeonPanelView selfRankNeonPanel;   // ranking-view/08
         [SerializeField] private Ranking.CullCountdownPanelView cullPanel;     // ranking-view/02
         [SerializeField] private Elimination.MassEliminationEffect massElim;   // elimination/01
         [SerializeField] private Ranking.AudiencePanelView audiencePanel;      // ranking-view/07
@@ -104,6 +105,7 @@ namespace Takoda99.View
             WarnIfMissing(selfRank, nameof(selfRank));
             WarnIfMissing(rankingPanel, nameof(rankingPanel));
             WarnIfMissing(bottomRankingPanel, nameof(bottomRankingPanel));
+            WarnIfMissing(selfRankNeonPanel, nameof(selfRankNeonPanel));
             WarnIfMissing(cullPanel, nameof(cullPanel));
             WarnIfMissing(massElim, nameof(massElim));
             WarnIfMissing(audiencePanel, nameof(audiencePanel));
@@ -206,6 +208,21 @@ namespace Takoda99.View
             // 自店の順位・スコア・生存数。**順位が本選の画面の主役**。
             // 順位テキストの色（金銀銅・警告・脱落）も state から決まる（hud/01 §5.1）。
             selfRank?.Apply(state);
+
+            // 自店の順位を大きく見せるネオン風パネル（ranking-view/08）。下位パネルが空けた
+            // 右下領域に置く。selfRank と同じ根拠でトーンを決めるだけで、値の計算はしない。
+            // 待機中は順位が未確定なので、他の試合中パネルと同じく畳む。
+            if (selfRankNeonPanel != null)
+            {
+                if (holding)
+                {
+                    selfRankNeonPanel.SetPanelVisible(false);
+                }
+                else
+                {
+                    selfRankNeonPanel.Apply(state);
+                }
+            }
 
             // ランキング（上位N＋自分）。待機中は描かない。
             if (rankingPanel != null)
@@ -526,6 +543,7 @@ namespace Takoda99.View
             orderBubble?.Hide();
             rankingPanel?.SetPanelVisible(false);
             bottomRankingPanel?.SetPanelVisible(false);
+            selfRankNeonPanel?.SetPanelVisible(false);
             cullPanel?.SetPanelVisible(false);
 
             // モーダル自体は HandleStateChanged（state 駆動）が先に出していることもある。
