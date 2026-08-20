@@ -52,6 +52,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | [`elimination/`](./elimination/README.md) | 一斉脱落の集約演出 | ranking-view の後 |
 | [`result-view/`](./result-view/README.md) | 個人成績画面・リザルトの順位別演出分岐 | 最後 |
 | [`cleanup/`](./cleanup/README.md) | 撤去チェックリスト（単独PRにしない） | 全部終わったあとの確認 |
+| [`sound/`](./sound/README.md) | SEの一括管理（`SoundLibrary`）とイベントへの割り当て | SEを足すとき |
 
 **実装順（1本＝1ブランチ＝1PR）**
 
@@ -83,6 +84,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | 14 | [ranking-view/04-top-ranking-slots.md](./ranking-view/04-top-ranking-slots.md) | 12, 13, 5 | ✅ |
 | 15 | [ranking-view/05-bottom-ranking-panel.md](./ranking-view/05-bottom-ranking-panel.md) | 12, 13, 5 | ✅ |
 | 16 | [ranking-view/06-rank-swap-animation.md](./ranking-view/06-rank-swap-animation.md) | 14, 15 | ✅ |
+| 17 | [ranking-view/08-self-rank-neon-panel.md](./ranking-view/08-self-rank-neon-panel.md) | 12, 13, 15 | ✅ |
 
 > **12・13 から着手する。** どちらも EditMode テストだけで完結し、
 > ここが固まると 14〜16 は「値を描くだけ」になる（1〜3 と同じ進め方）。

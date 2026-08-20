@@ -2,6 +2,7 @@
 // Title シーン。Start ボタンをマッチングシーンへの遷移に繋ぐだけ。
 // ★ここでは接続しない。BeginPlay() は呼ばない（接続は表示名確定後。matchmaking/01-matchmaking-flow.md §8.5）。
 
+using Takoda99.Sound;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -23,6 +24,9 @@ namespace Takoda99.View
         private void OnEnable()
         {
             hasAdvanced = false;
+
+            // 通常BGM。Title / Matchmaking の間はこれを流し続ける（Matchmaking 側では何もしない）。
+            BgmPlayer.PlayLoop(BgmId.Normal);
 
             if (Bootstrap.GameBootstrapper.Instance == null)
             {
@@ -76,11 +80,13 @@ namespace Takoda99.View
 
         private void OnStartClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
             Bootstrap.GameBootstrapper.Instance.GoToMatchmaking();
         }
 
         private void OnDescriptionClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
             Application.OpenURL(descriptionPageUrl);
         }
     }

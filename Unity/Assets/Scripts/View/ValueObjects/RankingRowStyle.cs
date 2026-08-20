@@ -86,7 +86,7 @@ namespace Takoda99.View.ValueObjects
             {
                 var tone = rank == 1 ? RankingRowTone.Gold : rank == 2 ? RankingRowTone.Silver : RankingRowTone.Bronze;
                 return new RankingRowStyle(
-                    new Vector2(230f, 44f), 20f * FontStepDown, 24f * FontStepDown, 20f * FontStepDown,
+                    new Vector2(230f, 44f), 20f * FontStepDown * FontStepDown, 24f * FontStepDown * FontStepDown, 20f * FontStepDown * FontStepDown,
                     new Vector2(35f, 0f), new Vector2(60f, 40f),
                     new Vector2(-5f, 0f), new Vector2(130f, 40f),
                     new Vector2(-35f, 0f), new Vector2(60f, 40f),
@@ -97,7 +97,7 @@ namespace Takoda99.View.ValueObjects
             {
                 // シーン参照 Slot04〜06 採寸：箱が縦長(130x66)になるぶん、Rank/Score を上下に振り分ける。
                 return new RankingRowStyle(
-                    new Vector2(130f, 66f), 16f * FontStepDown, 20f * FontStepDown, 14f * FontStepDown,
+                    new Vector2(130f, 66f), 16f * FontStepDown * FontStepDown, 20f * FontStepDown * FontStepDown, 14f * FontStepDown * FontStepDown,
                     new Vector2(35f, 10f), new Vector2(60f, 40f),
                     new Vector2(0f, 0f), new Vector2(110f, 40f),
                     new Vector2(-35f, -10f), new Vector2(60f, 40f),
@@ -106,7 +106,7 @@ namespace Takoda99.View.ValueObjects
 
             // 7〜10位、11位以上、0位以下（不明）はすべて同じ見た目（§4.1）。シーン参照 Slot07〜10 採寸。
             return new RankingRowStyle(
-                new Vector2(100f, 50f), 12f * FontStepDown, 16f * FontStepDown, 12f * FontStepDown,
+                new Vector2(100f, 50f), 12f * FontStepDown * FontStepDown, 16f * FontStepDown * FontStepDown, 12f * FontStepDown * FontStepDown,
                 new Vector2(35f, 3.5f), new Vector2(60f, 40f),
                 new Vector2(0f, 0f), new Vector2(110f, 40f),
                 new Vector2(-35f, -3.5f), new Vector2(60f, 40f),
@@ -116,11 +116,14 @@ namespace Takoda99.View.ValueObjects
         /// <summary>下位パネル用。寸法は固定で、色だけが帯で変わる。テキストの位置・寸法は BottomRanker.prefab の authored 値と一致させる。</summary>
         public static RankingRowStyle ForBottomBand(RankingRowTone tone)
         {
+            // 幅は元の 2/3（120 → 80）。テキストのx方向オフセット・幅も同じ比率で縮め、
+            // 箱からはみ出して隣の列と重ならないようにする（高さ・y方向は変えない）。
+            const float widthScale = 2f / 3f;
             return new RankingRowStyle(
-                new Vector2(120f, 29f), 12f, 12f, 0f,
-                new Vector2(33.5f, 0f), new Vector2(60f, 29f),
-                new Vector2(-44f, 0f), new Vector2(80f, 29f),
-                new Vector2(-35f, -3.5f), new Vector2(60f, 40f),
+                new Vector2(80f, 29f), 12f, 12f, 0f,
+                new Vector2(33.5f * widthScale, 0f), new Vector2(60f * widthScale, 29f),
+                new Vector2(-44f * widthScale, 0f), new Vector2(80f * widthScale, 29f),
+                new Vector2(-35f * widthScale, -3.5f), new Vector2(60f * widthScale, 40f),
                 tone);
         }
 

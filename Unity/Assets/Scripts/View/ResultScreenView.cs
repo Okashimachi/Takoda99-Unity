@@ -12,9 +12,12 @@
 // （試合が終わったのに画面から出られない状態を作らないため）。
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using Takoda99.Client.State;
 using Takoda99.Proto;
+using Takoda99.Sound;
+using Takoda99.View.ValueObjects;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,11 +41,37 @@ namespace Takoda99.View
         [Tooltip("ResultCanvas/Result/Rank 配下、自店の最終順位を表示する数値テキスト（「位」ラベルと兄弟にある数値の方）。")]
         [SerializeField] private TMP_Text rankText;
 
+        [Header("順位ごとのネオン色（ResultCanvas/Result/Rank/Panel/NeonFrame）")]
+        [Tooltip("Rank/Panel の縁取り。順位（Tier）に応じて色だけ差し替える。")]
+        [SerializeField] private Image rankNeonFrame;
+        [SerializeField] private Color championNeonColor = new Color(1f, 0.84f, 0.2f);   // 金（1位）
+        [SerializeField] private Color podiumNeonColor = new Color(0.78f, 0.86f, 0.95f); // 銀（2〜3位）
+        [SerializeField] private Color finalistNeonColor = new Color(1f, 0.55f, 0.15f);  // 銅（4〜10位）
+        [SerializeField] private Color standardNeonColor = new Color(0.3f, 0.75f, 1f);   // それ以外
+
+        [Header("暖簾のプレイヤー名（試合画面 MainStoreView と同じ組み方）")]
+        [Tooltip("ResultCanvas/Noren/PlayerName/LeftText")]
+        [SerializeField] private TMP_Text playerNameLeftText;
+        [Tooltip("ResultCanvas/Noren/PlayerName/MiddleText")]
+        [SerializeField] private TMP_Text playerNameMiddleText;
+        [Tooltip("ResultCanvas/Noren/PlayerName/RightText")]
+        [SerializeField] private TMP_Text playerNameRightText;
+
         /// <summary>MatchEnd 待ちのあいだ順位の代わりに出す文字（ResultStatsBoardView と揃える）。</summary>
         private const string RankPending = "…";
 
         [Header("X 投稿")]
         [SerializeField] private Button xButton;
+
+        [Header("順位表示SE（SoundLibrary の Result グループ）")]
+        [Tooltip("この順位までを「上位」とし、全パネルが出そろった瞬間に上位用のSEを鳴らす。")]
+        [SerializeField] private int topRankCount = ResultRankSoundRule.DefaultTopCount;
+
+        [Tooltip("最下位からこの件数までを「下位」とする。")]
+        [SerializeField] private int bottomRankCount = ResultRankSoundRule.DefaultBottomCount;
+
+        [Tooltip("1試合の参加店数。下位の境目を出すのに使う。")]
+        [SerializeField] private int storeCount = ResultRankSoundRule.DefaultStoreCount;
 
         [Header("テストモード")]
         [Tooltip("ON にすると、サーバーの受信値ではなく ResultSampleData のサンプルを全要素へ注入する（たこ焼き生成を含む）。")]
@@ -57,8 +86,21 @@ namespace Takoda99.View
         private PersonalResultState latestResult;
         private string latestStoreName = "-";
 
+        /// <summary>順位表示SEを鳴らしたか。表示完了は1度きりだが、二重再生を構造で封じる。</summary>
+        private bool hasPlayedRankRevealSe;
+
         private void OnEnable()
         {
+            hasPlayedRankRevealSe = false;
+
+            // たこ焼きの生成が終わり、順位・成績・次へボタンが出そろった瞬間に鳴らす。
+            // 購読は SetTakoyakiCount より前に済ませる（生成が 0 個だとすぐ表示完了まで進むため）。
+            if (takoyakiCreator != null)
+            {
+                takoyakiCreator.RevealCompleted -= OnRevealCompleted;
+                takoyakiCreator.RevealCompleted += OnRevealCompleted;
+            }
+
             if (testMode)
             {
                 ApplySample();
@@ -85,6 +127,11 @@ namespace Takoda99.View
 
         private void OnDisable()
         {
+            if (takoyakiCreator != null)
+            {
+                takoyakiCreator.RevealCompleted -= OnRevealCompleted;
+            }
+
             subscription?.Dispose();
             subscription = null;
 
@@ -118,6 +165,7 @@ namespace Takoda99.View
             var ranking = ResultSampleData.CreateRanking();
             latestResult = result;
             latestStoreName = FindSelfName(ranking, ResultSampleData.SelfStoreId);
+            ApplyPlayerName(latestStoreName);
 
             if (statsBoard != null)
             {
@@ -147,6 +195,54 @@ namespace Takoda99.View
             SetTier(podiumPresenter, tier == ValueObjects.ResultTier.Podium, result);
             SetTier(finalistPresenter, tier == ValueObjects.ResultTier.Finalist, result);
             SetTier(standardPresenter, tier == ValueObjects.ResultTier.Standard, result);
+
+            ApplyRankNeonColor(tier);
+        }
+
+        /// <summary>Rank/Panel の縁取りを、最終順位の Tier に応じたネオン色へ差し替える。</summary>
+        private void ApplyRankNeonColor(ValueObjects.ResultTier tier)
+        {
+            if (rankNeonFrame == null)
+            {
+                return;
+            }
+
+            switch (tier)
+            {
+                case ValueObjects.ResultTier.Champion:
+                    rankNeonFrame.color = championNeonColor;
+                    break;
+                case ValueObjects.ResultTier.Podium:
+                    rankNeonFrame.color = podiumNeonColor;
+                    break;
+                case ValueObjects.ResultTier.Finalist:
+                    rankNeonFrame.color = finalistNeonColor;
+                    break;
+                default:
+                    rankNeonFrame.color = standardNeonColor;
+                    break;
+            }
+        }
+
+        /// <summary>暖簾のプレイヤー名を、試合画面（MainStoreView）と同じ3分割の組み方で反映する。</summary>
+        private void ApplyPlayerName(string displayName)
+        {
+            var layout = PlayerNameLayout.From(displayName);
+
+            if (playerNameLeftText != null)
+            {
+                playerNameLeftText.text = layout.Left;
+            }
+
+            if (playerNameMiddleText != null)
+            {
+                playerNameMiddleText.text = layout.Middle;
+            }
+
+            if (playerNameRightText != null)
+            {
+                playerNameRightText.text = layout.Right;
+            }
         }
 
         private static void SetTier(Result.ResultTierPresenter presenter, bool selected, PersonalResultState result)
@@ -199,6 +295,7 @@ namespace Takoda99.View
             var result = state.PersonalResult;
             latestResult = result;
             latestStoreName = FindSelfName(state.Ranking, state.SelfStoreId);
+            ApplyPlayerName(latestStoreName);
 
             // 待ち表示は最初の1回だけ。観戦中は他店の更新が流れ続けるので、そのたびに組み直すと
             // TakoyakiCreator の表示演出が毎回リセットされ、いつまでも何も出てこなくなる。
@@ -235,14 +332,67 @@ namespace Takoda99.View
             }
         }
 
+        /// <summary>
+        /// 順位・成績・次へボタンがすべて出そろった瞬間。最終順位で3種類を鳴らし分ける。
+        /// **順位はここで初めて読む**（表示完了は MatchEnd の到着より後になることがある）。
+        /// </summary>
+        private void OnRevealCompleted()
+        {
+            if (hasPlayedRankRevealSe)
+            {
+                return;
+            }
+
+            hasPlayedRankRevealSe = true;
+
+            var finalRank = latestResult?.FinalRank ?? 0;
+            var sound = ResultRankSoundRule.From(finalRank, topRankCount, bottomRankCount, storeCount);
+
+            SoundId seId;
+            switch (sound)
+            {
+                case ResultRankSound.Top:
+                    seId = SoundId.ResultRankRevealTop;
+                    break;
+                case ResultRankSound.Bottom:
+                    seId = SoundId.ResultRankRevealBottom;
+                    break;
+                default:
+                    seId = SoundId.ResultRankRevealNormal;
+                    break;
+            }
+
+            var seLength = SoundPlayer.Play(seId);
+
+            // リザルトBGM。パネル表示完了SEが鳴り終わってから流し始める。
+            StartCoroutine(PlayResultBgmAfter(seLength));
+        }
+
+        private IEnumerator PlayResultBgmAfter(float delaySeconds)
+        {
+            if (delaySeconds > 0f)
+            {
+                yield return new WaitForSeconds(delaySeconds);
+            }
+
+            BgmPlayer.PlayLoop(BgmId.Result);
+        }
+
         private void OnTitleClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
+
+            // Title へ戻る＝リザルトBGMの役目が終わる瞬間。ここで完全に止める。
+            BgmPlayer.Stop();
+
             Bootstrap.GameBootstrapper.Instance.BackToTitle();
         }
 
         /// <summary>成績とハッシュタグを添えて、X の投稿画面をブラウザで開く。上位3位は専用の煽り文にする。</summary>
         private void OnXClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
+
             var stats = latestResult?.Stats ?? new MatchStats();
             var missRate = stats.TotalKeystrokes > 0
                 ? (stats.TotalMisses * 100.0 / stats.TotalKeystrokes).ToString("F1", System.Globalization.CultureInfo.InvariantCulture)

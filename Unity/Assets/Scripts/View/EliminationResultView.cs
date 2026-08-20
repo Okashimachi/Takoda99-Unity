@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Takoda99.Client.State;
+using Takoda99.Sound;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -145,6 +146,18 @@ namespace Takoda99.View
             Show(selfFinalRank);
         }
 
+        /// <summary>
+        /// 試合完全終了時、Renderer.OnMatchEnd から呼ぶ。MatchFinishCanvas が上から被さるため、
+        /// このモーダル側の NextButton は隠す（同じ画面に押せるボタンが2つ並ぶのを避ける）。
+        /// </summary>
+        public void HideNextButton()
+        {
+            if (nextButton != null)
+            {
+                nextButton.gameObject.SetActive(false);
+            }
+        }
+
         private void HandleStateChanged(ClientState state)
         {
             lastState = state;
@@ -183,6 +196,8 @@ namespace Takoda99.View
 
         private void OnNextClicked()
         {
+            SoundPlayer.Play(SoundId.ButtonTap);
+
             var bootstrap = Bootstrap.GameBootstrapper.Instance;
             if (bootstrap == null)
             {

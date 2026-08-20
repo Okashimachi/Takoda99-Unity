@@ -23,13 +23,13 @@ namespace Takoda99.View.Ranking
         [SerializeField] private float rowHeight = 29f;
 
         /// <summary>横の列数。columnCount × rowsPerColumn は visibleCount と一致させる。</summary>
-        [SerializeField] private int columnCount = 2;
+        [SerializeField] private int columnCount = 3;
 
         /// <summary>1列あたりの行数。columnCount × rowsPerColumn は visibleCount と一致させる。</summary>
-        [SerializeField] private int rowsPerColumn = 15;
+        [SerializeField] private int rowsPerColumn = 10;
 
         /// <summary>列と列の中心間の距離(px)。BottomRanker.prefab の幅より広くして重ならないようにする。</summary>
-        [SerializeField] private float columnSpacing = 125f;
+        [SerializeField] private float columnSpacing = 83f;
 
         [SerializeField] private float rowMoveDuration = 0.25f;
 
@@ -44,8 +44,8 @@ namespace Takoda99.View.Ranking
         private void Awake()
         {
             pool = new RankingRowPool(rowPrefab, rowsRoot);
-            // 05 §5.3: 縦2×横15…ではなく横2列×縦15行のグリッドに配置する（画面外へ溢れないよう分割）。
-            // index は列優先（0列目を上から15件埋めたのち1列目へ）で埋まる。
+            // 05 §5.3: 横3列×縦10行のグリッドに配置する（画面右上に収まる形へ変更。旧: 横2列×縦15行）。
+            // index は列優先（0列目を上から10件埋めたのち1列目へ）で埋まる。
             slotSource = new GridSlotSource(columnCount, rowsPerColumn, rowHeight, columnSpacing);
             swapSettings = new RankingSwapSettings
             {

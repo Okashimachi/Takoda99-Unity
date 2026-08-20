@@ -11,6 +11,7 @@ using Takoda99.Client.Lifecycle;
 using Takoda99.Client.State;
 using Takoda99.Client.Typing;
 using Takoda99.Proto;
+using Takoda99.Sound;
 using Takoda99.View.ValueObjects;
 using UnityEngine;
 
@@ -25,13 +26,25 @@ namespace Takoda99.View
         [SerializeField] private Customers.CustomerOrderBubbleView orderBubble;
         [SerializeField] private GameBeforeView gameBefore;
 
+        [Header("調理アニメーション（cooking-anim/01）")]
+        [SerializeField] private TakoyakiStandView takoyakiStand;   // 鉄板（生地・焼き・舟皿へ飛ばす）
+        [SerializeField] private Cooking.HandView hand;             // 千枚通しを持つ手
+
+        [Header("打鍵SE（hud/01・SoundLibrary の Typing グループ）")]
+        [Tooltip("1単語を打ち終えたときのミス率がこの値以下なら「通常」、超えたら「ミス多発」を鳴らす。0 ならノーミス以外すべてミス多発。")]
+        [SerializeField, Range(0f, 1f)]
+        private float wordMissRatioThreshold = TypingWordSoundRule.DefaultMissRatioThreshold;
+
         [Header("本選 HUD")]
         [SerializeField] private SelfRankView selfRank;                        // 順位の大表示＋スコア＋生存数
         [SerializeField] private Ranking.RankingPanelView rankingPanel;        // ranking-view/01
         [SerializeField] private Ranking.BottomRankingPanelView bottomRankingPanel; // ranking-view/05
+        [SerializeField] private Ranking.SelfRankNeonPanelView selfRankNeonPanel;   // ranking-view/08
         [SerializeField] private Ranking.CullCountdownPanelView cullPanel;     // ranking-view/02
         [SerializeField] private Elimination.MassEliminationEffect massElim;   // elimination/01
         [SerializeField] private Ranking.AudiencePanelView audiencePanel;      // ranking-view/07
+        [SerializeField] private MatchFinishView matchFinish;                  // 試合完全終了演出（MatchFinishCanvas）
+        [SerializeField] private LastStagePanelView lastStagePanel;            // 最終ステージ突入演出（「ラスト20秒！」）
 
         private IStore store;
         private ITypingJudge typingJudge;
@@ -41,6 +54,17 @@ namespace Takoda99.View
         /// <summary>自店が脱落済みか。以降は観戦なので行列を描かない。</summary>
         private bool selfEliminated;
 
+        /// <summary>「ラスト20秒！」を出し終えたか。最終ステージ突入の瞬間に1回だけ出すためのフラグ。</summary>
+        private bool finalStageAnnounced;
+
+        /// <summary>
+        /// いま打っている単語での正打数・ミス数。打鍵SEは**1単語につき1回**なので、
+        /// 打ち終えた瞬間に出来を判定するための材料をここに溜める。
+        /// <c>TypingView.MissCount</c> は1注文の通算なので単語ごとの判定には使えない。
+        /// </summary>
+        private int wordCorrectCount;
+        private int wordMissCount;
+
         /// <summary>IStore / ITypingJudge を注入する。通常は OnEnable が自動で呼ぶ。</summary>
         public void Bind(IStore boundStore, ITypingJudge boundTypingJudge)
         {
@@ -49,6 +73,9 @@ namespace Takoda99.View
             store = boundStore;
             typingJudge = boundTypingJudge;
             selfEliminated = false;
+            finalStageAnnounced = false;
+            wordCorrectCount = 0;
+            wordMissCount = 0;
 
             if (gameBefore != null)
             {
@@ -79,12 +106,16 @@ namespace Takoda99.View
             WarnIfMissing(customerQueue, nameof(customerQueue));
             WarnIfMissing(orderBubble, nameof(orderBubble));
             WarnIfMissing(gameBefore, nameof(gameBefore));
+            WarnIfMissing(takoyakiStand, nameof(takoyakiStand));
+            WarnIfMissing(hand, nameof(hand));
             WarnIfMissing(selfRank, nameof(selfRank));
             WarnIfMissing(rankingPanel, nameof(rankingPanel));
             WarnIfMissing(bottomRankingPanel, nameof(bottomRankingPanel));
+            WarnIfMissing(selfRankNeonPanel, nameof(selfRankNeonPanel));
             WarnIfMissing(cullPanel, nameof(cullPanel));
             WarnIfMissing(massElim, nameof(massElim));
             WarnIfMissing(audiencePanel, nameof(audiencePanel));
+            WarnIfMissing(lastStagePanel, nameof(lastStagePanel));
 
             // 試合終了後の Result シーンへの遷移は、このモーダルの NextButton だけが担う
             // （GameBootstrapper は MainGame にいる間は自動遷移しない）。未割り当てだと
@@ -184,6 +215,21 @@ namespace Takoda99.View
             // 自店の順位・スコア・生存数。**順位が本選の画面の主役**。
             // 順位テキストの色（金銀銅・警告・脱落）も state から決まる（hud/01 §5.1）。
             selfRank?.Apply(state);
+
+            // 自店の順位を大きく見せるネオン風パネル（ranking-view/08）。下位パネルが空けた
+            // 右下領域に置く。selfRank と同じ根拠でトーンを決めるだけで、値の計算はしない。
+            // 待機中は順位が未確定なので、他の試合中パネルと同じく畳む。
+            if (selfRankNeonPanel != null)
+            {
+                if (holding)
+                {
+                    selfRankNeonPanel.SetPanelVisible(false);
+                }
+                else
+                {
+                    selfRankNeonPanel.Apply(state);
+                }
+            }
 
             // ランキング（上位N＋自分）。待機中は描かない。
             if (rankingPanel != null)
@@ -316,11 +362,20 @@ namespace Takoda99.View
 
             servingCustomerId = frontId;
 
+            // 客が入れ替わったら打鍵の数え上げを捨てる。中断された注文（AbortOrder）の
+            // ミスを次の客の1単語目に持ち越すと、打っていないミスでミス多発が鳴る。
+            wordCorrectCount = 0;
+            wordMissCount = 0;
+
             if (front is null)
             {
                 orderBubble?.Hide();
+                takoyakiStand?.ClearOrder();
                 return;
             }
+
+            // 鉄板と舟皿を仕切り直す。前の客の焼きかけ・皿の中身を持ち越さない。
+            takoyakiStand?.BeginOrder(front.View.OrderCount);
 
             // 先頭に来た瞬間に注文文句を出す。文面は契約に無いため個数から組み立てる
             // （サーバーが文面を配信するようになったら第3引数に渡すだけでよい）。
@@ -334,12 +389,84 @@ namespace Takoda99.View
             // 対応中客の検知は HandleStateChanged 側で行う。
         }
 
+        /// <summary>
+        /// 打鍵の即時フィードバック。**1打ごとには鳴らさない**（毎秒数打の音が鳴り続けると
+        /// 秒読みや淘汰のSEを覆い隠す）。1単語を打ち終えた瞬間に、その出来を1回だけ返す。
+        /// </summary>
         public void OnKeyFeedback(KeyResult result)
         {
+            switch (result)
+            {
+                case KeyResult.Correct:
+                    wordCorrectCount++;
+                    hand?.PlayKeyReaction();
+                    takoyakiStand?.OnKeyTyped(false);
+                    return;
+
+                case KeyResult.Miss:
+                    wordMissCount++;
+                    // ミス反応は通常反応より優先する（企画書 3番）。同時に両方は出さない。
+                    hand?.PlayMissReaction();
+                    takoyakiStand?.OnKeyTyped(true);
+                    return;
+
+                case KeyResult.WordCleared:
+                    // 打ち切った最後の1打も正打として数える（この打鍵は Correct では届かない）。
+                    wordCorrectCount++;
+                    PlayWordOutcomeSe();
+
+                    // 玉は鉄板に残したまま、焼く穴を次へ進める。舟皿へ盛るのは注文ぶんを
+                    // 打ち終えた瞬間で、その判断は TakoyakiStandView 側が持つ（cooking-anim/01 §4.35）。
+                    // OnWordCleared が手のひっくり返し演出も出すため、ここで PlayKeyReaction は呼ばない
+                    // （呼んでも Play() が上書きするだけだが、意図を素直に書く）。
+                    takoyakiStand?.OnWordCleared();
+                    return;
+
+                default:
+                    // Ignored（Idle 中・対象外キー）は数えない。
+                    // OrderCleared（注文の最終単語）はここへ来ない。MatchClientController は
+                    // その打鍵だけ OnKeyFeedback ではなく OnOrderServed を呼ぶため、
+                    // 最後の1単語のSEはそちらで鳴らす（06-match-client-controller.md §101）。
+                    return;
+            }
+        }
+
+        /// <summary>打ち終えた1単語の出来を判定してSEを鳴らし、次の単語のために数え直す。</summary>
+        private void PlayWordOutcomeSe()
+        {
+            var outcome = TypingWordSoundRule.From(wordCorrectCount, wordMissCount, wordMissRatioThreshold);
+            wordCorrectCount = 0;
+            wordMissCount = 0;
+
+            switch (outcome)
+            {
+                case TypingWordOutcome.Perfect:
+                    SoundPlayer.Play(SoundId.KeyPerfect);
+                    break;
+                case TypingWordOutcome.Missed:
+                    SoundPlayer.Play(SoundId.KeyMiss);
+                    break;
+                default:
+                    SoundPlayer.Play(SoundId.KeyHit);
+                    break;
+            }
         }
 
         public void OnOrderServed(string customerId)
         {
+            // 注文の最終単語を打ち切った瞬間でもある（OrderCleared は OnKeyFeedback に来ない）。
+            // ここで鳴らさないと、注文の最後の1単語だけ打鍵SEが無音になる。
+            // 打ち切った最後の1打は OnKeyFeedback に届いていないので、ここで数に足す。
+            wordCorrectCount++;
+            PlayWordOutcomeSe();
+
+            // 注文の最終単語は OnKeyFeedback に来ない。ここで進めないと最後の1個が焼き上がらない。
+            // ひっくり返し演出は OnWordCleared 側の hand.PlayFlipReaction が出す。
+            // OnWordCleared が注文ぶんの打ち切りを検知して一斉盛り付けへ入る。
+            // OnOrderServed は取りこぼし（注文個数が 0 で届いた等）に備えた保険で、二重には発火しない。
+            takoyakiStand?.OnWordCleared();
+            takoyakiStand?.OnOrderServed();
+
             // 「喜び → 退店」で帰す。本選では客が減る契機はこれだけ（離脱は廃止）。
             customerQueue?.MarkServed(customerId);
         }
@@ -355,6 +482,15 @@ namespace Takoda99.View
         public void OnCullWarning(CullWarning warning)
         {
             cullPanel?.OnWarningReceived(warning);
+
+            // 最終ステージ（StageIndex == StageTotal＝残り20秒の最後の段階）に入った瞬間だけ、
+            // 「ラスト20秒！」を1回出す。CutLineRank==2 は最終ステージの根拠として比較しない
+            // （StageIndex/StageTotal がサーバーの段階そのものを表す値のため、こちらを使う）。
+            if (!finalStageAnnounced && warning != null && warning.StageTotal > 0 && warning.StageIndex == warning.StageTotal)
+            {
+                finalStageAnnounced = true;
+                lastStagePanel?.Show();
+            }
         }
 
         public void OnStoreEliminatedBatch(int stageIndex, IReadOnlyList<StoreEliminated> entries, bool includesSelf)
@@ -377,6 +513,7 @@ namespace Takoda99.View
             selfEliminated = true;
             customerQueue?.ClearAll();
             orderBubble?.Hide();
+            takoyakiStand?.HideTray();
 
             // 最終ステージ（120秒）では直後に MatchEnd が来る。その場合は脱落モーダルではなく
             // リザルトへ進むため、ここでは出さない。判定を state だけで閉じる。
@@ -413,16 +550,30 @@ namespace Takoda99.View
             var rank = store?.State.PersonalResult?.FinalRank ?? 0;
             Debug.Log($"{nameof(Renderer)}.{nameof(OnMatchEnd)}: MatchEnd 受信 rank={rank}", this);
 
+            SoundPlayer.Play(SoundId.MatchEnd);
+
+            // 試合終了の通知が届いたら、試合BGM（前半／後半のどちらでも）を完全に止める。
+            BgmPlayer.Stop();
+
             selfEliminated = true;
             customerQueue?.ClearAll();
             orderBubble?.Hide();
+            takoyakiStand?.HideTray();
             rankingPanel?.SetPanelVisible(false);
             bottomRankingPanel?.SetPanelVisible(false);
+            selfRankNeonPanel?.SetPanelVisible(false);
             cullPanel?.SetPanelVisible(false);
 
             // モーダル自体は HandleStateChanged（state 駆動）が先に出していることもある。
             // ShowIfHidden は冪等なので、どちらが先でも順位を上書きせず二重表示にもならない。
             resultView?.ShowIfHidden(rank);
+
+            // MatchFinishCanvas が上から被さるため、脱落モーダル側のNextButtonは隠す
+            // （押せるボタンが2つ重ならないようにする。遷移はMatchFinishCanvas側のNextButtonに一本化）。
+            resultView?.HideNextButton();
+
+            // 1位を含む全店に「試合が終わったこと」を伝える演出。脱落モーダルとは別に出す。
+            matchFinish?.Show();
         }
 
         public void OnLifecycleChanged(ClientPhase from, ClientPhase to)

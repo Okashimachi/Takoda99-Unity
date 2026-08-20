@@ -250,6 +250,15 @@ namespace Takoda99.View.ValueObjects
         }
 
         /// <summary>
+        /// 淘汰終盤で生存者が減っても、上位 <see cref="TopRankExemptFromBottomRange"/> 位は
+        /// 「ぎりぎり圏外」アラート（<see cref="IsInBottomRange"/>）の対象にしない。
+        /// 20→10人のような最終段階の淘汰では start=0 になり得るが、それだと1位まで
+        /// アラート対象に入ってしまうため。**下位パネルの表示行（<see cref="BuildBottom"/>）には
+        /// 適用しない**（そちらは仕様通り生存者全員を表示してよい。ranking-view/05 §5.1）。
+        /// </summary>
+        private const int TopRankExemptFromBottomRange = 5;
+
+        /// <summary>
         /// 下位 count 件（ranking-view/05 §5.1）。生存者が count 人を切ったら、
         /// 確定順位を持つ脱落済みの店で埋める。start = Max(0, aliveCount - count)。再ソートしない。
         /// </summary>
@@ -283,9 +292,10 @@ namespace Takoda99.View.ValueObjects
         }
 
         /// <summary>
-        /// <see cref="BuildBottom"/> と同じ範囲に指定の店が入っているかだけを返す（行を作らない）。
-        /// 淘汰アラートが「ぎりぎり圏外」を判定するのに毎回リストを組み立てないための軽量版。
-        /// 範囲の式は BuildBottom と同一（ranking-view/05 §5.1）。**片方だけ直さないこと。**
+        /// 「ぎりぎり圏外」アラートの対象範囲に指定の店が入っているかだけを返す（行を作らない）。
+        /// 範囲の下端は <see cref="BuildBottom"/> と同じ式だが、**上位
+        /// <see cref="TopRankExemptFromBottomRange"/> 位は常に除外する**（BuildBottom側は除外しない。
+        /// 表示は生存者全員でよいが、アラートは1位まで警告が出ると不自然なため）。
         /// </summary>
         public static bool IsInBottomRange(
             RankingTable ranking,
@@ -299,7 +309,7 @@ namespace Takoda99.View.ValueObjects
             }
 
             var rows = ranking.Rows;
-            var start = Math.Max(0, aliveCount - count);
+            var start = Math.Max(TopRankExemptFromBottomRange, Math.Max(0, aliveCount - count));
             var end = Math.Min(rows.Count, start + count);
 
             for (var i = start; i < end; i++)
