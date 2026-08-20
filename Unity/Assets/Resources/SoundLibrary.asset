@@ -12,26 +12,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c74b0d9e2af41539a6e17cb35d0f284, type: 3}
   m_Name: SoundLibrary
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.Sound.SoundLibrary
-  masterVolume: 1
+  masterVolume: 0.3
   muted: 0
   groups:
   - label: UI
     category: 0
-    volume: 1
+    volume: 0.5
     entries:
     - id: 100
       clip: {fileID: 8300000, guid: 20abf890021f3514fa23da1c40e6b7e8, type: 3}
       volume: 1
   - label: "\u30DE\u30C3\u30C1\u30F3\u30B0"
     category: 1
-    volume: 1
+    volume: 0.5
     entries:
     - id: 200
       clip: {fileID: 8300000, guid: b8567e31e5ef2e64e8290fed1db902ae, type: 3}
       volume: 1
   - label: "\u8A66\u5408\u306E\u9032\u884C"
     category: 2
-    volume: 1
+    volume: 0.5
     entries:
     - id: 300
       clip: {fileID: 8300000, guid: a69063d36a9c6624e8a5d7e3578a7472, type: 3}
@@ -44,7 +44,7 @@ MonoBehaviour:
       volume: 1
   - label: "\u6253\u9375"
     category: 3
-    volume: 0.4
+    volume: 0.5
     entries:
     - id: 400
       clip: {fileID: 8300000, guid: 0e1bb2d3edc53684d954949d9a5bc993, type: 3}
@@ -57,20 +57,20 @@ MonoBehaviour:
       volume: 1
   - label: "\u4E0B\u4F4D\u6DD8\u6C70"
     category: 4
-    volume: 1
+    volume: 0.5
     entries:
     - id: 500
       clip: {fileID: 8300000, guid: 868a07df24ca9574a830e07b7ee48b2d, type: 3}
-      volume: 1
+      volume: 0.6
     - id: 501
-      clip: {fileID: 8300000, guid: 6373494f2d10ed547a06f7b7162487aa, type: 3}
+      clip: {fileID: 8300000, guid: 868a07df24ca9574a830e07b7ee48b2d, type: 3}
       volume: 1
     - id: 502
       clip: {fileID: 8300000, guid: da797ff77f5642248890bca8f2e8f4e8, type: 3}
       volume: 1
   - label: "\u9806\u4F4D\u306E\u5909\u52D5"
     category: 5
-    volume: 1
+    volume: 0.5
     entries:
     - id: 600
       clip: {fileID: 8300000, guid: caea987ecc03c0b4dbbc7e57ccf7f860, type: 3}
@@ -83,7 +83,7 @@ MonoBehaviour:
       volume: 0.45
   - label: "\u30EA\u30B6\u30EB\u30C8"
     category: 6
-    volume: 1
+    volume: 0.5
     entries:
     - id: 700
       clip: {fileID: 8300000, guid: 7105b6bbb2710b24e95af0f667c5c9a1, type: 3}
