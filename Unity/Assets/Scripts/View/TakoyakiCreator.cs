@@ -140,13 +140,16 @@ namespace Takoda99.View
         {
             await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
             SetActiveIfAssigned(rank, true);
+            SoundPlayer.Play(SoundId.ResultTakoyakiSpawn);
 
             await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
             SetActiveIfAssigned(others, true);
             SetActiveIfAssigned(noren, true);
+            SoundPlayer.Play(SoundId.ResultTakoyakiSpawn);
 
             await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
             SetActiveIfAssigned(buttons, true);
+            SoundPlayer.Play(SoundId.ResultTakoyakiSpawn);
 
             // 順位・成績・次へボタンが出そろった。ここがリザルトの「表示完了」。
             RevealCompleted?.Invoke();
