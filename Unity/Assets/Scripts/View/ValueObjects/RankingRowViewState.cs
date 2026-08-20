@@ -250,6 +250,13 @@ namespace Takoda99.View.ValueObjects
         }
 
         /// <summary>
+        /// 淘汰終盤で生存者が減っても、上位 <see cref="TopRankExemptFromBottomRange"/> 位は
+        /// 「下位」扱いにしない。20→10人のような最終段階の淘汰では start=0 になり得るが、
+        /// それだと1位まで下位圏（＝ぎりぎり圏外アラート）に入ってしまうため。
+        /// </summary>
+        private const int TopRankExemptFromBottomRange = 5;
+
+        /// <summary>
         /// 下位 count 件（ranking-view/05 §5.1）。生存者が count 人を切ったら、
         /// 確定順位を持つ脱落済みの店で埋める。start = Max(0, aliveCount - count)。再ソートしない。
         /// </summary>
@@ -267,7 +274,7 @@ namespace Takoda99.View.ValueObjects
             }
 
             var rows = ranking.Rows;
-            var start = Math.Max(0, aliveCount - count);
+            var start = Math.Max(TopRankExemptFromBottomRange, Math.Max(0, aliveCount - count));
             var end = Math.Min(rows.Count, start + count);
 
             var result = new List<RankingRowViewState>(Math.Max(0, end - start));
@@ -299,7 +306,7 @@ namespace Takoda99.View.ValueObjects
             }
 
             var rows = ranking.Rows;
-            var start = Math.Max(0, aliveCount - count);
+            var start = Math.Max(TopRankExemptFromBottomRange, Math.Max(0, aliveCount - count));
             var end = Math.Min(rows.Count, start + count);
 
             for (var i = start; i < end; i++)
