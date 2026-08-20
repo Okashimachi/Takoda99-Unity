@@ -307,6 +307,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &41998806
 GameObject:
   m_ObjectHideFlags: 0
@@ -534,6 +535,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1001 &67715055
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -938,6 +940,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &78994647
 GameObject:
   m_ObjectHideFlags: 0
@@ -2470,6 +2473,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &193663028
 GameObject:
   m_ObjectHideFlags: 0
@@ -2489,7 +2493,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &193663029
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3405,6 +3409,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &325682545
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3657,6 +3662,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!224 &340901912 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4497216581260785866, guid: c411b726d01805f4fb3632b1064b052d, type: 3}
@@ -4365,6 +4371,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!224 &401865487 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8778296757079948182, guid: 85f4709b91f3b3944b37a32a83f3b0c7, type: 3}
@@ -5467,6 +5474,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &549606435
 GameObject:
   m_ObjectHideFlags: 0
@@ -6142,7 +6150,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -10, y: 0}
+  m_AnchoredPosition: {x: 10, y: 0}
   m_SizeDelta: {x: 100, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &646141037
@@ -6159,6 +6167,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 2100000, guid: 1903f5a6c4604ea498d4649cf60ee93a, type: 2}
 --- !u!114 &646141038
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6182,14 +6191,14 @@ MonoBehaviour:
   m_text: 99
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
-  m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 1903f5a6c4604ea498d4649cf60ee93a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -6245,7 +6254,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 0, y: 0, z: -78.89779, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -6509,7 +6518,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &662106439
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6802,7 +6811,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -8054442347522745554, guid: 956aaf17aa8a4d94f83a1d95da785786, type: 3}
+  m_Sprite: {fileID: 1331442493809603398, guid: 574920456e7054744bcf974f8622356b, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -6855,7 +6864,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -175, y: 0}
+  m_AnchoredPosition: {x: -65, y: 0}
   m_SizeDelta: {x: 200, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &699811177
@@ -6872,6 +6881,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 2100000, guid: 1903f5a6c4604ea498d4649cf60ee93a, type: 2}
 --- !u!114 &699811178
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6895,14 +6905,14 @@ MonoBehaviour:
   m_text: "75\u4F4D\u4EE5\u4E0B\u304C\u8131\u843D"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
-  m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 1903f5a6c4604ea498d4649cf60ee93a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -8007,6 +8017,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &847078136
 GameObject:
   m_ObjectHideFlags: 0
@@ -8600,6 +8611,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &916822599
 GameObject:
   m_ObjectHideFlags: 0
@@ -9004,7 +9016,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1010620065
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9044,8 +9056,8 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
-  m_Type: 1
+  m_Sprite: {fileID: -799439184873815422, guid: bfb71574bd73daf4ea72821b1d8caef1, type: 3}
+  m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -9062,6 +9074,81 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1010620064}
   m_CullTransparentMesh: 1
+--- !u!1 &1010620070
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1010620071}
+  - component: {fileID: 1010620072}
+  - component: {fileID: 1010620073}
+  m_Layer: 5
+  m_Name: NeonFrame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1010620071
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010620070}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1407023108}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 12, y: 12}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1010620072
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010620070}
+  m_CullTransparentMesh: 1
+--- !u!114 &1010620073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1010620070}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: b305a49956ae43b1a4c81484a5c5e4cc, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 0
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1001 &1023241266
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9323,6 +9410,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1051188811
 GameObject:
   m_ObjectHideFlags: 0
@@ -9906,6 +9994,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1101264613
 GameObject:
   m_ObjectHideFlags: 0
@@ -10482,6 +10571,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &1133799302
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10848,6 +10938,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1171247090
 GameObject:
   m_ObjectHideFlags: 0
@@ -10878,6 +10969,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 73478780}
+  - {fileID: 1418082145}
   - {fileID: 1569152580}
   - {fileID: 1990976013}
   m_Father: {fileID: 193663032}
@@ -11441,7 +11533,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 342, y: -114}
+  m_AnchoredPosition: {x: 0, y: -114}
   m_SizeDelta: {x: 100, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1232722206
@@ -12068,6 +12160,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &1326867710
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12935,6 +13028,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1389478772
 GameObject:
   m_ObjectHideFlags: 0
@@ -12952,7 +13046,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1389478773
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13291,6 +13385,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1010620065}
+  - {fileID: 1010620071}
   - {fileID: 699811176}
   - {fileID: 646141036}
   - {fileID: 1601581375}
@@ -13298,9 +13393,84 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -215, y: 315}
-  m_SizeDelta: {x: 525, y: 30}
+  m_AnchoredPosition: {x: 0, y: 315}
+  m_SizeDelta: {x: 300, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1418082144
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1418082145}
+  - component: {fileID: 1418082147}
+  - component: {fileID: 1418082146}
+  m_Layer: 5
+  m_Name: BG (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1418082145
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1418082144}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1171247091}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 219.38333}
+  m_SizeDelta: {x: 0, y: -354.7667}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1418082146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1418082144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.98039216}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1418082147
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1418082144}
+  m_CullTransparentMesh: 1
 --- !u!1001 &1422316087
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14670,6 +14840,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1556677288
 GameObject:
   m_ObjectHideFlags: 0
@@ -15031,7 +15202,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 225, y: 0}
+  m_AnchoredPosition: {x: 110, y: 0}
   m_SizeDelta: {x: 100, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1601581376
@@ -15048,6 +15219,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 2100000, guid: 1903f5a6c4604ea498d4649cf60ee93a, type: 2}
 --- !u!114 &1601581377
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15071,14 +15243,14 @@ MonoBehaviour:
   m_text: 6/6
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
-  m_sharedMaterial: {fileID: 7311214748013950156, guid: f99d5bbdc46b5a4419424add760b707f, type: 2}
+  m_sharedMaterial: {fileID: 2100000, guid: 1903f5a6c4604ea498d4649cf60ee93a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -15300,6 +15472,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1001 &1623722495
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15595,6 +15768,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1629167051
 GameObject:
   m_ObjectHideFlags: 0
@@ -15758,7 +15932,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -126.9, y: -128.2}
-  m_SizeDelta: {x: 100, y: 60}
+  m_SizeDelta: {x: 120, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1649910702
 MonoBehaviour:
@@ -15776,9 +15950,15 @@ MonoBehaviour:
   trayGroup: {fileID: 1649910703}
   trayEmpty: {fileID: 680783688}
   trayServed: {fileID: 1466440384}
-  trayCleanSprite: {fileID: 6220232966978009015, guid: 0dd09c44fde442642bd95887609cca89, type: 3}
-  trayNormalSprite: {fileID: -8054442347522745554, guid: 956aaf17aa8a4d94f83a1d95da785786, type: 3}
-  trayDirtySprite: {fileID: 1782707184255818919, guid: 40871398a019e6947963d72824a737f6, type: 3}
+  trayCleanSpriteTwo: {fileID: 6816825447400403083, guid: 9d37a59dd8a3a7543a040ba94301d94e, type: 3}
+  trayCleanSpriteFour: {fileID: 4888349996048609609, guid: 82d06f4ecef3eb44686c17be3501f336, type: 3}
+  trayCleanSpriteEight: {fileID: 21300000, guid: 0dd09c44fde442642bd95887609cca89, type: 3}
+  trayNormalSpriteTwo: {fileID: 340092009902087328, guid: ae2ce89260cd1e44abe9b3e201aa1ed9, type: 3}
+  trayNormalSpriteFour: {fileID: -7334607063304973984, guid: e2e8677d40e50af49b1484e4ff2b5187, type: 3}
+  trayNormalSpriteEight: {fileID: 21300000, guid: 956aaf17aa8a4d94f83a1d95da785786, type: 3}
+  trayDirtySpriteTwo: {fileID: -2086801438034399669, guid: f8b2a6647e6c53e4f95a53466b162963, type: 3}
+  trayDirtySpriteFour: {fileID: -2792938203526686256, guid: 321a01af4fd5bd747b0cfa00d2dd0246, type: 3}
+  trayDirtySpriteEight: {fileID: 21300000, guid: 40871398a019e6947963d72824a737f6, type: 3}
   landingPoint: {fileID: 1649910701}
 --- !u!225 &1649910703
 CanvasGroup:
@@ -16131,6 +16311,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1681810631
 GameObject:
   m_ObjectHideFlags: 0
@@ -17113,6 +17294,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &1769769505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17502,6 +17684,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1779617265
 GameObject:
   m_ObjectHideFlags: 0
@@ -19085,7 +19268,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -19662,6 +19845,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &1990375342
 GameObject:
   m_ObjectHideFlags: 0
@@ -20391,6 +20575,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &2053907836
 GameObject:
   m_ObjectHideFlags: 0
@@ -20620,6 +20805,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &2064065682
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21022,6 +21208,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &2086547155
 GameObject:
   m_ObjectHideFlags: 0
@@ -21415,6 +21602,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &2146892374
 GameObject:
   m_ObjectHideFlags: 0
@@ -23576,6 +23764,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!224 &6750782624664339412
 RectTransform:
   m_ObjectHideFlags: 0
@@ -23899,6 +24088,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &7070654239312845598
 GameObject:
   m_ObjectHideFlags: 0
@@ -23949,6 +24139,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 0
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23963,6 +24154,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23977,6 +24169,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23991,6 +24184,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24005,6 +24199,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24019,6 +24214,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 0
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24033,6 +24229,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 0
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24047,6 +24244,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24061,6 +24259,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 0
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24075,6 +24274,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24089,6 +24289,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 0
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24103,6 +24304,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 0
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24117,6 +24319,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24131,6 +24334,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000014
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24145,6 +24349,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 2
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000000015
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24159,6 +24364,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 0
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24173,6 +24379,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24187,6 +24394,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24201,6 +24409,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24215,6 +24424,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24229,6 +24439,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24243,6 +24454,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24257,6 +24469,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24271,6 +24484,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24285,6 +24499,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24299,6 +24514,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001010
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24313,6 +24529,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7100000000000001011
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24327,6 +24544,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7155814375913437604
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24433,6 +24651,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!114 &7155814376524980717
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24539,6 +24758,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &7219936913466631877
 GameObject:
   m_ObjectHideFlags: 0
@@ -24572,6 +24792,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!224 &7280515231582431169
 RectTransform:
   m_ObjectHideFlags: 0
@@ -24632,6 +24853,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!222 &7402855314424058614
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -24654,6 +24876,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!224 &7416116585665819375
 RectTransform:
   m_ObjectHideFlags: 0
@@ -24700,6 +24923,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!224 &7543836146935317140 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 4497216581260785866, guid: c411b726d01805f4fb3632b1064b052d, type: 3}
@@ -24855,6 +25079,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1 &7991079141207740294
 GameObject:
   m_ObjectHideFlags: 0
@@ -24888,6 +25113,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!222 &8187720965655644981
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -24910,6 +25136,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!1001 &8281571263518041477
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -25117,6 +25344,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Takoda99.View.Typography.ThemedText
   _theme: {fileID: 11400000, guid: e91d3a7c5b2f44e6a8c0d7b1f3e59c24, type: 2}
   _weight: 1
+  _materialPreset: {fileID: 0}
 --- !u!4 &8415043104890985203
 Transform:
   m_ObjectHideFlags: 0

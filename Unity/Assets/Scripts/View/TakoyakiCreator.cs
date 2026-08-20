@@ -34,6 +34,8 @@ namespace Takoda99.View
         [Header("生成完了後の表示演出（ResultCanvas/Result配下）")]
         [SerializeField] private GameObject rank;
         [SerializeField] private GameObject others;
+        [Tooltip("ResultCanvas/Noren。個人成績（others）と同時に出す。屋号はここに出るため。")]
+        [SerializeField] private GameObject noren;
         [SerializeField] private GameObject buttons;
         [SerializeField] private float revealIntervalSeconds = 2f;
 
@@ -59,6 +61,7 @@ namespace Takoda99.View
 
             SetActiveIfAssigned(rank, false);
             SetActiveIfAssigned(others, false);
+            SetActiveIfAssigned(noren, false);
             SetActiveIfAssigned(buttons, false);
 
             hasStarted = true;
@@ -140,6 +143,7 @@ namespace Takoda99.View
 
             await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
             SetActiveIfAssigned(others, true);
+            SetActiveIfAssigned(noren, true);
 
             await UniTask.Delay(System.TimeSpan.FromSeconds(revealIntervalSeconds), cancellationToken: token);
             SetActiveIfAssigned(buttons, true);
@@ -164,6 +168,7 @@ namespace Takoda99.View
 
             SetActiveIfAssigned(rank, false);
             SetActiveIfAssigned(others, false);
+            SetActiveIfAssigned(noren, false);
             SetActiveIfAssigned(buttons, false);
 
             foreach (var obj in spawned)

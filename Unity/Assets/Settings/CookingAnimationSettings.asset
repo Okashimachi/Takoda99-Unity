@@ -23,14 +23,14 @@ MonoBehaviour:
   handFlipDurationMs: 160
   takoyakiFlipRotationDegrees: 360
   trayServedFadeMs: 80
-  trayCleanMaxMissRatio: 0
-  trayNormalMaxMissRatio: 0.15
+  trayCleanMaxMissRatio: 0.1
+  trayNormalMaxMissRatio: 0.5
   flyRiseMs: 90
   flyArcMs: 80
   flyLandMs: 50
   flyApexHeightScale: 1.4
   flyStaggerMs: 40
-  serveDelayMs: 180
+  serveDelayMs: 380
   serveMs: 380
   trayFadeInMs: 220
   trayCrossOverlapMs: 50
