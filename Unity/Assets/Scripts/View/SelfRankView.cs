@@ -4,7 +4,6 @@
 // 順位・スコアを計算しない。順位と CutLineRank を比較して自分が危険かを判定しない
 // （危険の根拠は CutStoreIds と下位パネルの表示範囲。value-objects/12 §4.2）。
 
-using System.Collections.Generic;
 using TMPro;
 using Takoda99.Client.State;
 using Takoda99.Sound;
@@ -39,7 +38,7 @@ namespace Takoda99.View
         /// 「ぎりぎり圏外（AtRisk）」の判定に使う下位の件数。
         /// **下位パネルの visibleCount と揃える**（画面上の警告帯と色が一致するように）。
         /// </summary>
-        [SerializeField] private int bottomRangeCount = 30;
+        [SerializeField] private int bottomRangeCount = SelfRankToneResolver.DefaultBottomRangeCount;
 
         [Header("順位帯のSE（SoundLibrary の Ranking グループ）")]
         [Tooltip("この順位までを上位圏とし、入った瞬間に「上位ランク入り」を鳴らす。")]
@@ -86,7 +85,7 @@ namespace Takoda99.View
         /// </summary>
         private void PlayBandSe(ClientState state)
         {
-            var isCutTarget = Contains(state.Cull?.CutStoreIds, state.SelfStoreId)
+            var isCutTarget = SelfRankToneResolver.ContainsStoreId(state.Cull?.CutStoreIds, state.SelfStoreId)
                 || (state.Cull != null && state.Cull.SelfAtRisk);
 
             var bandCount = state.Cull != null
@@ -166,15 +165,12 @@ namespace Takoda99.View
         /// 危険の根拠は2つだけ：サーバーの <c>CutStoreIds</c> と、下位パネルの表示範囲
         /// （value-objects/12 §4.2）。**順位と `CutLineRank` を比較しない。**
         /// </summary>
+        /// <remarks>
+        /// 判定そのものは <see cref="SelfRankToneResolver"/> に置いてある
+        /// （右下のネオンパネル ranking-view/08 と必ず同じ色になるように）。
+        /// </remarks>
         private RankingRowTone ResolveTone(ClientState state)
-        {
-            var isCutTarget = Contains(state.Cull?.CutStoreIds, state.SelfStoreId);
-
-            var isInBottomRange = RankingRowsBuilder.IsInBottomRange(
-                state.Ranking, state.SelfStoreId, state.AliveCount, bottomRangeCount);
-
-            return RankingRowStyle.ResolveSelfRankTone(state.Rank, state.Alive, isCutTarget, isInBottomRange);
-        }
+            => SelfRankToneResolver.Resolve(state, bottomRangeCount);
 
         /// <summary>色を変えるのは順位テキストだけ（スコア・生存数は据え置き）。</summary>
         private void ApplyTone(RankingRowTone tone)
@@ -194,22 +190,5 @@ namespace Takoda99.View
             rankText.color = palette.Of(tone);
         }
 
-        private static bool Contains(IReadOnlyList<string> list, string storeId)
-        {
-            if (list == null || string.IsNullOrEmpty(storeId))
-            {
-                return false;
-            }
-
-            for (var i = 0; i < list.Count; i++)
-            {
-                if (string.Equals(list[i], storeId, System.StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
     }
 }
