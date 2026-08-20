@@ -191,6 +191,12 @@ namespace Takoda99.View
             ApplyAll();
         }
 
+        /// <summary>自店の脱落・試合終了で、空の皿ごと消す（Renderer.OnStoreEliminatedBatch / OnMatchEnd から呼ぶ）。</summary>
+        public void HideTray()
+        {
+            tray?.Hide();
+        }
+
         /// <summary>対応中の客がいなくなった。台と皿を空にする。</summary>
         public void ClearOrder()
         {
@@ -293,7 +299,7 @@ namespace Takoda99.View
             if (flyingAnimator == null || tray == null)
             {
                 ClearAllSlots();
-                tray?.Serve(quality);
+                tray?.Serve(quality, orderCount);
                 ResetOrderCounters();
                 return;
             }
@@ -338,7 +344,7 @@ namespace Takoda99.View
             }
 
             // 全部が皿に乗った。ここで盛り付けの出来が確定する。
-            tray.Serve(quality);
+            tray.Serve(quality, orderCount);
 
             ResetOrderCounters();
             serving = false;

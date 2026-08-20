@@ -26,16 +26,25 @@ namespace Takoda99.View.Cooking
         [Tooltip("盛り付け済みの舟皿。品質で差し替える。")]
         [SerializeField] private Image trayServed;
 
-        [Header("盛り付け済みスプライト（品質別）")]
-        [SerializeField] private Sprite trayCleanSprite;
-        [SerializeField] private Sprite trayNormalSprite;
-        [SerializeField] private Sprite trayDirtySprite;
+        [Header("盛り付け済みスプライト（品質×個数）。個数は2/4/8個のみ（仕様固定）。")]
+        [SerializeField] private Sprite trayCleanSpriteTwo;
+        [SerializeField] private Sprite trayCleanSpriteFour;
+        [SerializeField] private Sprite trayCleanSpriteEight;
+        [SerializeField] private Sprite trayNormalSpriteTwo;
+        [SerializeField] private Sprite trayNormalSpriteFour;
+        [SerializeField] private Sprite trayNormalSpriteEight;
+        [SerializeField] private Sprite trayDirtySpriteTwo;
+        [SerializeField] private Sprite trayDirtySpriteFour;
+        [SerializeField] private Sprite trayDirtySpriteEight;
 
         [Tooltip("玉が飛んでくる着地点。未割り当てなら皿の中心を使う。")]
         [SerializeField] private RectTransform landingPoint;
 
         /// <summary>この皿の出来。<see cref="Serve"/> で受け取った値。</summary>
         public TakoyakiQuality Quality { get; private set; }
+
+        /// <summary>この皿に盛る個数。<see cref="Serve"/> で受け取った値。2/4/8個のいずれか。</summary>
+        private int orderCount = 8;
 
         /// <summary>提供演出の再生中か。次の客の仕切り直しは、これが終わるまで待つ。</summary>
         public bool IsServing => serving != null;
@@ -78,10 +87,12 @@ namespace Takoda99.View.Cooking
         /// <summary>
         /// 提供（企画書 9番）。盛り付け済みの絵へ切り替え、余韻を置いてから皿を送り出し、
         /// 空の皿を出し直す。<paramref name="quality"/> は 1注文ぶんの打鍵ミス率から決まった出来。
+        /// <paramref name="orderCount"/> は注文個数（2/4/8個。仕様固定）。盛り付け絵の選択に使う。
         /// </summary>
-        public void Serve(TakoyakiQuality quality)
+        public void Serve(TakoyakiQuality quality, int orderCount)
         {
             Quality = quality;
+            this.orderCount = orderCount;
 
             if (settings == null || selfRect == null)
             {
@@ -95,6 +106,22 @@ namespace Takoda99.View.Cooking
             }
 
             serving = StartCoroutine(ServeRoutine());
+        }
+
+        /// <summary>
+        /// 自店の脱落・試合終了で、空の皿ごと消す。客がもう来ないのに空の皿だけ出ているのは不自然なため。
+        /// 提供演出の途中でも構わず打ち切る（脱落後に打鍵は続かない＝これ以降 Serve は来ない）。
+        /// </summary>
+        public void Hide()
+        {
+            if (serving != null)
+            {
+                StopCoroutine(serving);
+                serving = null;
+            }
+
+            SetVisible(trayEmpty, false);
+            SetVisible(trayServed, false);
         }
 
         /// <summary>皿を空の状態に戻す（客が入れ替わった・試合が始まった等の区切りで呼ぶ）。</summary>
@@ -222,11 +249,25 @@ namespace Takoda99.View.Cooking
             switch (quality)
             {
                 case TakoyakiQuality.Clean:
-                    return trayCleanSprite;
+                    return ResolveByCount(trayCleanSpriteTwo, trayCleanSpriteFour, trayCleanSpriteEight);
                 case TakoyakiQuality.Normal:
-                    return trayNormalSprite;
+                    return ResolveByCount(trayNormalSpriteTwo, trayNormalSpriteFour, trayNormalSpriteEight);
                 default:
-                    return trayDirtySprite;
+                    return ResolveByCount(trayDirtySpriteTwo, trayDirtySpriteFour, trayDirtySpriteEight);
+            }
+        }
+
+        /// <summary>個数（2/4/8個。仕様固定）でスプライトを選ぶ。それ以外の値は8個扱いにする。</summary>
+        private Sprite ResolveByCount(Sprite two, Sprite four, Sprite eight)
+        {
+            switch (orderCount)
+            {
+                case 2:
+                    return two;
+                case 4:
+                    return four;
+                default:
+                    return eight;
             }
         }
 

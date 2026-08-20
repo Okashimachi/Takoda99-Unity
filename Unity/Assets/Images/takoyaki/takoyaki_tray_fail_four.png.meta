@@ -1,10 +1,13 @@
 fileFormatVersion: 2
-guid: 40871398a019e6947963d72824a737f6
+guid: 321a01af4fd5bd747b0cfa00d2dd0246
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1782707184255818919
-    second: takoyaki_tray_fail_0
+      213: -2792938203526686256
+    second: takoyaki_tray_fail_four_0
+  - first:
+      213: 871851297445703944
+    second: takoyaki_tray_fail_four_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +49,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -113,13 +116,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: takoyaki_tray_fail_0
+      name: takoyaki_tray_fail_four_0
       rect:
         serializedVersion: 2
-        x: 18
-        y: 67
-        width: 519
-        height: 260
+        x: 0
+        y: 8
+        width: 727
+        height: 404
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +131,30 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7acda182db27db810800000000000000
-      internalID: 1782707184255818919
+      spriteID: 0d99c23608d7d39d0800000000000000
+      internalID: -2792938203526686256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: takoyaki_tray_fail_four_1
+      rect:
+        serializedVersion: 2
+        x: 798
+        y: 201
+        width: 7
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 801f631c220791c00800000000000000
+      internalID: 871851297445703944
       vertices: []
       indices: 
       edges: []
@@ -138,7 +163,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -148,7 +173,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      takoyaki_tray_fail_0: 1782707184255818919
+      takoyaki_tray_fail_four_0: -2792938203526686256
+      takoyaki_tray_fail_four_1: 871851297445703944
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

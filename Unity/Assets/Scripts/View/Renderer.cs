@@ -480,6 +480,7 @@ namespace Takoda99.View
             selfEliminated = true;
             customerQueue?.ClearAll();
             orderBubble?.Hide();
+            takoyakiStand?.HideTray();
 
             // 最終ステージ（120秒）では直後に MatchEnd が来る。その場合は脱落モーダルではなく
             // リザルトへ進むため、ここでは出さない。判定を state だけで閉じる。
@@ -524,6 +525,7 @@ namespace Takoda99.View
             selfEliminated = true;
             customerQueue?.ClearAll();
             orderBubble?.Hide();
+            takoyakiStand?.HideTray();
             rankingPanel?.SetPanelVisible(false);
             bottomRankingPanel?.SetPanelVisible(false);
             cullPanel?.SetPanelVisible(false);
