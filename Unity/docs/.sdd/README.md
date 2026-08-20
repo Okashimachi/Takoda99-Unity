@@ -84,6 +84,7 @@ Unity/Assets/Scripts/**/*.cs（仕様書の実装）
 | 14 | [ranking-view/04-top-ranking-slots.md](./ranking-view/04-top-ranking-slots.md) | 12, 13, 5 | ✅ |
 | 15 | [ranking-view/05-bottom-ranking-panel.md](./ranking-view/05-bottom-ranking-panel.md) | 12, 13, 5 | ✅ |
 | 16 | [ranking-view/06-rank-swap-animation.md](./ranking-view/06-rank-swap-animation.md) | 14, 15 | ✅ |
+| 17 | [ranking-view/08-self-rank-neon-panel.md](./ranking-view/08-self-rank-neon-panel.md) | 12, 13, 15 | ✅ |
 
 > **12・13 から着手する。** どちらも EditMode テストだけで完結し、
 > ここが固まると 14〜16 は「値を描くだけ」になる（1〜3 と同じ進め方）。

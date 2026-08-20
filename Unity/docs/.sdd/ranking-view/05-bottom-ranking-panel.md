@@ -92,11 +92,11 @@ namespace Takoda99.View.Ranking
         /// <summary>1行の高さ(px)。BottomRanker.prefab の高さと一致させる。</summary>
         [SerializeField] private float rowHeight = 29f;
 
-        /// <summary>横の列数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 2）。</summary>
-        [SerializeField] private int columnCount = 2;
+        /// <summary>横の列数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 3）。</summary>
+        [SerializeField] private int columnCount = 3;
 
-        /// <summary>1列あたりの行数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 15）。</summary>
-        [SerializeField] private int rowsPerColumn = 15;
+        /// <summary>1列あたりの行数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 10）。</summary>
+        [SerializeField] private int rowsPerColumn = 10;
 
         /// <summary>列と列の中心間の距離(px)。BottomRanker.prefab の幅より広くする（既定 125）。</summary>
         [SerializeField] private float columnSpacing = 125f;
@@ -176,12 +176,15 @@ start = Max(0, aliveCount - count)
 
 上位と違いスロットは使わない。すべて同じ高さなので数式で並べる。
 
-**縦一列（30行）ではなく、横2列×縦15行のグリッドに並べる。**
-1列30行だと画面外まで溢れるため（[c28ae36]の初期配置の反省）、パネル内に収まる2列に分割する。
-`index` は列優先で埋める（0列目を上から15件埋めたのち、1列目へ移る＝1〜15位が左列、16〜30位が右列）。
+**縦一列（30行）ではなく、横3列×縦10行のグリッドに並べる。**
+1列30行だと画面外まで溢れるため（[c28ae36]の初期配置の反省）、パネル内に収まる3列に分割する
+（★変更：旧仕様は横2列×縦15行。画面右上に収める形へレイアウトを変更し、空いた右下領域に
+[08-self-rank-neon-panel.md](./08-self-rank-neon-panel.md) の自店ネオンパネルを置く）。
+`index` は列優先で埋める（0列目を上から10件埋めたのち、1列目・2列目へ移る＝1〜10位が左列、
+11〜20位が中央列、21〜30位が右列）。
 
 ```
-column = index / rowsPerColumn          // rowsPerColumn = 15
+column = index / rowsPerColumn          // rowsPerColumn = 10
 row    = index % rowsPerColumn
 x = (column - (columnCount - 1) / 2) * columnSpacing
 y = ((rowsPerColumn - 1) / 2 - row) * rowHeight
