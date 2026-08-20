@@ -134,8 +134,10 @@ namespace Takoda99.View.Ranking
                     style = style.WithSize(slotSize);
                 }
 
+                // 最終ステージ終了時は1位を含む全店に脱落イベントが飛ぶ（Renderer.OnStoreEliminatedBatch参照）。
+                // IsAlive だけで判定すると優勝者まで灰色になるため、試合が完全終了した後は Dead を適用しない。
                 var isCutTarget = cutStoreIds != null && Contains(cutStoreIds, row.StoreId);
-                if (!row.IsAlive)
+                if (!row.IsAlive && !state.MatchEnded)
                 {
                     style = style.WithTone(RankingRowTone.Dead);
                 }

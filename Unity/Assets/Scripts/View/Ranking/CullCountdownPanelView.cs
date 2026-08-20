@@ -88,6 +88,14 @@ namespace Takoda99.View.Ranking
         /// <summary>段階が変わったときに色・濃さが飛ばないよう補間する速さ（1秒あたり）。</summary>
         private const float AlphaLerpPerSecond = 2.5f;
 
+        /// <summary>
+        /// 第4段階（20秒等間隔スケジュールの4番目、35→20人）の個別調整。
+        /// この段階だけ、淘汰対象外の「ぎりぎり圏外」警告を13〜20位に絞る（企画指示）。
+        /// </summary>
+        private const int FourthStageIndex = 4;
+        private const int FourthStageCautionRankMin = 13;
+        private const int FourthStageCautionRankMax = 20;
+
         private CullWarning warning;
         private IReadOnlyDictionary<string, string> displayNames;
         private CullCountdownState current;
@@ -167,9 +175,13 @@ namespace Takoda99.View.Ranking
                 && state.Phase != ClientPhase.Result
                 && !state.MatchEnded;
 
-            selfInBottomRange = state != null
-                && RankingRowsBuilder.IsInBottomRange(
-                    state.Ranking, state.SelfStoreId, state.AliveCount, bottomRangeCount);
+            // 第4段階（35→20人）だけは、淘汰対象ではない人への「ぎりぎり圏外」警告を
+            // 13〜20位に絞る（企画の個別調整。ranking-view/README §足切りスケジュール参照）。
+            selfInBottomRange = next != null && next.StageIndex == FourthStageIndex
+                ? state != null && state.Rank >= FourthStageCautionRankMin && state.Rank <= FourthStageCautionRankMax
+                : state != null
+                    && RankingRowsBuilder.IsInBottomRange(
+                        state.Ranking, state.SelfStoreId, state.AliveCount, bottomRangeCount);
 
             // C5: 未受信の間はパネルを非表示にする（0秒と区別する）。
             if (warning == null)

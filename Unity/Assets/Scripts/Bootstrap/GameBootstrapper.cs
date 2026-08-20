@@ -17,6 +17,7 @@ using Takoda99.DebugUI;
 using Takoda99.InputSource;
 using Takoda99.Net;
 using Takoda99.Proto;
+using Takoda99.Sound;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
@@ -244,9 +245,14 @@ namespace Takoda99.Bootstrap
         /// <summary>Result の Title ボタンから呼ぶ（Result → Title）。</summary>
         public void BackToTitle() => controller.BackToTitle();
 
-        /// <summary>MainGame の ResultCanvas（脱落モーダル）の NextButton から呼ぶ（MainGame → Result）。</summary>
+        /// <summary>
+        /// MainGame の NextButton（ResultCanvas / MatchFinishCanvas のどちらも）から呼ぶ（MainGame → Result）。
+        /// MatchEnd を待たずに離脱する経路もあるため、ここで試合BGMを必ず止めておく
+        /// （DontDestroyOnLoad の BgmPlayer が鳴り続けるのを防ぐ）。
+        /// </summary>
         public void GoToResult()
         {
+            BgmPlayer.Stop();
             SceneManager.LoadScene(resultSceneName, LoadSceneMode.Single);
         }
 

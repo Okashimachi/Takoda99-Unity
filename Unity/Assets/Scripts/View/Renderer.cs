@@ -43,6 +43,8 @@ namespace Takoda99.View
         [SerializeField] private Ranking.CullCountdownPanelView cullPanel;     // ranking-view/02
         [SerializeField] private Elimination.MassEliminationEffect massElim;   // elimination/01
         [SerializeField] private Ranking.AudiencePanelView audiencePanel;      // ranking-view/07
+        [SerializeField] private MatchFinishView matchFinish;                  // 試合完全終了演出（MatchFinishCanvas）
+        [SerializeField] private LastStagePanelView lastStagePanel;            // 最終ステージ突入演出（「ラスト20秒！」）
 
         private IStore store;
         private ITypingJudge typingJudge;
@@ -51,6 +53,9 @@ namespace Takoda99.View
 
         /// <summary>自店が脱落済みか。以降は観戦なので行列を描かない。</summary>
         private bool selfEliminated;
+
+        /// <summary>「ラスト20秒！」を出し終えたか。最終ステージ突入の瞬間に1回だけ出すためのフラグ。</summary>
+        private bool finalStageAnnounced;
 
         /// <summary>
         /// いま打っている単語での正打数・ミス数。打鍵SEは**1単語につき1回**なので、
@@ -68,6 +73,7 @@ namespace Takoda99.View
             store = boundStore;
             typingJudge = boundTypingJudge;
             selfEliminated = false;
+            finalStageAnnounced = false;
             wordCorrectCount = 0;
             wordMissCount = 0;
 
@@ -109,6 +115,7 @@ namespace Takoda99.View
             WarnIfMissing(cullPanel, nameof(cullPanel));
             WarnIfMissing(massElim, nameof(massElim));
             WarnIfMissing(audiencePanel, nameof(audiencePanel));
+            WarnIfMissing(lastStagePanel, nameof(lastStagePanel));
 
             // 試合終了後の Result シーンへの遷移は、このモーダルの NextButton だけが担う
             // （GameBootstrapper は MainGame にいる間は自動遷移しない）。未割り当てだと
@@ -475,6 +482,15 @@ namespace Takoda99.View
         public void OnCullWarning(CullWarning warning)
         {
             cullPanel?.OnWarningReceived(warning);
+
+            // 最終ステージ（StageIndex == StageTotal＝残り20秒の最後の段階）に入った瞬間だけ、
+            // 「ラスト20秒！」を1回出す。CutLineRank==2 は最終ステージの根拠として比較しない
+            // （StageIndex/StageTotal がサーバーの段階そのものを表す値のため、こちらを使う）。
+            if (!finalStageAnnounced && warning != null && warning.StageTotal > 0 && warning.StageIndex == warning.StageTotal)
+            {
+                finalStageAnnounced = true;
+                lastStagePanel?.Show();
+            }
         }
 
         public void OnStoreEliminatedBatch(int stageIndex, IReadOnlyList<StoreEliminated> entries, bool includesSelf)
@@ -551,6 +567,13 @@ namespace Takoda99.View
             // モーダル自体は HandleStateChanged（state 駆動）が先に出していることもある。
             // ShowIfHidden は冪等なので、どちらが先でも順位を上書きせず二重表示にもならない。
             resultView?.ShowIfHidden(rank);
+
+            // MatchFinishCanvas が上から被さるため、脱落モーダル側のNextButtonは隠す
+            // （押せるボタンが2つ重ならないようにする。遷移はMatchFinishCanvas側のNextButtonに一本化）。
+            resultView?.HideNextButton();
+
+            // 1位を含む全店に「試合が終わったこと」を伝える演出。脱落モーダルとは別に出す。
+            matchFinish?.Show();
         }
 
         public void OnLifecycleChanged(ClientPhase from, ClientPhase to)

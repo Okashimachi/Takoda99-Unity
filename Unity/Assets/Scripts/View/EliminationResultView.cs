@@ -146,6 +146,18 @@ namespace Takoda99.View
             Show(selfFinalRank);
         }
 
+        /// <summary>
+        /// 試合完全終了時、Renderer.OnMatchEnd から呼ぶ。MatchFinishCanvas が上から被さるため、
+        /// このモーダル側の NextButton は隠す（同じ画面に押せるボタンが2つ並ぶのを避ける）。
+        /// </summary>
+        public void HideNextButton()
+        {
+            if (nextButton != null)
+            {
+                nextButton.gameObject.SetActive(false);
+            }
+        }
+
         private void HandleStateChanged(ClientState state)
         {
             lastState = state;

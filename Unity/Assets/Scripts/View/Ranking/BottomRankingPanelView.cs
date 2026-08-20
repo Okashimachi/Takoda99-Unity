@@ -29,7 +29,7 @@ namespace Takoda99.View.Ranking
         [SerializeField] private int rowsPerColumn = 10;
 
         /// <summary>列と列の中心間の距離(px)。BottomRanker.prefab の幅より広くして重ならないようにする。</summary>
-        [SerializeField] private float columnSpacing = 125f;
+        [SerializeField] private float columnSpacing = 83f;
 
         [SerializeField] private float rowMoveDuration = 0.25f;
 
