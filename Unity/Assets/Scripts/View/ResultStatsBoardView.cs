@@ -1,10 +1,8 @@
 // リザルト画面の成績一覧。root/ResultCanvas/Result/Othes にアタッチする。
-// Othes を埋める子コンテナを作り、ResultUnitPanel を格子状に並べて項目を流し込む。
+// Othes/Upper・Othes/Lower の2つのコンテナへ分けて流し込む。
 //
-// 格子は縦3 x 横6。優先度の高い順に上から詰め、
-//   1段目 … 優先度「高」を2つ（各3マス幅）＝ 一番大きく、一番先に目に入る
-//   2段目 … 優先度「中」を3つ（各2マス幅）
-//   3段目 … 優先度「低」を3つ（各2マス幅）
+// Upper … 最優先の2項目（スコア／たこ焼き数）だけを左右半分ずつ、ネオン色の大きな文字で出す。
+// Lower … 残り6項目を縦2 x 横6の格子で均等（各2マス幅）に並べる。
 // パネルの幅と内容の文字サイズの両方で優先度を表す。
 
 using System.Collections.Generic;
@@ -20,7 +18,9 @@ namespace Takoda99.View
     {
         /// <summary>横6マスを何分割で使うかの定義。段ごとにパネル1枚が占めるマス数が変わる。</summary>
         private const int GridColumns = 6;
-        private const int GridRows = 3;
+
+        /// <summary>Lower（優先度「中」「低」の6項目）の段数。</summary>
+        private const int GridRows = 2;
 
         /// <summary>MatchEnd 待ちのあいだ、値の代わりに出す文字。</summary>
         private const string Pending = "…";
@@ -28,7 +28,25 @@ namespace Takoda99.View
         [Header("パネル")]
         [SerializeField] private ResultUnitPanelView unitPanelPrefab;
 
-        [Header("レイアウト（縦3 x 横6）")]
+        [Header("上段（Othes/Upper）: スコア・たこ焼き数を左右に2分割")]
+        [Tooltip("ResultCanvas/Result/Othes/Upper を割り当てる。未設定なら Upper 側は何も出さない。")]
+        [SerializeField] private RectTransform upperContainer;
+        [Tooltip("Upper に出す2項目のネオン用マテリアル（TMP SDF）。unitPanelPrefab の UnitParamText と同じフォントアトラス" +
+                 "（NotoSansJP-Bold SDF）で作った material を割り当てること。フォントが違うマテリアルを当てると文字が崩れる。" +
+                 "未設定なら通常の文字色のまま。")]
+        [SerializeField] private Material upperNeonMaterial;
+        [Tooltip("Upper 内側の余白（px）。")]
+        [SerializeField] private float upperPadding = 8f;
+        [Tooltip("Upper に出す2項目の間隔（px）。")]
+        [SerializeField] private float upperGap = 8f;
+        [SerializeField] private float upperFontScale = 2f;
+        [SerializeField] private float upperTitleFontScale = 1.2f;
+
+        [Header("下段（Othes/Lower）: 残り6項目を均等配置")]
+        [Tooltip("ResultCanvas/Result/Othes/Lower を割り当てる。未設定なら Lower 側は何も出さない。")]
+        [SerializeField] private RectTransform lowerContainer;
+
+        [Header("レイアウト（Lower：縦2 x 横6）")]
         [Tooltip("マス目の間隔（px）。")]
         [SerializeField] private Vector2 spacing = new Vector2(8f, 8f);
         [Tooltip("外周の余白（px）。")]
@@ -45,7 +63,8 @@ namespace Takoda99.View
         [SerializeField] private float middleTitleFontScale = 1f;
         [SerializeField] private float lowTitleFontScale = 1f;
 
-        private GameObject grid;
+        private GameObject upperGrid;
+        private GameObject lowerGrid;
 
         /// <summary>成績を構築して表示する。データが無い場合は空表示になる。</summary>
         public void Show(PersonalResultState result, RankingTable ranking, string selfStoreId)
@@ -58,9 +77,68 @@ namespace Takoda99.View
                 return;
             }
 
-            var items = BuildItems(result, ranking, selfStoreId);
-            var parent = CreateGrid();
-            var area = ((RectTransform)transform).rect;
+            ShowUpper(BuildUpperItems(result));
+            ShowLower(BuildLowerItems(result, ranking, selfStoreId));
+        }
+
+        /// <summary>Upper：たこ焼き数（左）・スコア（右）の2項目だけを大きなネオン文字で出す。</summary>
+        private void ShowUpper(IReadOnlyList<UpperItem> items)
+        {
+            if (upperContainer == null)
+            {
+                return;
+            }
+
+            var go = new GameObject("UpperGrid", typeof(RectTransform));
+            go.layer = gameObject.layer;
+            var parent = go.GetComponent<RectTransform>();
+            parent.SetParent(upperContainer, false);
+            parent.anchorMin = Vector2.zero;
+            parent.anchorMax = Vector2.one;
+            parent.pivot = new Vector2(0.5f, 0.5f);
+            parent.offsetMin = Vector2.zero;
+            parent.offsetMax = Vector2.zero;
+            upperGrid = go;
+
+            var area = upperContainer.rect;
+            var cellWidth = CellLength(area.width, items.Count, upperGap, upperPadding);
+            var cellHeight = area.height - (upperPadding * 2f);
+
+            for (var i = 0; i < items.Count; i++)
+            {
+                var panel = Instantiate(unitPanelPrefab, parent);
+                var rect = (RectTransform)panel.transform;
+                rect.anchorMin = new Vector2(0f, 1f);
+                rect.anchorMax = new Vector2(0f, 1f);
+                rect.pivot = new Vector2(0f, 1f);
+                rect.sizeDelta = new Vector2(cellWidth, cellHeight);
+                rect.anchoredPosition = new Vector2(upperPadding + (i * (cellWidth + upperGap)), -upperPadding);
+
+                panel.SetValue(items[i].Title, items[i].Param, upperFontScale, upperTitleFontScale);
+                panel.SetNeonMaterial(upperNeonMaterial);
+            }
+        }
+
+        /// <summary>Lower：残り6項目を縦2 x 横6の格子で均等に並べる。</summary>
+        private void ShowLower(List<Item> items)
+        {
+            if (lowerContainer == null)
+            {
+                return;
+            }
+
+            var go = new GameObject("LowerGrid", typeof(RectTransform));
+            go.layer = gameObject.layer;
+            var parent = go.GetComponent<RectTransform>();
+            parent.SetParent(lowerContainer, false);
+            parent.anchorMin = Vector2.zero;
+            parent.anchorMax = Vector2.one;
+            parent.pivot = new Vector2(0.5f, 0.5f);
+            parent.offsetMin = Vector2.zero;
+            parent.offsetMax = Vector2.zero;
+            lowerGrid = go;
+
+            var area = lowerContainer.rect;
             var cellWidth = CellLength(area.width, GridColumns, spacing.x, padding);
             var rowHeight = CellLength(area.height, GridRows, spacing.y, padding);
 
@@ -75,10 +153,16 @@ namespace Takoda99.View
         /// <summary>生成済みの格子とパネルをすべて破棄する。</summary>
         public void Clear()
         {
-            if (grid != null)
+            if (upperGrid != null)
             {
-                Destroy(grid);
-                grid = null;
+                Destroy(upperGrid);
+                upperGrid = null;
+            }
+
+            if (lowerGrid != null)
+            {
+                Destroy(lowerGrid);
+                lowerGrid = null;
             }
         }
 
@@ -117,25 +201,6 @@ namespace Takoda99.View
             }
         }
 
-        private RectTransform CreateGrid()
-        {
-            var go = new GameObject("StatsGrid", typeof(RectTransform));
-            go.layer = gameObject.layer;
-
-            // Othes いっぱいに広げる。マス目の大きさは Othes の実サイズから割り出すので、
-            // Othes の幅・高さを変えれば格子もそのまま追従する。
-            var rect = go.GetComponent<RectTransform>();
-            rect.SetParent(transform, false);
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            grid = go;
-            return rect;
-        }
-
         /// <summary>余白と間隔を差し引いた残りを等分し、1マスぶんの長さを出す。</summary>
         private static float CellLength(float total, int count, float gap, float outerPadding)
         {
@@ -149,6 +214,19 @@ namespace Takoda99.View
             High,
             Middle,
             Low,
+        }
+
+        /// <summary>Upper に出す1項目（項目名＋内容だけ。優先度・格子座標は持たない）。</summary>
+        private readonly struct UpperItem
+        {
+            public UpperItem(string title, string param)
+            {
+                Title = title;
+                Param = param;
+            }
+
+            public string Title { get; }
+            public string Param { get; }
         }
 
         private readonly struct Item
@@ -172,47 +250,62 @@ namespace Takoda99.View
         }
 
         /// <summary>
-        /// 表示する8項目を、優先度の高い順（上の段から）に組み立てる。
+        /// Upper に出す2項目（たこ焼き数＝左、スコア＝右）。
+        /// 成績が未着でも枠だけは組んで待ち表示にする。
+        /// </summary>
+        private static List<UpperItem> BuildUpperItems(PersonalResultState result)
+        {
+            if (result == null)
+            {
+                return new List<UpperItem>(2)
+                {
+                    new UpperItem("たこ焼き数", Pending),
+                    new UpperItem("スコア", Pending),
+                };
+            }
+
+            // ★たこ焼きの個数。stats.ServedCount（提供した「客」の数）とは別物。
+            return new List<UpperItem>(2)
+            {
+                new UpperItem("たこ焼き数", $"{result.TakoyakiCount} 個"),
+                // リザルトではスコアを大きく出す（試合中は順位が主役だが、ここでは具体的な数字が達成感になる）。
+                new UpperItem("スコア", $"{result.Score}"),
+            };
+        }
+
+        /// <summary>
+        /// Lower に出す残り6項目を、優先度の高い順（上の段から）に組み立てる。
         /// 成績がまだ届いていない（<paramref name="result"/> が null の）間も、
         /// 枠だけは組んで待ち表示にする。ここで空リストを返すと画面が真っ白になってしまう。
         /// </summary>
-        private static List<Item> BuildItems(PersonalResultState result, RankingTable ranking, string selfStoreId)
+        private static List<Item> BuildLowerItems(PersonalResultState result, RankingTable ranking, string selfStoreId)
         {
-            var items = new List<Item>(8);
+            var items = new List<Item>(6);
 
             if (result == null)
             {
-                items.Add(new Item("スコア", Pending, Priority.High, 0, 0, 3));
-                items.Add(new Item("たこ焼き数", Pending, Priority.High, 0, 3, 3));
-                items.Add(new Item("総打鍵数", Pending, Priority.Middle, 1, 0, 2));
-                items.Add(new Item("ミス打鍵数", Pending, Priority.Middle, 1, 2, 2));
-                items.Add(new Item("平均正確率", Pending, Priority.Middle, 1, 4, 2));
-                items.Add(new Item("店の名前", FindSelfName(ranking, selfStoreId), Priority.Low, 2, 0, 2));
-                items.Add(new Item("提供数", Pending, Priority.Low, 2, 2, 2));
-                items.Add(new Item("生存時間", Pending, Priority.Low, 2, 4, 2));
+                items.Add(new Item("総打鍵数", Pending, Priority.Middle, 0, 0, 2));
+                items.Add(new Item("ミス打鍵数", Pending, Priority.Middle, 0, 2, 2));
+                items.Add(new Item("平均正確率", Pending, Priority.Middle, 0, 4, 2));
+                items.Add(new Item("店の名前", FindSelfName(ranking, selfStoreId), Priority.Low, 1, 0, 2));
+                items.Add(new Item("提供数", Pending, Priority.Low, 1, 2, 2));
+                items.Add(new Item("生存時間", Pending, Priority.Low, 1, 4, 2));
                 return items;
             }
 
             var stats = result.Stats ?? new MatchStats();
 
-            // 1段目（優先度 高）：2つで横6マスを折半する。
-            // リザルトではスコアを大きく出す（試合中は順位が主役だが、ここでは具体的な数字が達成感になる）。
-            // 「来客数」は LeftCount（常に 0）に依存していたため撤去した。
-            items.Add(new Item("スコア", $"{result.Score}", Priority.High, 0, 0, 3));
-            // ★たこ焼きの個数。stats.ServedCount（提供した「客」の数）とは別物。
-            items.Add(new Item("たこ焼き数", $"{result.TakoyakiCount} 個", Priority.High, 0, 3, 3));
+            // 1段目：3つで横6マスを3等分する。
+            items.Add(new Item("総打鍵数", $"{stats.TotalKeystrokes} 打", Priority.Middle, 0, 0, 2));
+            items.Add(new Item("ミス打鍵数", $"{stats.TotalMisses} 打", Priority.Middle, 0, 2, 2));
+            items.Add(new Item("平均正確率", Percent(stats.AvgAccuracy), Priority.Middle, 0, 4, 2));
 
-            // 2段目（優先度 中）：3つで横6マスを3等分する。
-            items.Add(new Item("総打鍵数", $"{stats.TotalKeystrokes} 打", Priority.Middle, 1, 0, 2));
-            items.Add(new Item("ミス打鍵数", $"{stats.TotalMisses} 打", Priority.Middle, 1, 2, 2));
-            items.Add(new Item("平均正確率", Percent(stats.AvgAccuracy), Priority.Middle, 1, 4, 2));
-
-            // 3段目（優先度 低）。
-            items.Add(new Item("店の名前", FindSelfName(ranking, selfStoreId), Priority.Low, 2, 0, 2));
-            items.Add(new Item("提供数", $"{stats.ServedCount} 人", Priority.Low, 2, 2, 2));
+            // 2段目。
+            items.Add(new Item("店の名前", FindSelfName(ranking, selfStoreId), Priority.Low, 1, 0, 2));
+            items.Add(new Item("提供数", $"{stats.ServedCount} 人", Priority.Low, 1, 2, 2));
             // 「終わり方」は撤去した。v0.8.0 では脱落経路が足切りの1本だけになり、
             // 判別する意味が無くなった（MatchEnd.reason も消えている）。
-            items.Add(new Item("生存時間", FormatDuration(result.SurvivedMs), Priority.Low, 2, 4, 2));
+            items.Add(new Item("生存時間", FormatDuration(result.SurvivedMs), Priority.Low, 1, 4, 2));
 
             return items;
         }

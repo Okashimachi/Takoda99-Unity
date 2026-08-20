@@ -41,6 +41,22 @@ namespace Takoda99.View
         [Tooltip("ResultCanvas/Result/Rank 配下、自店の最終順位を表示する数値テキスト（「位」ラベルと兄弟にある数値の方）。")]
         [SerializeField] private TMP_Text rankText;
 
+        [Header("順位ごとのネオン色（ResultCanvas/Result/Rank/Panel/NeonFrame）")]
+        [Tooltip("Rank/Panel の縁取り。順位（Tier）に応じて色だけ差し替える。")]
+        [SerializeField] private Image rankNeonFrame;
+        [SerializeField] private Color championNeonColor = new Color(1f, 0.84f, 0.2f);   // 金（1位）
+        [SerializeField] private Color podiumNeonColor = new Color(0.78f, 0.86f, 0.95f); // 銀（2〜3位）
+        [SerializeField] private Color finalistNeonColor = new Color(1f, 0.55f, 0.15f);  // 銅（4〜10位）
+        [SerializeField] private Color standardNeonColor = new Color(0.3f, 0.75f, 1f);   // それ以外
+
+        [Header("暖簾のプレイヤー名（試合画面 MainStoreView と同じ組み方）")]
+        [Tooltip("ResultCanvas/Noren/PlayerName/LeftText")]
+        [SerializeField] private TMP_Text playerNameLeftText;
+        [Tooltip("ResultCanvas/Noren/PlayerName/MiddleText")]
+        [SerializeField] private TMP_Text playerNameMiddleText;
+        [Tooltip("ResultCanvas/Noren/PlayerName/RightText")]
+        [SerializeField] private TMP_Text playerNameRightText;
+
         /// <summary>MatchEnd 待ちのあいだ順位の代わりに出す文字（ResultStatsBoardView と揃える）。</summary>
         private const string RankPending = "…";
 
@@ -149,6 +165,7 @@ namespace Takoda99.View
             var ranking = ResultSampleData.CreateRanking();
             latestResult = result;
             latestStoreName = FindSelfName(ranking, ResultSampleData.SelfStoreId);
+            ApplyPlayerName(latestStoreName);
 
             if (statsBoard != null)
             {
@@ -178,6 +195,54 @@ namespace Takoda99.View
             SetTier(podiumPresenter, tier == ValueObjects.ResultTier.Podium, result);
             SetTier(finalistPresenter, tier == ValueObjects.ResultTier.Finalist, result);
             SetTier(standardPresenter, tier == ValueObjects.ResultTier.Standard, result);
+
+            ApplyRankNeonColor(tier);
+        }
+
+        /// <summary>Rank/Panel の縁取りを、最終順位の Tier に応じたネオン色へ差し替える。</summary>
+        private void ApplyRankNeonColor(ValueObjects.ResultTier tier)
+        {
+            if (rankNeonFrame == null)
+            {
+                return;
+            }
+
+            switch (tier)
+            {
+                case ValueObjects.ResultTier.Champion:
+                    rankNeonFrame.color = championNeonColor;
+                    break;
+                case ValueObjects.ResultTier.Podium:
+                    rankNeonFrame.color = podiumNeonColor;
+                    break;
+                case ValueObjects.ResultTier.Finalist:
+                    rankNeonFrame.color = finalistNeonColor;
+                    break;
+                default:
+                    rankNeonFrame.color = standardNeonColor;
+                    break;
+            }
+        }
+
+        /// <summary>暖簾のプレイヤー名を、試合画面（MainStoreView）と同じ3分割の組み方で反映する。</summary>
+        private void ApplyPlayerName(string displayName)
+        {
+            var layout = PlayerNameLayout.From(displayName);
+
+            if (playerNameLeftText != null)
+            {
+                playerNameLeftText.text = layout.Left;
+            }
+
+            if (playerNameMiddleText != null)
+            {
+                playerNameMiddleText.text = layout.Middle;
+            }
+
+            if (playerNameRightText != null)
+            {
+                playerNameRightText.text = layout.Right;
+            }
         }
 
         private static void SetTier(Result.ResultTierPresenter presenter, bool selected, PersonalResultState result)
@@ -230,6 +295,7 @@ namespace Takoda99.View
             var result = state.PersonalResult;
             latestResult = result;
             latestStoreName = FindSelfName(state.Ranking, state.SelfStoreId);
+            ApplyPlayerName(latestStoreName);
 
             // 待ち表示は最初の1回だけ。観戦中は他店の更新が流れ続けるので、そのたびに組み直すと
             // TakoyakiCreator の表示演出が毎回リセットされ、いつまでも何も出てこなくなる。
