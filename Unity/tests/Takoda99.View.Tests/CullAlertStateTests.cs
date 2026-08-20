@@ -146,13 +146,17 @@ namespace Takoda99.View.Tests
         }
 
         [Fact]
-        public void 生存20なら1位も下位範囲に入る()
+        public void 生存20でも上位5位はアラート対象から除外される()
         {
+            // 淘汰終盤で生存者が減っても、1位を含む上位5位に「ぎりぎり圏外」警告を出さない
+            // （最終ステージ直前の20→10人のような淘汰で優勝候補まで警告が出るのはおかしいため）。
             var table = Table99();
 
-            Assert.True(RankingRowsBuilder.IsInBottomRange(table, "store-01", aliveCount: 20, count: 30));
-            Assert.True(RankingRowsBuilder.IsInBottomRange(table, "store-30", aliveCount: 20, count: 30));
-            Assert.False(RankingRowsBuilder.IsInBottomRange(table, "store-31", aliveCount: 20, count: 30));
+            Assert.False(RankingRowsBuilder.IsInBottomRange(table, "store-01", aliveCount: 20, count: 30));
+            Assert.False(RankingRowsBuilder.IsInBottomRange(table, "store-05", aliveCount: 20, count: 30));
+            Assert.True(RankingRowsBuilder.IsInBottomRange(table, "store-06", aliveCount: 20, count: 30));
+            Assert.True(RankingRowsBuilder.IsInBottomRange(table, "store-35", aliveCount: 20, count: 30));
+            Assert.False(RankingRowsBuilder.IsInBottomRange(table, "store-36", aliveCount: 20, count: 30));
         }
 
         [Fact]
