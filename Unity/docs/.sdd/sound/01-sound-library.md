@@ -67,7 +67,7 @@ namespace Takoda99.Sound
 | 上位ランク入り | 自店の順位が上位圏（既定10位以内）に**入った瞬間** | `SelfRankView.PlayBandSe` |
 | 下位ランク入り（淘汰圏内／ぎりぎり圏外） | 自店が淘汰圏、またはその直前の帯に**入った瞬間**。2つは別の `SoundId` として音量を独立に振れる | `SelfRankView.PlayBandSe` |
 | リザルトたこ焼き生成 | たこ焼き1個の生成ごと | `TakoyakiCreator.Spawn` |
-| リザルトランク表示 上位／下位／通常 | **順位・成績・次へボタンが出そろった瞬間**（1回）。既定で3位までが上位、下位20位が下位 | `TakoyakiCreator.RevealCompleted` → `ResultScreenView.OnRevealCompleted` |
+| リザルトランク表示 上位／下位／通常 | **順位・成績・次へボタンが出そろった瞬間**（1回）。既定で3位までが上位、50位以下（99店の下半分＝下位50店）が下位 | `TakoyakiCreator.RevealCompleted` → `ResultScreenView.OnRevealCompleted` |
 
 ### エッジケース
 
