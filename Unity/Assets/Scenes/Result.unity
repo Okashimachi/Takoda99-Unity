@@ -3789,7 +3789,7 @@ MonoBehaviour:
   playerNameRightText: {fileID: 1645849234}
   xButton: {fileID: 1736761677}
   topRankCount: 3
-  bottomRankCount: 20
+  bottomRankCount: 50
   storeCount: 99
   testMode: 0
   testTakoyakiCount: 43

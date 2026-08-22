@@ -136,7 +136,46 @@ private const float FontStepDown = 0.9f;   // 一回り＝1回、二回り＝2�
 |---|---|---|
 | 上位パネル（`ForTopRank`） | **1回**（一回り小さい） | 1〜3位 18 / 21.6 / 18、4〜6位 14.4 / 18 / 12.6、7位以下 10.8 / 14.4 / 10.8 |
 | オーディエンスパネル（`ForAudienceCell`） | **2回**（二回り小さい） | `AudienceFontFillRatio = 0.7 × 0.9²` = 0.567 |
-| 下位パネル（`ForBottomBand`） | 0回 | 12 / 12（`BottomRanker.prefab` の authored 値に合わせるため触らない） |
+| 下位パネル（`ForBottomBand`） | **2回**（二回り小さい） | 順位 9.72、屋号は 9.72 と「屋号枠の幅 ÷ 全角6文字」の小さいほう |
+
+#### 3.2.2 フォントサイズは必ず「枠に入る上限」で頭打ちにする
+
+段の高さや係数から出した値は、**縦の収まりしか保証しない**。屋号は全角6文字、順位は `22nd` の4文字まで
+来るため、横幅を見ずに置くと折り返される（`16th` が `16t` ＋ `h` になる）か隣の列に重なる。
+
+```csharp
+private const float RankTextEm  = 2.6f;  // "22nd" = 2.47em
+private const float ScoreTextEm = 3.0f;  // "-9999" = 2.73em
+private const float NameTextEm  = 6.3f;  // 全角6文字 = 6.00em
+
+private static float FitFont(float cap, float boxWidth, float em);  // Min(cap, boxWidth / em)
+```
+
+em は **Noto Sans JP の実測値**（`NotoSansJP-Bold SDF.asset` の UnitsPerEM 1000 / PointSize 61 から換算。
+半角数字 0.590em・`nd` 1.285em・全角 1.000em）に余裕を足したもの。
+`RankingRowStyle` は `UnityEngine.UI` に触らない純粋な値なので、TMP に実測させずここで上限だけを持つ。
+
+**`ForTopRank` / `ForBottomBand` / `ForAudienceCell` の3つとも、返すフォントサイズは `FitFont` を通す。**
+あわせて `TopRanker.prefab` / `BottomRanker.prefab` のテキストは `TextWrappingMode = NoWrap` にしてある
+（万一はみ出しても折り返しで読めなくなるより、少しはみ出すほうがまだ気づける）。
+
+#### 3.2.3 オフセットは「中心からの距離」ではなく Prefab のアンカー基準
+
+`RankOffset` / `NameOffset` / `ScoreOffset` は `anchoredPosition` にそのまま入る。
+**アンカーは Prefab ごとに違う**ので、中心基準のつもりで値を書くと、行の幅を変えた瞬間に
+中身だけが横へずれる（`ForBottomBand` の行幅を 80 → 118 にしたときに実際に起きた）。
+
+| Prefab | `RankText` | `NameText` | `ScoreText` |
+|---|---|---|---|
+| `TopRanker.prefab` | 左 (0, 0.5) | 中央 (0.5, 0.5) | 右 (1, 0.5) |
+| `BottomRanker.prefab` | 左 (0, 0.5) | 右 (1, 0.5) | 右 (1, 0.5) |
+| `LostRanker.prefab` | 中央 | 中央 | 中央 |
+
+右アンカーの欄は**負の値**（右端からの距離）になる。
+
+> **下位パネルの屋号だけは係数より枠幅を優先する。** 屋号は全角6文字まで来るため、
+> 二回り小さくしてもなお行（80px）からはみ出す場合はさらに落とす
+> （はみ出したまま置くと TMP が右端で切るか折り返す）。
 
 **値を個別に書き換えず係数にしている理由：** 段ごとの比（1位が大きく7位が小さい／オーディエンスの上段:下段 = 2:3）を
 崩さずに全体だけ縮められる。「もう一回り」と言われたら掛ける回数を増やすだけで済む。

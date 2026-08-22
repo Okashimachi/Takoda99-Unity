@@ -394,44 +394,84 @@ namespace Takoda99.View
             SoundPlayer.Play(SoundId.ButtonTap);
 
             var stats = latestResult?.Stats ?? new MatchStats();
-            var missRate = stats.TotalKeystrokes > 0
-                ? (stats.TotalMisses * 100.0 / stats.TotalKeystrokes).ToString("F1", System.Globalization.CultureInfo.InvariantCulture)
-                : "0.0";
+
+            // 正確率は**打鍵数とミス数から導く**（stats.AvgAccuracy は使わない）。
+            // AvgAccuracy は1注文ごとの正確率の平均で、リザルト画面の「平均正確率」がそれにあたる。
+            // ここは真上に「打鍵数」「ミス数」を並べるので、読み手が 1 - ミス数 ÷ 打鍵数 を検算できる値でないと
+            // 数字が食い違って見える。
+            var accuracy = stats.TotalKeystrokes > 0
+                ? ((stats.TotalKeystrokes - stats.TotalMisses) * 100.0 / stats.TotalKeystrokes)
+                    .ToString("F1", System.Globalization.CultureInfo.InvariantCulture)
+                : null;
 
             var finalRank = latestResult?.FinalRank ?? 0;
 
-            // 順位は本文の先頭に置く。X のタイムラインは先頭数行しか見えないことが多く、
-            // 一番の話題性がある数字を打鍵数より下へ埋めない。
-            // MatchEnd 未着（finalRank が 0）のときだけ順位行を落とす。
-            var rankLine = finalRank > 0 ? $"順位：{finalRank}位 / 99店\n" : string.Empty;
+            // 一打も叩いていない（打鍵数 0）なら正確率の行ごと落とす。
+            // 0.0% は不当に低く、100.0% は不当に高い。どちらも書かないのが正しい。
+            var accuracyLine = accuracy != null ? $"\n正確率：{accuracy}%" : string.Empty;
 
+            // 順位は見出し側（BuildHeadline）が書く。ここで繰り返さない。
             var body =
-                rankLine +
                 $"打鍵数：{stats.TotalKeystrokes}\n" +
-                $"ミス数：{stats.TotalMisses}\n" +
-                $"ミス率：{missRate}%";
+                $"ミス数：{stats.TotalMisses}" +
+                accuracyLine;
 
-            var headline = BuildHeadline(finalRank, latestStoreName, stats.ServedCount);
-            var text = $"{headline}\n{body}\n#たこ打99 #THEHACK2026";
+            // ★「作ったたこ焼きの数」は PersonalResult.TakoyakiCount。
+            // stats.ServedCount は**提供した「客」の数**で、1客が複数個を持っていくため桁が変わる
+            // （ResultStatsBoardView の「たこ焼き数」も TakoyakiCount 側を出している）。
+            // ここで ServedCount を渡すと、画面の数字と投稿の数字が食い違う。
+            var takoyakiCount = latestResult?.TakoyakiCount ?? 0;
+            var headline = BuildHeadline(finalRank, latestStoreName, takoyakiCount);
+            var text = $"{headline}\n\n{body}\n\n#たこ打99 #THEHACK2026";
 
             var url = "https://x.com/intent/post?text=" + UnityEngine.Networking.UnityWebRequest.EscapeURL(text);
             Application.OpenURL(url);
         }
 
-        /// <summary>上位3位専用の煽り文。それ以外は通常の見出し。</summary>
-        private static string BuildHeadline(int finalRank, string storeName, int servedCount)
+        /// <summary>
+        /// 投稿の見出し（3行）。X のタイムラインは先頭数行しか見えないので、
+        /// 一番の話題性がある「順位」を独立した行で先に見せ、そのあと個人成績へ移る。
+        ///
+        /// <code>
+        /// 🏆優勝🏆
+        /// たこ焼き店Aは1位でした！
+        /// 123個のたこ焼きを作りました！
+        /// </code>
+        ///
+        /// 4位以下は称号の行を出さず2行になる。MatchEnd 未着（<paramref name="finalRank"/> が 0）のときは
+        /// 順位を書かず、たこ焼きの数だけを出す。
+        ///
+        /// <paramref name="takoyakiCount"/> は <c>PersonalResult.TakoyakiCount</c>（作ったたこ焼きの総数）。
+        /// **<c>MatchStats.ServedCount</c>（提供した客の数）を渡さないこと。**
+        /// </summary>
+        private static string BuildHeadline(int finalRank, string storeName, int takoyakiCount)
         {
+            // 上位3位だけ称号を独立した1行に置く（それだけで一度改行する）。
+            string titleLine;
             switch (finalRank)
             {
                 case 1:
-                    return $"🏆優勝🏆 {storeName}は堂々の1位！{servedCount}個のたこ焼きを作りました！";
+                    titleLine = "🏆優勝🏆\n";
+                    break;
                 case 2:
-                    return $"🥈準優勝🥈 {storeName}は2位に輝きました！{servedCount}個のたこ焼きを作りました！";
+                    titleLine = "🥈準優勝🥈\n";
+                    break;
                 case 3:
-                    return $"🥉3位入賞🥉 {storeName}は見事3位！{servedCount}個のたこ焼きを作りました！";
+                    titleLine = "🥉3位入賞🥉\n";
+                    break;
                 default:
-                    return $"{storeName}は{servedCount}個のたこ焼きを作りました！";
+                    titleLine = string.Empty;
+                    break;
             }
+
+            var rankLine = finalRank > 0 ? $"{storeName}は{finalRank}位でした！\n" : string.Empty;
+
+            // 順位が無いときだけ、たこ焼きの行に店名を添える（誰の投稿か分からなくなるため）。
+            var countLine = finalRank > 0
+                ? $"{takoyakiCount}個のたこ焼きを作りました！"
+                : $"{storeName}は{takoyakiCount}個のたこ焼きを作りました！";
+
+            return titleLine + rankLine + countLine;
         }
 
         /// <summary>自店の表示名。ランキング表の行から引く（RankingRow.DisplayName は解決済み）。</summary>

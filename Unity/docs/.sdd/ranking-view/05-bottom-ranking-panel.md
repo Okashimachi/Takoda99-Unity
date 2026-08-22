@@ -89,7 +89,7 @@ namespace Takoda99.View.Ranking
         /// <summary>表示件数。淘汰人数の最大(24)より大きい値にする。</summary>
         [SerializeField] private int visibleCount = 30;
 
-        /// <summary>1行の高さ(px)。BottomRanker.prefab の高さと一致させる。</summary>
+        /// <summary>1行の高さ(px)。RankingRowStyle.BottomRowSize.y と一致させる（既定 29）。</summary>
         [SerializeField] private float rowHeight = 29f;
 
         /// <summary>横の列数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 3）。</summary>
@@ -98,8 +98,8 @@ namespace Takoda99.View.Ranking
         /// <summary>1列あたりの行数。columnCount × rowsPerColumn は visibleCount と一致させる（既定 10）。</summary>
         [SerializeField] private int rowsPerColumn = 10;
 
-        /// <summary>列と列の中心間の距離(px)。BottomRanker.prefab の幅より広くする（既定 125）。</summary>
-        [SerializeField] private float columnSpacing = 125f;
+        /// <summary>列と列の中心間の距離(px)。行の幅より広くする（既定 81.33）。</summary>
+        [SerializeField] private float columnSpacing = 81.33f;
 
         [SerializeField] private float rowMoveDuration = 0.25f;
 
@@ -189,6 +189,41 @@ row    = index % rowsPerColumn
 x = (column - (columnCount - 1) / 2) * columnSpacing
 y = ((rowsPerColumn - 1) / 2 - row) * rowHeight
 ```
+
+> **★行の寸法は prefab の authored 値ではなく `RankingRowStyle.ForBottomBand` が返す `Size`。**
+> 80px では「二回り小さいフォントの全角6文字の屋号」＋「`22nd`」が入らず屋号が隣の列へはみ出したため
+> 118px まで広げたが、3列（366px）だと `BottomRrankers`（370×300）に収まりきらなかった。
+> そこで **`RankingRowStyle.BottomPanelScale = 2/3` で全体を縮めている**。
+>
+> | | 縮尺前 | 実際の値（× 2/3） |
+> |---|---|---|
+> 高さだけは別係数 **`BottomRowHeightScale = 1.5`** を重ねて、横は詰めたまま縦にゆとりを持たせている。
+>
+> | | 縮尺前 | 実際の値 |
+> |---|---|---|
+> | 行の寸法 | 118 × 29 | 約 78.7 × 29（幅 × 2/3、高さ × 2/3 × 1.5） |
+> | 列間隔 | 122 | 約 81.3 |
+> | フォント | 9.72 | 6.48（**幅の縮尺だけが効く**） |
+> | グリッド全体 | 366 × 290 | 約 244 × 290 |
+>
+> **大きさを変えるときは `BottomPanelScale`（横と文字）と `BottomRowHeightScale`（縦）だけを触る。**
+> 幅も文字も同じ倍率で縮むので、「全角6文字の屋号が入る」関係
+> （[value-objects/12](../value-objects/12-ranking-row-style.md) §3.2.2）は保たれる。
+> ただし `rowHeight` / `columnSpacing`（シーンの値）は自動では追従しないので、必ず揃えること。
+
+### 5.3.1 画面内の収まり（縦を伸ばすときの上限）
+
+`BottomRrankers` は `RankingCanvas`（参照解像度 800×600・`MatchWidthOrHeight = 0` ＝幅合わせ）の
+中心から (270, 70) にある。**縦を伸ばすと上下から同時に余白が減る。**
+
+| | 位置 | 現在の余白 |
+|---|---|---|
+| 画面上端（16:9 では y = 225） | グリッド上端 y = 215 | **10px** |
+| 自店パネル `SelfRankNeonPanel`（上端 y = -85） | グリッド下端 y = -75 | **10px** |
+
+横は x[148, 392] で画面内（±400）に収まっている（`BottomRrankers` の BG は 370px 幅のため
+右へ 55px はみ出すが、行そのものは出ない）。
+**`BottomRowHeightScale` をこれ以上上げるなら、先に `BottomRrankers` の位置か自店パネルの位置を動かすこと。**
 
 `GridSlotSource`（`RankingSwapSettings.cs`）がこの計算を持つ。
 既存の `RankingRowLayout.Apply` は `IRankingSlotSource` を介して座標を受け取るだけなので変更不要。

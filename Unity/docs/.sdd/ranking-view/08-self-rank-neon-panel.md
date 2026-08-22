@@ -151,3 +151,17 @@ WebGL の GC を避ける）。
   アートディレクション次第。
 - `RankText` のフォントサイズ 36 は TopRanker.prefab 系の基準値からの目測。実機で大きすぎ／小さすぎたら
   Inspector 上の値のみで調整可能（コード変更不要）。
+
+## 追記：ネオンの作り方は `InfoPanel` / `TopRanker` に合わせる
+
+当初の `Glow` は**組み込みの `Background` スプライトを半透明で敷いただけ**で、ネオンになっていなかった。
+`CullPanel/InfoPanel` と `TopRanker.prefab` と同じ3点セットに揃える。
+
+| 要素 | 中身 |
+|---|---|
+| `NeonFrame`（旧 `Glow`） | `Images/UI/NeonFrame.png` / `Type = Sliced` / `FillCenter = オフ` / `sizeDelta (12, 12)` のストレッチ |
+| `Panel` | 半透明の塗り（白 α0.13）。**色は据え置き**（`SelfRankNeonPanelView` は触らない） |
+| `RankText` / `NameText` / `ScoreText` | `ThemedText._materialPreset` に `NotoSansJP-Black SDF - Neon.mat` |
+
+`SelfRankNeonPanelView.glowImage` は引き続き `NeonFrame` を指す。トーンで色相を差し替える挙動と、
+authored なアルファを保つ扱いはそのまま（枠のアルファは 1 になったので、パレット色がそのまま乗る）。
