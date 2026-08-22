@@ -47,7 +47,7 @@ namespace Takoda99.View.Result
 |---|---|---|
 | **最終順位** | `FinalRank` | 「99人中 ◯位」。最も大きく |
 | **スコア** | `Score` | **試合中は補助だったが、ここでは大きく出す。** 具体的な数字が達成感になる（企画書 3.8）。負値もそのまま |
-| **作ったたこ焼き数** | `TakoyakiCount` | ★`Stats.ServedCount`（提供した**客**の数）と混同しない |
+| **作ったたこ焼き数** | `TakoyakiCount` | ★`Stats.ServedCount`（提供した**客**の数）と混同しない。**X 投稿の見出しもこちら**（`ResultScreenView.BuildHeadline`）|
 | **総ミス数** | `Stats.TotalMisses` | `PersonalResult` 直下には無い |
 | 総打鍵数 | `Stats.TotalKeystrokes` | 精度の分母 |
 | 平均精度 | `Stats.AvgAccuracy` | 0..1。パーセント表記にする |
@@ -126,6 +126,7 @@ namespace Takoda99.View.Result
 | 2 | **`null` を渡しても例外が出ず、画面から出られる** | 同上 |
 | 3 | `Score` が負値でそのまま出る | 同上 |
 | 4 | `TakoyakiCount` と `Stats.ServedCount` が別々の欄に出る | 目視 |
+| 5 | **X 投稿の「○個のたこ焼きを作りました」が、画面の「たこ焼き数」と一致する** | 目視（かつて `ServedCount` を渡していて桁が違っていた） |
 | 5 | `FastestMs == 0`（提供0）のとき、その欄が出ない | EditMode |
 | 6 | `LeftCount` / `CreditLeft` / `EvalRaw` が画面のどこにも出ない | `Assets/Scripts/View/Result` を grep して0件 |
 | 7 | 脱落直後に開いても、120秒後に開いても同じ内容 | シナリオ再生 |

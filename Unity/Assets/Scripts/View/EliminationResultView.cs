@@ -176,7 +176,10 @@ namespace Takoda99.View
 
                 var place = i + 1;
                 var displayName = FindDisplayNameAtRank(state, place);
-                text.text = displayName != null ? $"{PlaceNames[i]}. {displayName}" : $"{PlaceNames[i]}. ";
+
+                // 順位と屋号は改行で分ける（シーンの authored なサンプル文字列と同じ2行組み）。
+                // 屋号は全角6文字まで来るため、1行に並べると 80〜100px の枠から必ずはみ出す。
+                text.text = displayName != null ? $"{PlaceNames[i]}.\n{displayName}" : $"{PlaceNames[i]}.";
             }
         }
 

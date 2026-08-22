@@ -110,8 +110,11 @@ namespace Takoda99.View.ValueObjects
         /// <summary>上位とみなす件数（1〜3位）。</summary>
         public const int DefaultTopCount = 3;
 
-        /// <summary>下位とみなす件数（最下位から20店）。</summary>
-        public const int DefaultBottomCount = 20;
+        /// <summary>
+        /// 下位とみなす件数（最下位から50店）。99店の**下半分**にあたる。
+        /// 決勝へ残れなかった側にはひとまとめに下位のSEを鳴らす。
+        /// </summary>
+        public const int DefaultBottomCount = 50;
 
         /// <summary>1試合の参加店数。</summary>
         public const int DefaultStoreCount = 99;

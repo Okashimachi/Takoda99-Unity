@@ -76,6 +76,53 @@ namespace Takoda99.View.ValueObjects
         private const float FontStepDown = 0.9f;
 
         /// <summary>
+        /// フォントサイズ1に対して1文字が取る幅（em）。**Noto Sans JP の実測値**
+        /// （`NotoSansJP-Bold SDF.asset` の UnitsPerEM 1000 / PointSize 61 から換算）に
+        /// 少しだけ余裕を足したもの。
+        ///
+        /// <para>
+        /// 枠に入るかどうかを TMP に聞かずに決めているのは、<see cref="RankingRowStyle"/> が
+        /// <c>UnityEngine.UI</c> に触らない純粋な値だから。実測（半角数字 0.590em・"nd" 1.285em・
+        /// 全角 1.000em）から**最悪の文字列**を積んだ上限だけを持つ。
+        /// </para>
+        /// </summary>
+        private const float RankTextEm = 2.6f;
+
+        /// <summary>スコア欄の最悪ケース "-9999"（2.73em）。</summary>
+        private const float ScoreTextEm = 3.0f;
+
+        /// <summary>屋号の最悪ケース。**全角6文字**（6.00em）。</summary>
+        private const float NameTextEm = 6.3f;
+
+        /// <summary>
+        /// 枠に収まる最大のフォントサイズ。<paramref name="cap"/> より大きくはしない
+        /// （枠が余っても勝手に太らせない）。
+        /// **これを通していない値をそのまま TMP に渡さない。** はみ出した文字は
+        /// 折り返される（"16th" が "16t" ＋ "h" になる）か、隣の列に重なる。
+        /// </summary>
+        private static float FitFont(float cap, float boxWidth, float em)
+        {
+            if (boxWidth <= 0f || em <= 0f)
+            {
+                return cap;
+            }
+
+            return Mathf.Min(cap, boxWidth / em);
+        }
+
+        // ★RankOffset / NameOffset / ScoreOffset は「中心からの距離」ではなく
+        //   **その Prefab のアンカーからの距離**（anchoredPosition にそのまま入る）。
+        //   Prefab ごとにアンカーが違うので、値を書き換えるときは必ず確認する。
+        //
+        //   | Prefab             | RankText | NameText | ScoreText |
+        //   |--------------------|----------|----------|-----------|
+        //   | TopRanker.prefab   | 左       | 中央     | 右        |
+        //   | BottomRanker.prefab| 左       | 右       | 右        |
+        //   | LostRanker.prefab  | 中央     | 中央     | 中央      |
+        //
+        //   中心基準のつもりで書くと、行の幅を変えた瞬間に中身だけが横へずれる。
+
+        /// <summary>
         /// 上位パネル用。順位だけで決まる（value-objects/12 §3.2・§4.1）。
         /// フォントサイズは Prefab 採寸の基準値へ <see cref="FontStepDown"/> を1回掛けた値
         /// （＝一回り小さい）。
@@ -85,45 +132,142 @@ namespace Takoda99.View.ValueObjects
             if (rank == 1 || rank == 2 || rank == 3)
             {
                 var tone = rank == 1 ? RankingRowTone.Gold : rank == 2 ? RankingRowTone.Silver : RankingRowTone.Bronze;
+                var rankSize = new Vector2(60f, 40f);
+                var nameSize = new Vector2(130f, 40f);
+                var scoreSize = new Vector2(60f, 40f);
                 return new RankingRowStyle(
-                    new Vector2(230f, 44f), 20f * FontStepDown * FontStepDown, 24f * FontStepDown * FontStepDown, 20f * FontStepDown * FontStepDown,
-                    new Vector2(35f, 0f), new Vector2(60f, 40f),
-                    new Vector2(-5f, 0f), new Vector2(130f, 40f),
-                    new Vector2(-35f, 0f), new Vector2(60f, 40f),
+                    new Vector2(230f, 44f),
+                    FitFont(20f * FontStepDown * FontStepDown, rankSize.x, RankTextEm),
+                    FitFont(24f * FontStepDown * FontStepDown, nameSize.x, NameTextEm),
+                    FitFont(20f * FontStepDown * FontStepDown, scoreSize.x, ScoreTextEm),
+                    new Vector2(35f, 0f), rankSize,
+                    new Vector2(-5f, 0f), nameSize,
+                    new Vector2(-35f, 0f), scoreSize,
                     tone);
             }
 
             if (rank >= 4 && rank <= 6)
             {
                 // シーン参照 Slot04〜06 採寸：箱が縦長(130x66)になるぶん、Rank/Score を上下に振り分ける。
+                var rankSize = new Vector2(60f, 40f);
+                var nameSize = new Vector2(110f, 40f);
+                var scoreSize = new Vector2(60f, 40f);
                 return new RankingRowStyle(
-                    new Vector2(130f, 66f), 16f * FontStepDown * FontStepDown, 20f * FontStepDown * FontStepDown, 14f * FontStepDown * FontStepDown,
-                    new Vector2(35f, 10f), new Vector2(60f, 40f),
-                    new Vector2(0f, 0f), new Vector2(110f, 40f),
-                    new Vector2(-35f, -10f), new Vector2(60f, 40f),
+                    new Vector2(130f, 66f),
+                    FitFont(16f * FontStepDown * FontStepDown, rankSize.x, RankTextEm),
+                    FitFont(20f * FontStepDown * FontStepDown, nameSize.x, NameTextEm),
+                    FitFont(14f * FontStepDown * FontStepDown, scoreSize.x, ScoreTextEm),
+                    new Vector2(35f, 10f), rankSize,
+                    new Vector2(0f, 0f), nameSize,
+                    new Vector2(-35f, -10f), scoreSize,
                     RankingRowTone.Upper);
             }
 
             // 7〜10位、11位以上、0位以下（不明）はすべて同じ見た目（§4.1）。シーン参照 Slot07〜10 採寸。
-            return new RankingRowStyle(
-                new Vector2(100f, 50f), 12f * FontStepDown * FontStepDown, 16f * FontStepDown * FontStepDown, 12f * FontStepDown * FontStepDown,
-                new Vector2(35f, 3.5f), new Vector2(60f, 40f),
-                new Vector2(0f, 0f), new Vector2(110f, 40f),
-                new Vector2(-35f, -3.5f), new Vector2(60f, 40f),
-                RankingRowTone.Upper);
+            {
+                var rankSize = new Vector2(60f, 40f);
+                var nameSize = new Vector2(110f, 40f);
+                var scoreSize = new Vector2(60f, 40f);
+                return new RankingRowStyle(
+                    new Vector2(100f, 50f),
+                    FitFont(12f * FontStepDown * FontStepDown, rankSize.x, RankTextEm),
+                    FitFont(16f * FontStepDown * FontStepDown, nameSize.x, NameTextEm),
+                    FitFont(12f * FontStepDown * FontStepDown, scoreSize.x, ScoreTextEm),
+                    new Vector2(35f, 3.5f), rankSize,
+                    new Vector2(0f, 0f), nameSize,
+                    new Vector2(-35f, -3.5f), scoreSize,
+                    RankingRowTone.Upper);
+            }
         }
 
-        /// <summary>下位パネル用。寸法は固定で、色だけが帯で変わる。テキストの位置・寸法は BottomRanker.prefab の authored 値と一致させる。</summary>
+        /// <summary>
+        /// 下位パネル全体の縮尺。**行の寸法・余白・フォントをまとめてこの倍率で縮める。**
+        ///
+        /// <para>
+        /// 一度 3列 × 122px（＝366px）まで広げたが `BottomRrankers`（370px）に収まりきらなかったため、
+        /// 全体を 2/3 にする。**係数を1つにしてあるのは、順位と屋号の収まり（§3.2.2）を崩さずに
+        /// 大きさだけを変えられるようにするため。** 幅も文字も同じ倍率で縮むので、
+        /// 「全角6文字の屋号が入る」関係はこの値をいくつにしても保たれる。
+        /// </para>
+        /// <para>
+        /// ★この値を変えたら <c>BottomRankingPanelView</c> の <c>rowHeight</c> と
+        /// <c>columnSpacing</c>（シーンの値）も揃えること。
+        /// </para>
+        /// </summary>
+        private const float BottomPanelScale = 2f / 3f;
+
+        /// <summary>
+        /// 行の高さだけに追加で掛ける倍率。**横幅とフォントには掛からない。**
+        ///
+        /// <para>
+        /// 幅は詰まっているがもう少し縦にゆとりが欲しい、という調整のための独立した係数。
+        /// <see cref="BottomPanelScale"/>（2/3）と合わせて 29 × 2/3 × 1.5 ＝ 29px になる。
+        /// </para>
+        /// <para>
+        /// ★上げすぎると 10行ぶんの高さが画面から出る。現在の 1.5 で 10 行＝290px、
+        /// `BottomRrankers` の中心 y=70 から上下 ±145 ＝ y[-75, 215]。
+        /// 参照解像度 800×600・`MatchWidthOrHeight = 0`（幅合わせ）なので 16:9 では y の上端が 225、
+        /// 自店パネル（`SelfRankNeonPanel`・上端 y=-85）との隙間が 10px。**どちらも余白は10pxしかない。**
+        /// </para>
+        /// </summary>
+        private const float BottomRowHeightScale = 1.5f;
+
+        /// <summary>下位パネル1行の寸法（縮尺適用前）。</summary>
+        private static readonly Vector2 BottomBaseRowSize = new Vector2(118f, 29f);
+
+        /// <summary>下位パネル1行の寸法。<c>BottomRankingPanelView.rowHeight</c> と一致させる。</summary>
+        public static Vector2 BottomRowSize => new Vector2(
+            BottomBaseRowSize.x * BottomPanelScale,
+            BottomBaseRowSize.y * BottomPanelScale * BottomRowHeightScale);
+
+        /// <summary>列と列の中心間の距離。<c>BottomRankingPanelView.columnSpacing</c> と一致させる。</summary>
+        public static float BottomColumnSpacing => 122f * BottomPanelScale;
+
+        /// <summary>下位パネルの基準フォントサイズ（<c>BottomRanker.prefab</c> の authored 値）。</summary>
+        private const float BottomBaseFontSize = 12f;
+
+        /// <summary>下位パネルのセル内側に空ける余白（px・縮尺適用前）。文字が枠線に触らないための最小限。</summary>
+        private const float BottomCellPadding = 3f * BottomPanelScale;
+
+        /// <summary>屋号と順位のあいだに空ける隙間（px・縮尺適用前）。</summary>
+        private const float BottomColumnGap = 4f * BottomPanelScale;
+
+        /// <summary>
+        /// 下位パネル用。寸法は固定で、色だけが帯で変わる。
+        ///
+        /// <para>
+        /// フォントは基準値へ <see cref="FontStepDown"/> を**2回**掛けた値（＝二回り小さい）。
+        /// 順位が左・屋号が右で、どちらも <see cref="FitFont"/> を通してから枠を採るため、
+        /// 全角6文字の屋号も "22nd" も**必ず行の内側に収まる**。
+        /// </para>
+        /// <para>
+        /// ★オフセットは <b>Prefab のアンカー基準</b>（§3.2.3）。
+        /// <c>BottomRanker.prefab</c> は <c>RankText</c> が左アンカー・<c>NameText</c>／<c>ScoreText</c> が
+        /// 右アンカーなので、順位は左端から、屋号は右端からの距離で置く。
+        /// 中心基準のつもりで書くと、行の幅を変えたときに中身だけが横へずれる。
+        /// </para>
+        /// </summary>
         public static RankingRowStyle ForBottomBand(RankingRowTone tone)
         {
-            // 幅は元の 2/3（120 → 80）。テキストのx方向オフセット・幅も同じ比率で縮め、
-            // 箱からはみ出して隣の列と重ならないようにする（高さ・y方向は変えない）。
-            const float widthScale = 2f / 3f;
+            var cap = BottomBaseFontSize * FontStepDown * FontStepDown * BottomPanelScale;
+
+            var rowSize = BottomRowSize;
+            var inner = rowSize.x - BottomCellPadding * 2f;
+            var rankWidth = RankTextEm * cap;
+            var nameWidth = inner - rankWidth - BottomColumnGap;
+
+            var rankFontSize = FitFont(cap, rankWidth, RankTextEm);
+            var nameFontSize = FitFont(cap, nameWidth, NameTextEm);
+
+            // 順位は左アンカーからの距離（正）、屋号は右アンカーからの距離（負）。
+            var rankOffsetX = BottomCellPadding + rankWidth * 0.5f;
+            var nameOffsetX = -(BottomCellPadding + nameWidth * 0.5f);
+
             return new RankingRowStyle(
-                new Vector2(80f, 29f), 12f, 12f, 0f,
-                new Vector2(33.5f * widthScale, 0f), new Vector2(60f * widthScale, 29f),
-                new Vector2(-44f * widthScale, 0f), new Vector2(80f * widthScale, 29f),
-                new Vector2(-35f * widthScale, -3.5f), new Vector2(60f * widthScale, 40f),
+                rowSize, rankFontSize, nameFontSize, 0f,
+                new Vector2(rankOffsetX, 0f), new Vector2(rankWidth, rowSize.y),
+                new Vector2(nameOffsetX, 0f), new Vector2(nameWidth, rowSize.y),
+                new Vector2(nameOffsetX, 0f), new Vector2(nameWidth, rowSize.y),
                 tone);
         }
 
@@ -169,11 +313,17 @@ namespace Takoda99.View.ValueObjects
             var halfWidth = innerWidth * 0.5f;
             var halfOffset = innerWidth * 0.25f;
 
+            // 段の高さから出したサイズは**縦にしか収まりを保証しない**。
+            // 9列に割ると1マスは 61px ほどしかなく、全角6文字の屋号はそのままでは必ずはみ出す
+            // （屋号が隣のマスへ流れる不具合の原因はこれ）。横幅でも頭打ちにする。
+            var topFontSize = topHeight * AudienceFontFillRatio;
+            var nameFontSize = nameHeight * AudienceFontFillRatio;
+
             return new RankingRowStyle(
                 cellSize,
-                topHeight * AudienceFontFillRatio,
-                nameHeight * AudienceFontFillRatio,
-                topHeight * AudienceFontFillRatio,
+                FitFont(topFontSize, halfWidth, RankTextEm),
+                FitFont(nameFontSize, innerWidth, NameTextEm),
+                FitFont(topFontSize, halfWidth, ScoreTextEm),
                 new Vector2(-halfOffset, topY), new Vector2(halfWidth, topHeight),
                 new Vector2(0f, nameY), new Vector2(innerWidth, nameHeight),
                 new Vector2(halfOffset, topY), new Vector2(halfWidth, topHeight),

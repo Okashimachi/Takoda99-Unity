@@ -19,8 +19,20 @@ namespace Takoda99.View
 {
     public sealed class GameBeforeView : MonoBehaviour
     {
-        [SerializeField] private TextMeshProUGUI countText;      // CountDownPanel/CountText
+        [SerializeField] private TextMeshProUGUI countText;      // CountDownPanel/CountPanel/CountText
         [SerializeField] private float countdownSeconds = 5f;
+
+        // ネオンパネルの演出（§3.1）。すべて未設定でも数字のカウントダウンは成立する。
+        [SerializeField] private Image neonFrame;                // CountPanel/NeonFrame
+        [SerializeField] private CanvasGroup countPanelGroup;    // CountPanel の CanvasGroup
+        [SerializeField] private RectTransform scaleRoot;        // CountPanel
+        [SerializeField] private Color neonNormalColor;          // 5〜2秒台
+        [SerializeField] private Color neonFinalColor;           // 最後の1秒
+        [SerializeField] private float popStartScale = 1.35f;
+        [SerializeField] private float popSeconds = 0.25f;
+        [SerializeField] private float fadeInSeconds = 0.1f;
+        [SerializeField] private float fadeOutSeconds = 0.25f;
+        [SerializeField] private float neonPulseDepth = 0.45f;
 
         /// <summary>まだ待機中か。true の間、お題と客の行列は出さない。</summary>
         public bool IsHolding { get; }
@@ -43,9 +55,37 @@ namespace Takoda99.View
 GameBefore                    ← GameBeforeView（ルートのCanvas）
 └── CountDownPanel
     ├── Panel
-    ├── Text (TMP)            （「まもなく開店」等の固定文言。触らない）
-    └── CountText             ← カウントダウンの数値
+    ├── CountPanel            ← ★CanvasGroup を持つ。拡大とフェードの単位
+    │   ├── NeonFrame         ← ★追加。数字の裏に敷くネオンの縁取り（Image・Sliced）
+    │   ├── Panel
+    │   └── CountText         ← カウントダウンの数値
+    └── MessagePanel          （「1番の…」等の固定文言。触らない）
 ```
+
+### 3.1 ネオンパネルの演出
+
+ネオンの作り方はこのプロジェクトで1つに決まっている（`CullPanel/InfoPanel`・`TopRanker.prefab` と同じ）。
+
+| 要素 | 中身 |
+|---|---|
+| 枠 | `Images/UI/NeonFrame.png` を `Image`（`Type = Sliced` / `FillCenter = オフ` / `RaycastTarget = オフ`）で、`sizeDelta (12, 12)` のストレッチで敷く |
+| 塗り | その下の `Panel`。**半透明**（白 α0.2 程度）。不透明にするとネオンが埋もれる |
+| 文字 | `ThemedText._materialPreset` に `Materials/NotoSansJP-Black SDF - Neon.mat` を割り当てる（TMP の `m_sharedMaterial` も同じものに揃える） |
+
+**組み込みの `Background` スプライトを敷いただけのものはネオンではない。** 枠のスプライトと
+テキストのマテリアルプリセットの両方が揃って初めて同じ見た目になる。
+
+演出は毎フレームの `ApplyAnimation()` が担う。**時間はすべて `remainingSec` の小数部から引く**
+（`Coroutine` も DOTween も使わない）ので、フレームレートが落ちても数字と演出がずれない。
+
+| 要素 | 1秒のあいだの動き |
+|---|---|
+| `scaleRoot` | `popStartScale`（1.35倍）から等倍へ EaseOut で縮む |
+| `countPanelGroup.alpha` | `fadeInSeconds` で立ち上がり、次の数字へ移る `fadeOutSeconds` 前から落ちる |
+| `neonFrame.color` | 1秒で1往復の脈動（`neonPulseDepth`）。**残り1秒台だけ `neonFinalColor`** に変わる |
+
+数え終わって `MatchStart` を待っている間は脈動とフェードを止め、出しっぱなしにする
+（点滅し続けると「固まった」ではなく「壊れた」に見えるため）。
 
 - `Begin()` が `gameObject.SetActive(true)` を行うため、シーン上で非アクティブに置いてあってもよい
 - 畳むときは `gameObject.SetActive(false)`。以降 `Update` は回らない
@@ -87,8 +127,12 @@ GameBefore                    ← GameBeforeView（ルートのCanvas）
 
 | コンポーネント | フィールド | 割り当て |
 |---|---|---|
-| `GameBefore` の `GameBeforeView` | `countText` | `GameBefore/CountDownPanel/CountText` |
+| `GameBefore` の `GameBeforeView` | `countText` | `GameBefore/CountDownPanel/CountPanel/CountText` |
 | 同上 | `countdownSeconds` | 5 |
+| 同上 | `neonFrame` | `CountDownPanel/CountPanel/NeonFrame` の `Image`（`NeonFrame.png`） |
+| `CountText` の `ThemedText` | `_materialPreset` | `NotoSansJP-Black SDF - Neon.mat` |
+| 同上 | `countPanelGroup` | `CountDownPanel/CountPanel` の `CanvasGroup` |
+| 同上 | `scaleRoot` | `CountDownPanel/CountPanel`（★`GameBefore` 自身を指さないこと。Canvas ごと伸び縮みする） |
 | `Render ` の `Renderer` | `gameBefore` | `GameBefore` |
 
 ## 8. テスト・確認観点
@@ -96,6 +140,8 @@ GameBefore                    ← GameBeforeView（ルートのCanvas）
 `UnityEngine` 依存のため xUnit では検証できない。Unity Editor 実行で確認する。
 
 - シーンに入ってから 5 → 1 と数え、0 で待機画面が畳まれるか
+- 数字が変わるたびにネオンパネルが大きいところから縮んで現れ、次の数字の前に薄くなるか
+- 残り1秒だけネオンの色が変わり、`MatchStart` 待ちの間は点滅せず出たままか
 - 畳まれた瞬間にお題が出て、待機中に届いていた客が行列に現れるか
 - 待機中はお題・行列・我慢ゲージが出ず、他店盤面や順位バーは動いているか
 - `gameBefore` を未割り当てにしたとき、待機なしで従来どおり動くか（結線漏れで画面が止まらないこと）

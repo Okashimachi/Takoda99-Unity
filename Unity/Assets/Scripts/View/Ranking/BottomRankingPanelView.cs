@@ -19,7 +19,10 @@ namespace Takoda99.View.Ranking
         /// <summary>表示件数。淘汰人数の最大(24)より大きい値にする。</summary>
         [SerializeField] private int visibleCount = 30;
 
-        /// <summary>1行の高さ(px)。BottomRanker.prefab の高さと一致させる。</summary>
+        /// <summary>
+        /// 1行の高さ(px)。<c>RankingRowStyle.BottomRowSize.y</c> と一致させる
+        /// （行の寸法はそちらが返す値で上書きされるため、ここがズレると行間だけが合わなくなる）。
+        /// </summary>
         [SerializeField] private float rowHeight = 29f;
 
         /// <summary>横の列数。columnCount × rowsPerColumn は visibleCount と一致させる。</summary>
@@ -28,8 +31,12 @@ namespace Takoda99.View.Ranking
         /// <summary>1列あたりの行数。columnCount × rowsPerColumn は visibleCount と一致させる。</summary>
         [SerializeField] private int rowsPerColumn = 10;
 
-        /// <summary>列と列の中心間の距離(px)。BottomRanker.prefab の幅より広くして重ならないようにする。</summary>
-        [SerializeField] private float columnSpacing = 83f;
+        /// <summary>
+        /// 列と列の中心間の距離(px)。<c>RankingRowStyle.BottomColumnSpacing</c> と一致させる。
+        /// <c>RankingRowStyle.ForBottomBand</c> が返す行の幅（約 78.7px）より広くして重ならないようにする。
+        /// 3列で約 244px・10行で約 193px なので `BottomRrankers`（370×300）に余裕を持って収まる。
+        /// </summary>
+        [SerializeField] private float columnSpacing = 81.33f;
 
         [SerializeField] private float rowMoveDuration = 0.25f;
 
